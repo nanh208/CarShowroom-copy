@@ -4,18 +4,20 @@ export const reduced = () => typeof window !== 'undefined' && window.matchMedia?
 let io
 const observer = () => io || (io = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } })
-}, { rootMargin: '0px 0px 40px 0px', threshold: 0 }))
+}, { rootMargin: '0px 0px 120px 0px', threshold: 0 }))
 
 /** v-reveal="'left' | 'right' | 'up' | 'zoom'"  · v-reveal:120 (độ trễ ms) */
 export const vReveal = {
   mounted(el, b) {
     if (reduced()) return
     // chỉ hiện 1 lần, trễ tối đa 120ms để không chờ lâu
-    el.classList.add('rv')
+    el.classList.add('reveal')
     if (b.arg) el.style.setProperty('--rv-delay', Math.min(+b.arg, 120) + 'ms')
     observer().observe(el)
+    // An toàn: nội dung luôn hiện dù observer không kích hoạt (chụp full-page, in, tab ẩn…)
+    el._rvT = setTimeout(() => { el.classList.add('in'); io?.unobserve(el) }, 600)
   },
-  unmounted(el) { io?.unobserve(el) }
+  unmounted(el) { clearTimeout(el._rvT); io?.unobserve(el) }
 }
 
 /** Ảnh sản phẩm "lái" theo đường cong vào icon giỏ hàng. */

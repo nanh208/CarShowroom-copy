@@ -113,8 +113,8 @@ img.cover { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
 .page-enter-from { opacity: 0; }
 
 /* Reveal khi cuộn: chỉ chạy 1 lần, quãng ngắn */
-.rv { opacity: 0; transform: translateY(12px); transition: opacity .22s ease-out, transform .22s ease-out; transition-delay: var(--rv-delay, 0ms); }
-.rv.in { opacity: 1; transform: none; }
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity .22s ease-out, transform .22s ease-out; transition-delay: var(--rv-delay, 0ms); }
+.reveal.in { opacity: 1; transform: none; }
 
 /* Hover: chỉ đổi màu nhẹ */
 .btn { transition: background-color .15s ease-out, color .15s ease-out, border-color .15s ease-out; }
@@ -132,5 +132,6 @@ img.cover { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-  .rv { opacity: 1; transform: none; }
+  .reveal { opacity: 1; transform: none; }
 }
+@media print { .reveal { opacity: 1 !important; transform: none !important; } }

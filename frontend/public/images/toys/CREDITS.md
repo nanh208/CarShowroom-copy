@@ -19,8 +19,8 @@
 | tomica-nsx-0.jpg | [File:Tomica Premium Honda S2000. (38844843805).jpg](https://commons.wikimedia.org/wiki/File:Tomica_Premium_Honda_S2000._(38844843805).jpg) | Shadman Samee from Dhaka, Bangladesh | CC BY-SA 2.0 |
 | tomica-nsx-1.jpg | [File:Tomica Premium Honda S2000. (39033849004).jpg](https://commons.wikimedia.org/wiki/File:Tomica_Premium_Honda_S2000._(39033849004).jpg) | Shadman Samee from Dhaka, Bangladesh | CC BY-SA 2.0 |
 | tomica-nsx-2.jpg | [File:TOMICA PREMIUM EVO 6.jpg](https://commons.wikimedia.org/wiki/File:TOMICA_PREMIUM_EVO_6.jpg) | BenedictLiang | CC BY-SA 4.0 |
-| maisto-mustang-0.jpg | [File:S355 Ford Mustang GT - USA (California) Highway Patrol (8207335674).jpg](https://commons.wikimedia.org/wiki/File:S355_Ford_Mustang_GT_-_USA_(California)_Highway_Patrol_(8207335674).jpg) | Dave Conner from Inverness, Scotland | CC BY 2.0 |
-| maisto-mustang-1.jpg | [File:Maisto 1 18 2015 Ford Mustang VI GT (S550) black.jpg](https://commons.wikimedia.org/wiki/File:Maisto_1_18_2015_Ford_Mustang_VI_GT_(S550)_black.jpg) | メイド理世 | CC BY-SA 4.0 |
+| maisto-mustang-0.jpg | [File:Maisto 1 18 2015 Ford Mustang VI GT (S550) black.jpg](https://commons.wikimedia.org/wiki/File:Maisto_1_18_2015_Ford_Mustang_VI_GT_(S550)_black.jpg) | メイド理世 | CC BY-SA 4.0 |
+| maisto-mustang-1.jpg | [File:S355 Ford Mustang GT - USA (California) Highway Patrol (8207335674).jpg](https://commons.wikimedia.org/wiki/File:S355_Ford_Mustang_GT_-_USA_(California)_Highway_Patrol_(8207335674).jpg) | Dave Conner from Inverness, Scotland | CC BY 2.0 |
 | maisto-aventador-0.jpg | [File:Maistolamborghinidiablo.jpg](https://commons.wikimedia.org/wiki/File:Maistolamborghinidiablo.jpg) | Buttonfreak at Dutch Wikipedia | Public domain |
 | maisto-aventador-1.jpg | [File:Maisto 1 18 Lamborghini Centenario.jpg](https://commons.wikimedia.org/wiki/File:Maisto_1_18_Lamborghini_Centenario.jpg) | メイド理世 | CC BY-SA 4.0 |
 | bburago-sf90-0.jpg | [File:Bburago 1 24 Ferrari F50.jpg](https://commons.wikimedia.org/wiki/File:Bburago_1_24_Ferrari_F50.jpg) | メイド理世 | CC BY-SA 4.0 |
@@ -31,8 +31,8 @@
 | maisto-911-0.jpg | [File:Porsche 911 Carrera model car.jpg](https://commons.wikimedia.org/wiki/File:Porsche_911_Carrera_model_car.jpg) | Victor Lopes | CC BY-SA 4.0 |
 | maisto-911-1.jpg | [File:Porsche 911 (8232633411).jpg](https://commons.wikimedia.org/wiki/File:Porsche_911_(8232633411).jpg) | Antti | CC BY 2.0 |
 | maisto-911-2.jpg | [File:Porsche 911 turbo targa Rainbow-Porsche (24505943995).jpg](https://commons.wikimedia.org/wiki/File:Porsche_911_turbo_targa_Rainbow-Porsche_(24505943995).jpg) | Michael Reiss from Mannheim, Deutschland | CC BY-SA 2.0 |
-| bburago-f40-0.jpg | [File:Ferrari F40 in Red, federal model, front left.jpg](https://commons.wikimedia.org/wiki/File:Ferrari_F40_in_Red,_federal_model,_front_left.jpg) | Mr.choppers | CC BY-SA 4.0 |
-| bburago-f40-1.jpg | [File:ScaleCarComparison.jpg](https://commons.wikimedia.org/wiki/File:ScaleCarComparison.jpg) | Không rõ | CC BY-SA 3.0 |
+| bburago-f40-0.jpg | [File:ScaleCarComparison.jpg](https://commons.wikimedia.org/wiki/File:ScaleCarComparison.jpg) | Không rõ | CC BY-SA 3.0 |
+| bburago-f40-1.jpg | [File:Ferrari F40 in Red, federal model, front left.jpg](https://commons.wikimedia.org/wiki/File:Ferrari_F40_in_Red,_federal_model,_front_left.jpg) | Mr.choppers | CC BY-SA 4.0 |
 | kyosho-countach-0.jpg | [File:Renault A 310 in 1-18 scale (15980731694).jpg](https://commons.wikimedia.org/wiki/File:Renault_A_310_in_1-18_scale_(15980731694).jpg) | Andrew Bone from Weymouth, England | CC BY 2.0 |
 | kyosho-countach-1.jpg | [File:Renault A 310 in 1-18 scale (15980715704).jpg](https://commons.wikimedia.org/wiki/File:Renault_A_310_in_1-18_scale_(15980715704).jpg) | Andrew Bone from Weymouth, England | CC BY 2.0 |
 | kyosho-countach-2.jpg | [File:Ferrari 250 GTO, CMC-Model 1-18 (vorn links 2017-03-23).JPG](https://commons.wikimedia.org/wiki/File:Ferrari_250_GTO,_CMC-Model_1-18_(vorn_links_2017-03-23).JPG) | Lothar Spurzem | CC BY-SA 2.0 de |
@@ -88,9 +88,11 @@
 | futaba-2.jpg | [File:Futaba receiver.jpg](https://commons.wikimedia.org/wiki/File:Futaba_receiver.jpg) | Daniel van den Ouden | CC BY 2.0 |
 | wheels-sc-0.jpg | [File:TOSY TyreROBO.jpg](https://commons.wikimedia.org/wiki/File:TOSY_TyreROBO.jpg) | Lylodo | CC BY-SA 3.0 |
 | wheels-sc-1.jpg | [File:The tire wheel of Lexus RC F"Performance package" (5BA-USC10-FCZRH).jpg](https://commons.wikimedia.org/wiki/File:The_tire_wheel_of_Lexus_RC_F%22Performance_package%22_(5BA-USC10-FCZRH).jpg) | Tokumeigakarinoaoshima | CC BY-SA 4.0 |
-| wheels-drift-0.jpg | [File:One scene at 2015 Suzuka Tire Test (26).JPG](https://commons.wikimedia.org/wiki/File:One_scene_at_2015_Suzuka_Tire_Test_(26).JPG) | Tokumeigakarinoaoshima | CC0 |
-| wheels-drift-1.jpg | [File:The tire wheel of Lexus RC F"Performance package" (5BA-USC10-FCZRH).jpg](https://commons.wikimedia.org/wiki/File:The_tire_wheel_of_Lexus_RC_F%22Performance_package%22_(5BA-USC10-FCZRH).jpg) | Tokumeigakarinoaoshima | CC BY-SA 4.0 |
+| wheels-drift-0.jpg | [File:RC-Drift-Wagen.jpg](https://commons.wikimedia.org/wiki/File:RC-Drift-Wagen.jpg) | Halo3000 at de.wikipedia | Public domain |
+| wheels-drift-1.jpg | [File:TOSY TyreROBO.jpg](https://commons.wikimedia.org/wiki/File:TOSY_TyreROBO.jpg) | Lylodo | CC BY-SA 3.0 |
 | brushless-0.jpg | [File:Hacker A10-13L Motor with Wires in Butt Connectors Ready for ESC.JPG](https://commons.wikimedia.org/wiki/File:Hacker_A10-13L_Motor_with_Wires_in_Butt_Connectors_Ready_for_ESC.JPG) | Shatton8111 | CC BY-SA 3.0 |
 | brushless-1.jpg | [File:Motor and ESC Connected By Butt Connectors.JPG](https://commons.wikimedia.org/wiki/File:Motor_and_ESC_Connected_By_Butt_Connectors.JPG) | Shatton8111 | CC BY-SA 3.0 |
 | display-case-0.jpg | [File:Vista aérea del rancho de Tow Mater, Diecast Convention, Mexico 2017.jpg](https://commons.wikimedia.org/wiki/File:Vista_a%C3%A9rea_del_rancho_de_Tow_Mater,_Diecast_Convention,_Mexico_2017.jpg) | Kenyirotsuru | CC BY-SA 4.0 |
 | display-case-1.jpg | [File:Vista lateral del rancho de Tow Mater, Diecast Convention, Mexico 2017.jpg](https://commons.wikimedia.org/wiki/File:Vista_lateral_del_rancho_de_Tow_Mater,_Diecast_Convention,_Mexico_2017.jpg) | Kenyirotsuru | CC BY-SA 4.0 |
+
+| cut/minigt-supra.webp | Cắt nền (rembg) từ [File:Tamiya Toyota Supra 1.jpg](https://commons.wikimedia.org/wiki/File:Tamiya_Toyota_Supra_1.jpg) | Shingo.a | CC BY-SA 4.0 (tác phẩm phái sinh) |
