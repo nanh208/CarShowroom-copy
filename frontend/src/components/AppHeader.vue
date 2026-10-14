@@ -5,7 +5,14 @@
         <img loading="lazy" decoding="async" src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span>
       </router-link>
       <nav class="pill">
-        <div class="menu">
+        <div v-if="theme === 'v2'" class="menu">
+          <router-link :to="{ path: '/products', query: { type: 'MODEL,DISPLAY' } }" :class="{ on: isModel }" @mouseenter="mega = 'cars'">Xe mô hình</router-link>
+          <router-link :to="{ path: '/products', query: { type: 'RC' } }" :class="{ on: isRC }" @mouseenter="mega = ''">Xe RC</router-link>
+          <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
+          <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">Đấu giá</router-link>
+          <router-link to="/support" active-class="on" @mouseenter="mega = ''">Hỗ trợ</router-link>
+        </div>
+        <div v-else class="menu">
           <router-link to="/" exact-active-class="on" @mouseenter="mega = ''">Trang chủ</router-link>
           <router-link to="/products" :class="{ on: isCars }" @mouseenter="mega = 'cars'">Danh mục xe</router-link>
           <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
@@ -15,6 +22,7 @@
           <router-link to="/about" active-class="on" @mouseenter="mega = ''">Về chúng tôi</router-link>
         </div>
         <div class="tools" @mouseenter="mega = ''">
+          <ThemeSwitch class="tsw" />
           <div class="search" :class="{ open: sOpen }">
             <button class="ib" title="Tìm kiếm" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
             <input ref="sInput" v-model="q" placeholder="Tìm xe đồ chơi, hãng… (phím /)" aria-label="Tìm kiếm" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
@@ -76,6 +84,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import ThemeSwitch from './ThemeSwitch.vue'
+import { theme } from '../stores/theme'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../api'
 import { useAuth } from '../stores/auth'
@@ -86,6 +96,8 @@ const auth = useAuth(), cart = useCart(), prefs = usePrefs(), router = useRouter
 const bump = ref(false)
 watch(() => cart.fly, () => { bump.value = false; requestAnimationFrame(() => { bump.value = true; setTimeout(() => bump.value = false, 250) }) })
 const mega = ref(''), scrolled = ref(false), scrollY = ref(0)
+const isRC = computed(() => route.path === '/products' && route.query.type === 'RC')
+const isModel = computed(() => route.path === '/products' && /MODEL|DISPLAY/.test(route.query.type || ''))
 const isAcc = computed(() => route.path === '/products' && route.query.grp === 'ACCESSORY')
 const isCars = computed(() => (route.path === '/products' && route.query.grp !== 'ACCESSORY') || route.path.startsWith('/products/'))
 // Chữ logo đổi trắng/đen theo độ sáng nền: trên hero tối (trang chủ, đầu trang) => chữ trắng

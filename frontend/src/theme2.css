@@ -1,0 +1,114 @@
+/* ===================== Giao diện 2.0 — racing poster: nền kem, chữ nghiêng đậm đen/cam, panel xiên, cờ caro ===================== */
+html[data-theme="v2"] {
+  --v2-orange: #f05a1a; --v2-cream: #f3efe6; --v2-ink: #111111;
+  --bronze: #f05a1a; --bronze-2: #d94a0e; --bronze-3: #b33a08; --bronze-soft: #fde6da;
+  --primary: #f05a1a; --primary-hover: #d94a0e; --primary-active: #b33a08; --accent: #f05a1a;
+  --bg: #f3efe6; --bg-2: #ebe5d8; --surface: #ffffff; --tile: #e6e0d3; --tile-2: #d8d1c2;
+  --card: #ffffff; --border: #ddd5c6; --text: #111111; --text-2: #2c2c2c; --muted: #6b665d;
+  --shadow: none; --radius: 2px;
+  --head: 'Oswald', 'Be Vietnam Pro', sans-serif;
+}
+html[data-theme="v2"] h1, html[data-theme="v2"] h2 { font-family: 'Anton', 'Oswald', sans-serif; font-style: italic; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; }
+html[data-theme="v2"] h3, html[data-theme="v2"] h4 { font-family: 'Oswald', sans-serif; font-weight: 600; }
+html[data-theme="v2"] .page > h1, html[data-theme="v2"] .page h1:first-child, html[data-theme="v2"] .content h1 { font-size: 2.6rem; line-height: 1; position: relative; padding-bottom: 12px; margin-bottom: 14px; }
+html[data-theme="v2"] .page > h1::after, html[data-theme="v2"] .page h1:first-child::after, html[data-theme="v2"] .content h1::after {
+  content: ''; position: absolute; left: 0; bottom: 0; width: 120px; height: 6px;
+  background: linear-gradient(90deg, var(--v2-orange) 0 60%, transparent 60% 66%, var(--v2-ink) 66%); transform: skewX(-20deg); }
+html[data-theme="v2"] a { color: var(--v2-ink); } html[data-theme="v2"] a:hover { color: var(--v2-orange); }
+
+/* Nút: đen/cam, góc vuông, chữ Oswald */
+html[data-theme="v2"] .btn { border-radius: 0; background: var(--v2-orange); color: #fff; font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: .85rem; }
+html[data-theme="v2"] .btn:hover { background: var(--v2-ink); color: #fff; }
+html[data-theme="v2"] .btn.v2-black { background: var(--v2-ink); } html[data-theme="v2"] .btn.v2-black:hover { background: var(--v2-orange); }
+html[data-theme="v2"] .btn-outline { background: transparent; color: var(--v2-ink); border: 1.5px solid var(--v2-ink); }
+html[data-theme="v2"] .btn-outline:hover { background: var(--v2-ink); color: #fff; }
+html[data-theme="v2"] .btn-danger, html[data-theme="v2"] .btn-red { background: var(--v2-orange); }
+html[data-theme="v2"] .btn-social { background: #fff; color: #111; text-transform: none; } html[data-theme="v2"] .btn-fb { background: #1877f2; color: #fff; }
+
+/* Thẻ, bảng, form */
+html[data-theme="v2"] .card { border-radius: 0; border: 1px solid var(--border); box-shadow: none; }
+html[data-theme="v2"] .input, html[data-theme="v2"] select.input, html[data-theme="v2"] textarea.input { border-radius: 0; background: #fff; border-color: #cfc7b7; }
+html[data-theme="v2"] .input:focus { border-color: var(--v2-ink); box-shadow: 0 0 0 2px rgba(240,90,26,.25); }
+html[data-theme="v2"] .badge { border-radius: 0; font-family: 'Oswald', sans-serif; letter-spacing: .04em; }
+html[data-theme="v2"] .badge-new, html[data-theme="v2"] .tag-yellow { background: var(--v2-ink); color: #fff; transform: skewX(-10deg); }
+html[data-theme="v2"] .price { color: var(--v2-orange); font-family: 'Oswald', sans-serif; font-weight: 700; }
+html[data-theme="v2"] .table th { font-family: 'Oswald', sans-serif; color: #111; letter-spacing: .1em; }
+html[data-theme="v2"] .table tbody tr:hover { background: #faf6ee; }
+html[data-theme="v2"] .tabs button { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+html[data-theme="v2"] .tabs button.active { border-color: var(--v2-orange); color: #111; }
+html[data-theme="v2"] .modal { border-radius: 0; border-top: 6px solid var(--v2-orange); }
+html[data-theme="v2"] .alert { border-radius: 0; }
+html[data-theme="v2"] :focus-visible { outline-color: var(--v2-orange); }
+
+/* Header 2.0: thanh trắng phẳng, menu chữ đen, gạch cam dưới mục đang chọn */
+html[data-theme="v2"] .hdr { padding: 0; background: #fff !important; border-bottom: 1px solid #e7e1d4; }
+html[data-theme="v2"] .hdr .wrap { max-width: 1240px; height: 64px; }
+html[data-theme="v2"] .hdr .logo, html[data-theme="v2"] .hdr.dark .logo { color: #111; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.25rem; }
+html[data-theme="v2"] .hdr .logo b, html[data-theme="v2"] .hdr.dark .logo b { color: var(--v2-orange); }
+html[data-theme="v2"] .hdr .pill { background: none; box-shadow: none; height: 64px; padding: 0; }
+html[data-theme="v2"] .hdr .menu { margin-left: 28px; gap: 8px; }
+html[data-theme="v2"] .hdr .menu a { color: #111; font-family: 'Oswald', sans-serif; font-weight: 500; font-size: .95rem; opacity: 1; padding: 0 12px; }
+html[data-theme="v2"] .hdr .menu a:hover { background: none; color: var(--v2-orange); }
+html[data-theme="v2"] .hdr .menu a.on { font-weight: 600; }
+html[data-theme="v2"] .hdr .menu a.on::after { left: 12px; right: 12px; bottom: 14px; height: 3px; border-radius: 0; background: var(--v2-orange); }
+html[data-theme="v2"] .hdr .ib, html[data-theme="v2"] .hdr .cartpill { background: none; color: #111; }
+html[data-theme="v2"] .hdr .ib:hover, html[data-theme="v2"] .hdr .cartpill:hover { background: #f3efe6; color: #111; }
+html[data-theme="v2"] .hdr .cartpill span { background: #111; color: #fff; padding: 1px 7px; font-size: .72rem; }
+html[data-theme="v2"] .hdr .cnt { background: var(--v2-orange); color: #fff; }
+html[data-theme="v2"] .hdr .search { border: 1px solid #ddd5c6; background: #faf8f3; border-radius: 2px; }
+html[data-theme="v2"] .hdr .search input { width: 210px; padding: 0 10px 0 2px; background: none; color: #111; }
+html[data-theme="v2"] .hdr .search input::placeholder { color: #8a857b; }
+html[data-theme="v2"] .hdr .search .ib { background: none; }
+html[data-theme="v2"] .hdr .avatar { background: #111; color: #fff; }
+html[data-theme="v2"] .hdr .tsw { color: #111; margin-right: 4px; }
+html[data-theme="v2"] .mega-in { background: #111; border-radius: 0; } html[data-theme="v2"] .mall { background: var(--v2-orange); border-radius: 0; }
+html[data-theme="v2"] .mtile { border-radius: 0; clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%); }
+html[data-theme="v2"] .page { padding-top: 96px; }
+html[data-theme="v2"] .road { background: #111; } html[data-theme="v2"] .road .done { background: var(--v2-orange); }
+@media (max-width: 1100px) { html[data-theme="v2"] .hdr .search input { width: 120px; } }
+
+/* Thẻ sản phẩm 2.0 */
+html[data-theme="v2"] .pcard { background: #fff; border-radius: 0; border: 1px solid var(--border); padding: 10px; }
+html[data-theme="v2"] .pcard:hover { border-color: #111; }
+html[data-theme="v2"] .pcard .thumb { border-radius: 0; background: #ece6da; }
+html[data-theme="v2"] .pcard .name { font-family: 'Oswald', sans-serif; font-weight: 500; font-size: 1rem; }
+html[data-theme="v2"] .pcard .foot .price { color: var(--v2-orange); font-size: 1.2rem; }
+html[data-theme="v2"] .pcard .flash { border-radius: 0; background: var(--v2-orange); transform: skewX(-10deg); }
+html[data-theme="v2"] .pcard .meta { border-radius: 0; }
+html[data-theme="v2"] .pcard .buy { background: #111; } html[data-theme="v2"] .pcard .buy:hover { background: var(--v2-orange); }
+
+/* Trang danh sách, chips, tile */
+html[data-theme="v2"] .fbar { background: #111; border-radius: 0; clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+html[data-theme="v2"] .filters { background: var(--v2-cream); }
+html[data-theme="v2"] .chip { border-radius: 0; background: transparent; color: #eee; border-color: #444; font-family: 'Oswald', sans-serif; transform: skewX(-10deg); }
+html[data-theme="v2"] .chip.on { background: var(--v2-orange); border-color: var(--v2-orange); color: #fff; }
+html[data-theme="v2"] .chip:hover { border-color: var(--v2-orange); }
+html[data-theme="v2"] .tile { border-radius: 0; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%); }
+html[data-theme="v2"] .home .block h2, html[data-theme="v2"] .home .bh h2 { color: #111; font-size: 2rem; }
+html[data-theme="v2"] .home .bh a { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .1em; color: #111; }
+html[data-theme="v2"] .breadcrumb, html[data-theme="v2"] .crumbs { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: .75rem; }
+
+/* Footer 2.0: đen, sọc caro trên cùng */
+html[data-theme="v2"] .ftr { background: #111; color: #bbb; position: relative; padding-top: 14px; }
+html[data-theme="v2"] .ftr::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 14px;
+  background: conic-gradient(#111 25%, #f3efe6 0 50%, #111 0 75%, #f3efe6 0) 0 0/14px 14px; }
+html[data-theme="v2"] .ftr .news { border-color: #2c2c2c; } html[data-theme="v2"] .ftr .news b { color: #fff; font-family: 'Anton', sans-serif; font-style: italic; font-weight: 400; text-transform: uppercase; font-size: 1.5rem; }
+html[data-theme="v2"] .ftr .news input { background: #1d1d1d; border-color: #333; color: #fff; border-radius: 0; }
+html[data-theme="v2"] .ftr a { color: #ddd; } html[data-theme="v2"] .ftr a:hover { color: var(--v2-orange); }
+html[data-theme="v2"] .ftr .logo { color: #fff; } html[data-theme="v2"] .ftr .logo b { color: var(--v2-orange); }
+
+/* Admin 2.0: sidebar đen, mục chọn cam */
+html[data-theme="v2"] .admin { background: var(--v2-cream); }
+html[data-theme="v2"] .admin .side { background: #111; border-color: #111; }
+html[data-theme="v2"] .admin .side .logo { color: #fff; font-family: 'Anton', sans-serif; font-style: italic; letter-spacing: .08em; }
+html[data-theme="v2"] .admin .side nav a { color: #bbb; border-radius: 0; font-family: 'Oswald', sans-serif; }
+html[data-theme="v2"] .admin .side nav a:hover { background: #1f1f1f; color: #fff; }
+html[data-theme="v2"] .admin .side nav a.on { background: var(--v2-orange); color: #fff; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+html[data-theme="v2"] .admin .side nav a.on svg { color: #fff; } html[data-theme="v2"] .admin .side nav a.on::before { display: none; }
+html[data-theme="v2"] .admin .side .foot { border-color: #2a2a2a; } html[data-theme="v2"] .admin .side .foot a, html[data-theme="v2"] .admin .side .muted { color: #999; }
+html[data-theme="v2"] .admin .side .theme-switch { color: #ddd; }
+
+/* Auth */
+html[data-theme="v2"] .auth-card, html[data-theme="v2"] .shell .box { border-radius: 0; }
+html[data-theme="v2"] .auth-bg { background: linear-gradient(112deg, var(--v2-cream) 0 58%, var(--v2-ink) 58% 61%, var(--v2-orange) 61%) !important; }
+html[data-theme="v2"] .auth-card { border-radius: 0 !important; border-top: 6px solid var(--v2-orange); }

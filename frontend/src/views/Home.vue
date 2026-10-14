@@ -1,6 +1,8 @@
 <template>
   <div class="home">
     <!-- Hero carousel (banner quản lý trong admin) — menu đè lên phần trên, ảnh parallax -->
+    <HeroV2 v-if="theme === 'v2'" :products="all" />
+    <template v-else>
     <section class="hero" @mouseenter="pause = true" @mouseleave="pause = false">
       <div class="slides">
         <router-link v-for="(s, i) in hero" :key="s.id" :to="s.link || '/products'" :class="['slide', { on: i === cur }]">
@@ -12,9 +14,10 @@
       </div>
     </section>
     <div class="dots"><button v-for="(s, i) in hero" :key="i" :class="{ on: i === cur }" :aria-label="`Ảnh ${i + 1}`" @click="cur = i" /></div>
+    </template>
 
     <div class="container">
-      <router-link v-if="promo" v-reveal :to="promo.link || '/promotions'" class="promo-banner">
+      <router-link v-if="promo && theme !== 'v2'" v-reveal :to="promo.link || '/promotions'" class="promo-banner">
         <img loading="lazy" decoding="async" :src="promo.image" alt="" />
         <div />
         <div class="pb-txt"><b>{{ promo.title }}</b><i>{{ promo.kicker }}</i></div>
@@ -22,7 +25,7 @@
         <div class="pb-moon"><svg class="wheel-ico" viewBox="0 0 40 40" width="74" height="74"><circle cx="20" cy="20" r="18" fill="#26262a"/><circle cx="20" cy="20" r="11" fill="#d9d9de"/><g stroke="#8a8a90" stroke-width="2.4"><path d="M20 9v22M9 20h22M12 12l16 16M28 12 12 28"/></g><circle cx="20" cy="20" r="3.5" fill="#555"/></svg></div>
       </router-link>
 
-      <section v-reveal class="block">
+      <section v-if="theme !== 'v2'" v-reveal class="block">
         <h2>Danh mục</h2>
         <div class="cats">
           <router-link v-for="c in catalog.categories" :key="c.code" :to="{ path: '/products', query: { type: c.code } }" class="cat">
@@ -32,7 +35,7 @@
         </div>
       </section>
 
-      <div class="usp" v-reveal>
+      <div v-if="theme !== 'v2'" class="usp" v-reveal>
         <div><b><CountUp :value="catalog.options.freeShipFrom / 1000" />K</b><span>Freeship từ</span></div>
         <div><b><CountUp :value="totalProducts" />+</b><span>Mẫu xe & phụ kiện</span></div>
         <div><b><CountUp :value="7" /> ngày</b><span>Đổi trả miễn phí</span></div>
@@ -98,6 +101,8 @@ import Countdown from '../components/Countdown.vue'
 import CountUp from '../components/CountUp.vue'
 import Skeleton from '../components/Skeleton.vue'
 import ProductCard from '../components/ProductCard.vue'
+import HeroV2 from '../components/HeroV2.vue'
+import { theme } from '../stores/theme'
 import { vnd, d, catalog, loadCatalog } from '../format'
 import { usePrefs } from '../stores/prefs'
 
