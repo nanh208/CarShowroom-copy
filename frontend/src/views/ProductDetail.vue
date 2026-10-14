@@ -7,7 +7,7 @@
       <div class="grid grid-2 top">
         <div>
           <div class="card main-img">
-            <CarPreview v-if="view === 'design' || !p.images.length" :body="paintHex" :wheel="wheel.hex" :interior="interior.hex" :type="p.type" :scale="p.scale" />
+            <CarPreview v-if="view === 'design' || !p.images.length" :body="paintHex" :wheel="wheel.hex" :interior="interior.hex" :type="p.type" :scale="p.year ? String(p.year) : ''" />
             <img v-else :src="p.images[view]" :alt="p.name" class="photo" />
           </div>
           <div class="row thumbs">
@@ -17,7 +17,7 @@
         </div>
 
         <div>
-          <div class="row"><span v-if="p.isNew" class="badge badge-new">MỚI</span><span class="badge">{{ TYPES[p.type] }}</span><span class="badge">Tỉ lệ {{ p.scale }}</span></div>
+          <div class="row"><span v-if="p.isNew" class="badge badge-new">MỚI</span><span class="badge">{{ TYPES[p.type] }}</span><span class="badge">{{ p.fuel }}</span><span v-if="p.year" class="badge">{{ p.year }}</span></div>
           <h1 class="title">{{ p.name }}</h1>
           <div class="muted">Thương hiệu: <b>{{ p.brand?.name }}</b> · Đã bán {{ p.sold }}</div>
           <div class="pricebox">
@@ -27,7 +27,7 @@
           </div>
 
           <div v-if="canCustomize" class="card designer">
-            <h3>🎨 Thiết kế mô hình của bạn</h3>
+            <h3>🎨 Cấu hình xe của bạn</h3>
             <div class="opt">
               <label>Màu sơn: <b>{{ paint.name }}</b> <span v-if="paint.price" class="muted">(+{{ vnd(paint.price) }})</span></label>
               <div class="row"><button v-for="o in opts.paints" :key="o.id" :class="['swatch', { active: paint.id === o.id }]" :title="o.name"
@@ -55,10 +55,10 @@
           </div>
           <div v-if="added" class="alert alert-success" style="margin-top:12px">Đã thêm vào giỏ hàng! <router-link to="/cart">Xem giỏ hàng →</router-link></div>
           <div class="row" style="margin-top:12px">
-            <router-link :to="{ path: '/services', query: { productId: p.id } }" class="btn btn-sm btn-outline">📅 Đặt lịch xem mẫu thật tại showroom</router-link>
+            <router-link :to="{ path: '/services', query: { productId: p.id } }" class="btn btn-sm btn-outline">📅 Đăng ký lái thử thật tại showroom</router-link>
           </div>
           <ul class="perks muted small">
-            <li>✔ Hàng chính hãng, kèm hộp & giấy chứng nhận</li><li>✔ Đặt cọc 30% hoặc trả góp 0% (đơn từ 1 triệu)</li><li>✔ Đổi trả 7 ngày nếu lỗi nhà sản xuất</li>
+            <li>✔ Xe mới chính hãng, bảo hành 3–10 năm</li><li>✔ Đặt cọc 10% hoặc trả góp đến 80% giá trị xe</li><li>✔ Đổi trả 7 ngày nếu lỗi nhà sản xuất</li>
           </ul>
         </div>
       </div>
@@ -113,7 +113,7 @@ async function load() {
 function add(buyNow) {
   const v = p.value
   cart.add({
-    productId: v.id, name: v.name, scale: v.scale, type: v.type, baseColor: paintHex.value, wheelHex: wheel.value.hex, interiorHex: interior.value.hex,
+    productId: v.id, name: v.name, fuel: v.fuel, type: v.type, baseColor: paintHex.value, wheelHex: wheel.value.hex, interiorHex: interior.value.hex,
     image: v.images?.[0], unitPrice: unitPrice.value, quantity: qty.value, stock: v.stock,
     options: canCustomize.value ? { ...sel } : {},
     optionLabel: canCustomize.value ? `${paint.value.name} · ${wheel.value.name} · Nội thất ${interior.value.name}` : ''

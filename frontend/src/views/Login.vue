@@ -1,7 +1,7 @@
 <template>
   <AuthShell>
     <h2>Đăng nhập</h2>
-    <p class="muted small" style="margin:4px 0 20px">Chào mừng trở lại với ARES Models</p>
+    <p class="muted small" style="margin:4px 0 20px">Chào mừng trở lại với ARES Auto</p>
     <div v-if="$route.query.expired" class="alert alert-info">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.</div>
     <div v-if="err" class="alert alert-error">{{ err }}</div>
     <form @submit.prevent="submit">

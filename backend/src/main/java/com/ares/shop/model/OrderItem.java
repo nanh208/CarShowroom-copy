@@ -9,7 +9,7 @@ public class OrderItem {
     @JsonIgnore @ManyToOne public CustomerOrder order;
     public Long productId;
     public String productName;
-    public String scale;
+    public String fuel;
     public long unitPrice;
     public int quantity;
     @Column(length = 500) public String options;   // "Sơn: Đỏ; Mâm: Vàng; Nội thất: Đen"

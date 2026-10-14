@@ -13,12 +13,12 @@
           <h3>Sản phẩm</h3>
           <div v-for="i in o.items" :key="i.id" class="row between item">
             <div class="grow"><router-link :to="`/products/${i.productId}`">{{ i.productName }}</router-link> × {{ i.quantity }}
-              <div class="small muted">{{ i.scale }}<span v-if="i.options"> · {{ i.options }}</span></div></div>
+              <div class="small muted">{{ i.fuel }}<span v-if="i.options"> · {{ i.options }}</span></div></div>
             <b>{{ vnd(i.unitPrice * i.quantity) }}</b>
           </div>
           <div class="row between"><span>Tạm tính</span><span>{{ vnd(o.subtotal) }}</span></div>
           <div v-if="o.discount" class="row between"><span>Giảm giá ({{ o.promoCode }})</span><span>−{{ vnd(o.discount) }}</span></div>
-          <div class="row between"><span>Vận chuyển</span><span>{{ o.shippingFee ? vnd(o.shippingFee) : 'Miễn phí' }}</span></div>
+          <div class="row between"><span>Giao xe</span><span>{{ o.shippingFee ? vnd(o.shippingFee) : 'Miễn phí' }}</span></div>
           <div class="row between total"><span>Tổng cộng</span><span class="price">{{ vnd(o.total) }}</span></div>
         </div>
         <div>

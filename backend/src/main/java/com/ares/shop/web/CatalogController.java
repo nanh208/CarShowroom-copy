@@ -19,7 +19,7 @@ public class CatalogController {
         this.products = products; this.brands = brands; this.promos = promos; this.orderService = orderService;
     }
 
-    public static Specification<Product> filter(String q, Long brandId, String type, String scale, Long minPrice, Long maxPrice,
+    public static Specification<Product> filter(String q, Long brandId, String type, String fuel, Long minPrice, Long maxPrice,
                                                 Boolean inStock, boolean onlyActive) {
         return (root, cq, cb) -> {
             List<Predicate> p = new ArrayList<>();
@@ -30,7 +30,7 @@ public class CatalogController {
             }
             if (brandId != null) p.add(cb.equal(root.get("brand").get("id"), brandId));
             if (type != null && !type.isBlank()) p.add(cb.equal(root.get("type"), Enums.ProductType.valueOf(type)));
-            if (scale != null && !scale.isBlank()) p.add(cb.equal(root.get("scale"), scale));
+            if (fuel != null && !fuel.isBlank()) p.add(cb.equal(root.get("fuel"), fuel));
             if (minPrice != null) p.add(cb.ge(root.get("price"), minPrice));
             if (maxPrice != null) p.add(cb.le(root.get("price"), maxPrice));
             if (Boolean.TRUE.equals(inStock)) p.add(cb.gt(root.get("stock"), 0));
@@ -51,11 +51,11 @@ public class CatalogController {
 
     @GetMapping("/products")
     public Page<Product> list(@RequestParam(required = false) String q, @RequestParam(required = false) Long brandId,
-                              @RequestParam(required = false) String type, @RequestParam(required = false) String scale,
+                              @RequestParam(required = false) String type, @RequestParam(required = false) String fuel,
                               @RequestParam(required = false) Long minPrice, @RequestParam(required = false) Long maxPrice,
                               @RequestParam(required = false) Boolean inStock, @RequestParam(required = false) String sort,
                               @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
-        return products.findAll(filter(q, brandId, type, scale, minPrice, maxPrice, inStock, true),
+        return products.findAll(filter(q, brandId, type, fuel, minPrice, maxPrice, inStock, true),
                 PageRequest.of(page, Math.min(size, 60), sort(sort)));
     }
 
@@ -80,7 +80,7 @@ public class CatalogController {
     @GetMapping("/options")
     public Map<String, Object> options() {
         return Map.of("customizer", CustomizerOptions.all(), "types", Enums.ProductType.values(),
-                "scales", List.of("1:12", "1:18", "1:24", "1:32", "1:43", "1:64"));
+                "fuels", List.of("Xăng", "Dầu", "Hybrid", "Điện"));
     }
 
     @GetMapping("/promotions")

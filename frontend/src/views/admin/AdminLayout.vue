@@ -8,6 +8,7 @@
         <router-link to="/admin/orders" active-class="on">🧾 Đơn hàng</router-link>
         <router-link to="/admin/customers" active-class="on">👥 Khách hàng</router-link>
         <router-link to="/admin/promotions" active-class="on">🎁 Ưu đãi</router-link>
+        <router-link to="/admin/auctions" active-class="on">🔨 Đấu giá</router-link>
         <router-link to="/admin/bookings" active-class="on">📅 Lịch hẹn</router-link>
         <router-link to="/admin/chat" active-class="on">💬 Live chat</router-link>
       </nav>

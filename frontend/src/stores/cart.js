@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 const KEY = 'cart'
 
-// Mỗi dòng giỏ hàng: { key, productId, name, scale, image, baseColor, unitPrice, quantity, stock, options:{paint,wheel,interior}, optionLabel }
+// Mỗi dòng giỏ hàng: { key, productId, name, fuel, image, baseColor, unitPrice, quantity, stock, options:{paint,wheel,interior}, optionLabel }
 export const useCart = defineStore('cart', {
   state: () => ({ items: JSON.parse(localStorage.getItem(KEY) || '[]') }),
   getters: {

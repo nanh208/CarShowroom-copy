@@ -3,16 +3,16 @@
     <div class="topbar">
       <div class="container row between">
         <span>📞 Hotline: <b>{{ HOTLINE }}</b> · ✉️ cskh@ares.vn</span>
-        <span class="hide-sm">🚚 Miễn phí giao hàng đơn từ 2.000.000đ · Trả góp 0%</span>
+        <span class="hide-sm">🚗 Giao xe tận nhà miễn phí · Trả góp đến 80% · Đấu giá xe hiếm mỗi tuần</span>
       </div>
     </div>
     <div class="container main row">
       <router-link to="/" class="logo">
         <img src="/images/logo.png" alt="ARES" @error="e => e.target.style.display = 'none'" />
-        <span>ARES <b>MODELS</b></span>
+        <span>ARES <b>AUTO</b></span>
       </router-link>
       <form class="search grow" @submit.prevent="search">
-        <input v-model="q" class="input" placeholder="Tìm mô hình, thương hiệu... (VD: Ferrari, 1:18)" />
+        <input v-model="q" class="input" placeholder="Tìm xe, thương hiệu... (VD: Camry, VinFast, SUV)" />
         <button class="btn btn-sm">🔍</button>
       </form>
       <div class="row actions">
@@ -31,8 +31,10 @@
       <div class="container row">
         <router-link to="/" exact-active-class="on">Trang chủ</router-link>
         <router-link to="/products" active-class="on">Sản phẩm</router-link>
+        <router-link :to="{ path: '/products', query: { type: 'SUV' } }">SUV</router-link>
+        <router-link :to="{ path: '/products', query: { type: 'ELECTRIC' } }">Xe điện</router-link>
         <router-link :to="{ path: '/products', query: { type: 'SUPERCAR' } }">Siêu xe</router-link>
-        <router-link :to="{ path: '/products', query: { type: 'CLASSIC' } }">Xe cổ điển</router-link>
+        <router-link to="/auctions" active-class="on">🔨 Đấu giá</router-link>
         <router-link :to="{ path: '/products', query: { type: 'ACCESSORY' } }">Phụ kiện</router-link>
         <router-link to="/promotions" active-class="on">Ưu đãi</router-link>
         <router-link to="/services" active-class="on">Dịch vụ & Hậu mãi</router-link>

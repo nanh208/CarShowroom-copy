@@ -1,6 +1,6 @@
 <template>
   <img v-if="src && !failed" :src="src" :alt="product.name" class="pimg" @error="failed = true" />
-  <CarPreview v-else :body="product.baseColor" :type="product.type" :scale="product.scale" />
+  <CarPreview v-else :body="product.baseColor" :type="product.type" :scale="product.year ? String(product.year) : ''" />
 </template>
 <script setup>
 import { ref, computed } from 'vue'

@@ -8,7 +8,7 @@
           <div class="img"><img v-if="i.image" :src="i.image" class="cimg" /><CarPreview v-else :body="i.baseColor" :wheel="i.wheelHex" :interior="i.interiorHex" :type="i.type" /></div>
           <div class="grow">
             <router-link :to="`/products/${i.productId}`" class="name">{{ i.name }}</router-link>
-            <div class="muted small">{{ i.type === 'ACCESSORY' ? 'Phụ kiện' : 'Tỉ lệ ' + i.scale }}<span v-if="i.optionLabel"> · {{ i.optionLabel }}</span></div>
+            <div class="muted small">{{ i.type === 'ACCESSORY' ? 'Phụ kiện' : i.fuel }}<span v-if="i.optionLabel"> · {{ i.optionLabel }}</span></div>
             <div class="price">{{ vnd(i.unitPrice) }}</div>
           </div>
           <div class="qty"><button @click="cart.setQty(i.key, i.quantity - 1)">−</button><span>{{ i.quantity }}</span><button @click="cart.setQty(i.key, i.quantity + 1)">+</button></div>
@@ -23,8 +23,7 @@
       <div class="card summary">
         <h3>Tóm tắt</h3>
         <div class="row between"><span>Tạm tính ({{ cart.count }} sp)</span><b>{{ vnd(cart.subtotal) }}</b></div>
-        <div class="row between muted small"><span>Phí vận chuyển</span><span>{{ cart.subtotal >= 2000000 ? 'Miễn phí' : vnd(40000) }}</span></div>
-        <p v-if="cart.subtotal < 2000000" class="small muted">Mua thêm {{ vnd(2000000 - cart.subtotal) }} để được miễn phí vận chuyển.</p>
+        <div class="row between muted small"><span>Giao xe</span><span>Miễn phí (giao xe tận nhà)</span></div>
         <router-link to="/checkout" class="btn btn-block" style="margin-top:16px">Tiến hành thanh toán →</router-link>
       </div>
     </div>

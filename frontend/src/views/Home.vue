@@ -3,12 +3,12 @@
     <section class="hero">
       <div class="container hero-inner">
         <div class="hero-text">
-          <span class="badge">🏁 Bộ sưu tập 2026</span>
-          <h1>Sở hữu siêu xe<br /><span>trong lòng bàn tay</span></h1>
-          <p>Hơn 500 mẫu mô hình ô tô chính hãng tỉ lệ 1:18 – 1:64 từ Bburago, AUTOart, Minichamps, Norev... Tuỳ chỉnh màu sơn, mâm và nội thất theo phong cách của bạn.</p>
+          <span class="badge">🏁 Showroom 2026</span>
+          <h1>Chiếc xe mơ ước<br /><span>chỉ cách bạn một cú nhấp</span></h1>
+          <p>Showroom ô tô đa thương hiệu: Toyota, Honda, VinFast, Mercedes-Benz, BMW, Porsche, Lamborghini, Ferrari... Cấu hình màu sơn, mâm và nội thất theo phong cách của bạn.</p>
           <div class="row">
             <router-link to="/products" class="btn">Khám phá ngay →</router-link>
-            <router-link to="/services" class="btn btn-outline">Đặt lịch xem mẫu</router-link>
+            <router-link to="/services" class="btn btn-outline">Đăng ký lái thử</router-link>
           </div>
         </div>
       </div>
@@ -43,8 +43,20 @@
           </div>
         </section>
 
+        <section v-if="auctions.length" class="section">
+          <div class="section-head"><h2>🔨 Đấu giá <span>xe hiếm</span></h2><router-link to="/auctions">Tất cả phiên →</router-link></div>
+          <div class="grid grid-4">
+            <router-link v-for="a in auctions" :key="a.id" :to="`/auctions/${a.id}`" class="au card">
+              <img :src="a.images?.[0]" :alt="a.title" />
+              <b>{{ a.title }}</b>
+              <div class="row between small"><span class="price">{{ ty(a.currentPrice) }}</span>
+                <span class="muted">{{ a.status === 'LIVE' ? 'Còn ' : 'Mở sau ' }}<Countdown :to="a.status === 'LIVE' ? a.endTime : a.startTime" /></span></div>
+            </router-link>
+          </div>
+        </section>
+
         <section class="section">
-          <div class="section-head"><h2>Hàng <span>mới về</span></h2><router-link :to="{ path: '/products', query: { sort: 'newest' } }">Xem thêm →</router-link></div>
+          <div class="section-head"><h2>Xe <span>mới về</span></h2><router-link :to="{ path: '/products', query: { sort: 'newest' } }">Xem thêm →</router-link></div>
           <div class="grid grid-4"><ProductCard v-for="p in data.newArrivals" :key="p.id" :p="p" /></div>
         </section>
 
@@ -54,7 +66,7 @@
         </section>
 
         <section class="section cta card row between">
-          <div><h2>🔧 Mô hình bị bong sơn, gãy gương?</h2><p class="muted">Đặt lịch mang mô hình đến xưởng ARES để vệ sinh, phục chế, sơn lại hoặc thay linh kiện.</p></div>
+          <div><h2>🔧 Đến hạn bảo dưỡng xe?</h2><p class="muted">Đặt lịch bảo dưỡng định kỳ, sửa chữa, đồng sơn tại xưởng dịch vụ ARES — nhận xe tận nhà, có xe thay thế.</p></div>
           <router-link to="/services?tab=maintenance" class="btn">Đặt lịch sửa chữa</router-link>
         </section>
       </template>
@@ -66,10 +78,15 @@
 import { ref, onMounted } from 'vue'
 import api from '../api'
 import ProductCard from '../components/ProductCard.vue'
-const data = ref({}), loading = ref(true)
-const perks = [['🚚', 'Giao hàng toàn quốc', 'Miễn phí đơn từ 2 triệu'], ['🛡️', 'Chính hãng 100%', 'Có giấy chứng nhận'],
-  ['💳', 'Trả góp 0%', 'Đặt cọc chỉ 30%'], ['🎨', 'Thiết kế theo ý bạn', 'Sơn, mâm, nội thất']]
-onMounted(async () => { data.value = (await api.get('/products/home')).data; loading.value = false })
+import Countdown from '../components/Countdown.vue'
+import { ty } from '../format'
+const data = ref({}), loading = ref(true), auctions = ref([])
+const perks = [['🚚', 'Giao xe tận nhà', 'Miễn phí toàn quốc'], ['🛡️', 'Chính hãng 100%', 'Bảo hành 3–10 năm'],
+  ['💳', 'Trả góp đến 80%', 'Đặt cọc chỉ 10%'], ['🎨', 'Thiết kế theo ý bạn', 'Sơn, mâm, nội thất']]
+onMounted(async () => {
+  data.value = (await api.get('/products/home')).data; loading.value = false
+  auctions.value = (await api.get('/auctions')).data.filter(a => a.status === 'LIVE' || a.status === 'SCHEDULED').slice(0, 4)
+})
 </script>
 
 <style scoped>
@@ -88,4 +105,7 @@ onMounted(async () => { data.value = (await api.get('/products/home')).data; loa
 .pct { font-size: 2.2rem; font-weight: 800; }
 .code { margin-top: 8px; background: rgba(0,0,0,.3); padding: 6px 10px; border-radius: 8px; align-self: flex-start; border: 1px dashed rgba(255,255,255,.4); }
 .cta h2 { font-size: 1.3rem; margin-bottom: 6px; }
+.au { padding: 12px; display: flex; flex-direction: column; gap: 8px; color: var(--text); }
+.au img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 10px; }
+.au:hover { border-color: var(--accent); color: var(--text); }
 </style>

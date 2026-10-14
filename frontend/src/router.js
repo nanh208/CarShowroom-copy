@@ -5,6 +5,8 @@ const routes = [
   { path: '/', component: () => import('./views/Home.vue') },
   { path: '/products', component: () => import('./views/Products.vue') },
   { path: '/products/:id', component: () => import('./views/ProductDetail.vue') },
+  { path: '/auctions', component: () => import('./views/Auctions.vue') },
+  { path: '/auctions/:id', component: () => import('./views/AuctionDetail.vue') },
   { path: '/promotions', component: () => import('./views/Promotions.vue') },
   { path: '/services', component: () => import('./views/Services.vue') },
   { path: '/cart', component: () => import('./views/Cart.vue') },
@@ -23,6 +25,7 @@ const routes = [
       { path: 'orders', component: () => import('./views/admin/AdminOrders.vue') },
       { path: 'customers', component: () => import('./views/admin/AdminCustomers.vue') },
       { path: 'promotions', component: () => import('./views/admin/AdminPromotions.vue') },
+      { path: 'auctions', component: () => import('./views/admin/AdminAuctions.vue') },
       { path: 'bookings', component: () => import('./views/admin/AdminBookings.vue') },
       { path: 'chat', component: () => import('./views/admin/AdminChat.vue') }
     ]

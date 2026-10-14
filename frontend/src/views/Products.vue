@@ -1,20 +1,19 @@
 <template>
   <div class="container page">
-    <h1>Danh mục mô hình</h1>
+    <h1>Danh mục xe</h1>
     <p class="muted" style="margin-bottom:20px">{{ total }} sản phẩm<span v-if="f.q"> cho "{{ f.q }}"</span></p>
     <div class="layout">
       <aside class="card filters">
         <div class="field"><label>Từ khoá</label><input v-model="f.q" class="input" placeholder="Tên xe, hãng..." @keyup.enter="apply" /></div>
         <div class="field"><label>Thương hiệu</label>
           <select v-model="f.brandId" class="input"><option value="">Tất cả</option><option v-for="b in brands" :key="b.id" :value="String(b.id)">{{ b.name }}</option></select></div>
-        <div class="field"><label>Loại xe</label>
+        <div class="field"><label>Dòng xe</label>
           <select v-model="f.type" class="input"><option value="">Tất cả</option><option v-for="(v, k) in TYPES" :key="k" :value="k">{{ v }}</option></select></div>
-        <div class="field"><label>Tỉ lệ</label>
-          <div class="chips"><button v-for="s in ['', ...scales]" :key="s" :class="['chip', { on: f.scale === s }]" @click="f.scale = s">{{ s || 'Tất cả' }}</button></div></div>
+        <div class="field"><label>Nhiên liệu</label>
+          <div class="chips"><button v-for="s in ['', ...FUELS]" :key="s" :class="['chip', { on: f.fuel === s }]" @click="f.fuel = s">{{ s || 'Tất cả' }}</button></div></div>
         <div class="field"><label>Khoảng giá</label>
           <select v-model="price" class="input">
-            <option value="">Tất cả</option><option value="0-500000">Dưới 500.000đ</option><option value="500000-1000000">500.000đ – 1 triệu</option>
-            <option value="1000000-3000000">1 – 3 triệu</option><option value="3000000-">Trên 3 triệu</option>
+            <option value="">Tất cả</option><option value="0-1000000000">Dưới 1 tỷ</option><option value="1000000000-2000000000">1 – 2 tỷ</option><option value="2000000000-5000000000">2 – 5 tỷ</option><option value="5000000000-15000000000">5 – 15 tỷ</option><option value="15000000000-">Trên 15 tỷ</option>
           </select></div>
         <label class="check field"><input v-model="f.inStock" type="checkbox" /> Chỉ hiện còn hàng</label>
         <div class="row"><button class="btn btn-sm grow" @click="apply">Lọc</button><button class="btn btn-sm btn-outline" @click="reset">Xoá lọc</button></div>
@@ -42,17 +41,16 @@
 import { ref, reactive, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api'
-import { TYPES } from '../format'
+import { TYPES, FUELS } from '../format'
 import ProductCard from '../components/ProductCard.vue'
 
 const route = useRoute(), router = useRouter()
 const brands = ref([]), items = ref([]), total = ref(0), pages = ref(0), page = ref(0), loading = ref(true), price = ref('')
-const scales = ['1:18', '1:24', '1:43', '1:64']
-const f = reactive({ q: '', brandId: '', type: '', scale: '', inStock: false, sort: 'featured' })
+const f = reactive({ q: '', brandId: '', type: '', fuel: '', inStock: false, sort: 'featured' })
 
 function fromQuery() {
   const q = route.query
-  Object.assign(f, { q: q.q || '', brandId: q.brandId || '', type: q.type || '', scale: q.scale || '', inStock: q.inStock === '1', sort: q.sort || 'featured' })
+  Object.assign(f, { q: q.q || '', brandId: q.brandId || '', type: q.type || '', fuel: q.fuel || '', inStock: q.inStock === '1', sort: q.sort || 'featured' })
   price.value = q.price || ''; page.value = Number(q.page || 0)
 }
 async function load() {

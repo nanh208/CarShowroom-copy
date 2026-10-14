@@ -2,18 +2,19 @@
   <footer class="footer">
     <div class="container grid cols">
       <div>
-        <div class="brand">ARES <b>MODELS</b></div>
-        <p class="muted small">Chuyên mô hình ô tô sưu tầm chính hãng tỉ lệ 1:12 – 1:64. Thiết kế màu sơn theo yêu cầu, bảo hành và phục chế mô hình.</p>
+        <div class="brand">ARES <b>AUTO</b></div>
+        <p class="muted small">Showroom ô tô đa thương hiệu: xe mới chính hãng, cấu hình theo ý bạn, trả góp, đấu giá xe hiếm, dịch vụ hậu mãi trọn đời.</p>
       </div>
       <div>
         <h4>Mua sắm</h4>
         <router-link to="/products">Tất cả sản phẩm</router-link>
         <router-link to="/promotions">Chương trình ưu đãi</router-link>
+        <router-link to="/auctions">Đấu giá xe hiếm</router-link>
         <router-link to="/cart">Giỏ hàng</router-link>
       </div>
       <div>
         <h4>Dịch vụ</h4>
-        <router-link to="/services">Đặt lịch xem mô hình</router-link>
+        <router-link to="/services">Đăng ký lái thử</router-link>
         <router-link to="/services?tab=maintenance">Sửa chữa & bảo dưỡng</router-link>
         <router-link to="/account">Tài khoản của tôi</router-link>
       </div>
@@ -25,7 +26,7 @@
         <p>🕘 8:00 – 21:00 (T2 – CN)</p>
       </div>
     </div>
-    <div class="copy">© {{ new Date().getFullYear() }} ARES Models. All rights reserved.</div>
+    <div class="copy">© {{ new Date().getFullYear() }} ARES Auto. All rights reserved.</div>
   </footer>
 </template>
 <script setup>import { HOTLINE } from '../format'</script>

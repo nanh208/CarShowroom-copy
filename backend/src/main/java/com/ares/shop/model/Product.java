@@ -10,12 +10,13 @@ public class Product {
     public String name;
     @ManyToOne(fetch = FetchType.EAGER) public Brand brand;
     @Enumerated(EnumType.STRING) public Enums.ProductType type;
-    public String scale;            // 1:18, 1:24, 1:43, 1:64
+    public String fuel;            // Xăng, Dầu, Hybrid, Điện
     public long price;              // VND
     public Long oldPrice;
     public int stock;
     public int sold;
-    public String material;         // Diecast, Resin...
+    @Column(name = "model_year") public Integer year;
+    public String material;         // Hộp số / ghi chú ngắn
     public String baseColor = "#c1121f";
     @Column(length = 3000) public String description;
     @ElementCollection(fetch = FetchType.EAGER) @OrderColumn

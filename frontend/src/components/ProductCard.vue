@@ -28,7 +28,7 @@ const props = defineProps({ p: Object })
 const cart = useCart()
 const add = () => {
   const p = props.p
-  cart.add({ productId: p.id, name: p.name, scale: p.scale, type: p.type, baseColor: p.baseColor, image: p.images?.[0],
+  cart.add({ productId: p.id, name: p.name, fuel: p.fuel, type: p.type, baseColor: p.baseColor, image: p.images?.[0],
     unitPrice: p.price, quantity: 1, stock: p.stock, options: {}, optionLabel: p.type === 'ACCESSORY' ? '' : 'Màu nguyên bản' })
 }
 </script>
