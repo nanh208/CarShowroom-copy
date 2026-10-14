@@ -1,23 +1,23 @@
 <template>
   <div class="container page">
     <h1>Dịch vụ & Hậu mãi</h1>
-    <p class="muted" style="margin-bottom:22px">Tư vấn mua xe, đăng ký lái thử, sửa chữa – bảo dưỡng và chăm sóc xe trọn đời.</p>
+    <p class="muted">Tư vấn mua xe, đăng ký lái thử, sửa chữa – bảo dưỡng và chăm sóc xe trọn đời.</p>
     <div class="grid svc">
-      <div class="card"><div class="ico">💬</div><h3>Tư vấn trực tuyến</h3><p class="muted small">Chat với nhân viên ở góc phải màn hình, phản hồi trong vài phút (8:00–21:00).</p></div>
-      <div class="card"><div class="ico">📞</div><h3>Hotline {{ HOTLINE }}</h3><p class="muted small">Gọi miễn phí để được tư vấn chọn mẫu, kiểm tra đơn hàng và bảo hành.</p>
+      <div class="card"><span class="eyebrow">01</span><h3>Tư vấn trực tuyến</h3><p class="muted small">Chat với nhân viên ở góc phải màn hình, phản hồi trong vài phút (8:00–21:00).</p></div>
+      <div class="card"><span class="eyebrow">02</span><h3>Hotline {{ HOTLINE }}</h3><p class="muted small">Gọi miễn phí để được tư vấn chọn mẫu, kiểm tra đơn hàng và bảo hành.</p>
         <a :href="`tel:${HOTLINE.replace(/ /g, '')}`" class="btn btn-sm" style="margin-top:8px">Gọi ngay</a></div>
-      <div class="card"><div class="ico">📍</div><h3>Showroom</h3><p class="muted small">123 Nguyễn Văn Linh, Q.7, TP.HCM — trưng bày hơn 50 mẫu xe, sẵn xe lái thử mỗi ngày.</p></div>
+      <div class="card"><span class="eyebrow">03</span><h3>Showroom</h3><p class="muted small">123 Nguyễn Văn Linh, Q.7, TP.HCM — trưng bày hơn 50 mẫu xe, sẵn xe lái thử mỗi ngày.</p></div>
     </div>
 
     <div class="card form-card">
       <div class="tabs">
-        <button :class="{ active: tab === 'viewing' }" @click="tab = 'viewing'">🚗 Đăng ký lái thử</button>
-        <button :class="{ active: tab === 'maintenance' }" @click="tab = 'maintenance'">🔧 Đặt lịch sửa chữa & bảo dưỡng</button>
+        <button :class="{ active: tab === 'viewing' }" @click="tab = 'viewing'">Đăng ký lái thử</button>
+        <button :class="{ active: tab === 'maintenance' }" @click="tab = 'maintenance'">Đặt lịch sửa chữa & bảo dưỡng</button>
       </div>
       <p class="muted small" style="margin-bottom:16px">{{ tab === 'viewing'
         ? 'Chọn mẫu xe, ngày và khung giờ — chuyên viên sẽ chuẩn bị xe, lộ trình lái thử 15–30 phút cùng tư vấn trả góp. Mang theo bằng lái B2 trở lên.'
         : 'Bảo dưỡng định kỳ, sửa chữa máy – gầm, đồng sơn, thay lốp – ắc quy, cứu hộ 24/7. Có dịch vụ nhận & giao xe tận nhà.' }}</p>
-      <div v-if="ok" class="alert alert-success">✔ Đã gửi yêu cầu! Mã lịch hẹn #{{ ok.id }} — chúng tôi sẽ gọi xác nhận trong 30 phút.
+      <div v-if="ok" class="alert alert-success">Đã gửi yêu cầu! Mã lịch hẹn #{{ ok.id }} — chúng tôi sẽ gọi xác nhận trong 30 phút.
         <router-link v-if="auth.loggedIn" to="/account?tab=bookings">Xem lịch hẹn</router-link></div>
       <div v-if="err" class="alert alert-error">{{ err }}</div>
       <div class="form-grid">

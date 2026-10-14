@@ -2,11 +2,17 @@
   <div class="container page">
     <div v-if="!o" class="spinner" />
     <template v-else>
-      <div v-if="$route.query.new" class="alert alert-success">🎉 Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
+      <Breadcrumb :items="[{ label: 'Tài khoản', to: '/account' }, { label: 'Đơn ' + o.code }]" />
+      <div v-if="$route.query.new" class="alert alert-success">Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
       <div class="row between"><h1>Đơn hàng {{ o.code }}</h1><span :class="['badge', 'badge-' + o.status]">{{ ORDER_STATUS[o.status] }}</span></div>
       <p class="muted">Đặt lúc {{ dt(o.createdAt) }}</p>
-      <div class="steps">
-        <div v-for="(s, i) in flow" :key="s" :class="['step', { done: i <= flow.indexOf(o.status) }]">{{ ORDER_STATUS[s] }}</div>
+      <div class="card track">
+        <h3>Theo dõi đơn hàng</h3>
+        <ol class="tl">
+          <li v-for="st in steps" :key="st.key" :class="st.state">
+            <span class="dot" /><div><b>{{ st.label }}</b><p>{{ st.desc }}</p><small v-if="st.time">{{ dt(st.time) }}</small></div>
+          </li>
+        </ol>
       </div>
       <div class="grid grid-2">
         <div class="card">
@@ -48,7 +54,8 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import Breadcrumb from '../components/Breadcrumb.vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api, { errMsg } from '../api'
 import { vnd, dt, ORDER_STATUS, PAY_METHOD, PAY_STATUS } from '../format'
@@ -57,6 +64,15 @@ const flow = ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED']
 async function act(a) { err.value = ''; try { o.value = (await api.post(`/orders/${o.value.code}/${a}`)).data } catch (e) { err.value = errMsg(e) } }
 const cancel = () => confirm('Bạn chắc chắn muốn huỷ đơn hàng này?') && act('cancel')
 onMounted(async () => { o.value = (await api.get(`/orders/${route.params.code}`)).data })
+const STEP_DESC = { PENDING: 'Đơn hàng đã được tạo, chờ ARES xác nhận.', CONFIRMED: 'Đã xác nhận, chuẩn bị xe & giấy tờ.', SHIPPING: 'Xe đang được vận chuyển tới bạn.', COMPLETED: 'Đã bàn giao xe. Cảm ơn bạn!', CANCELLED: 'Đơn hàng đã bị huỷ.' }
+const steps = computed(() => {
+  if (!o.value) return []
+  const tl = o.value.timeline || {}
+  const keys = o.value.status === 'CANCELLED' ? [...['PENDING', 'CONFIRMED', 'SHIPPING'].filter(k => tl[k] || k === 'PENDING'), 'CANCELLED'] : ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED']
+  const cur = keys.indexOf(o.value.status)
+  return keys.map((k, i) => ({ key: k, label: ORDER_STATUS[k], desc: STEP_DESC[k], time: tl[k] || (k === 'PENDING' ? o.value.createdAt : null),
+    state: k === 'CANCELLED' ? 'cancel' : i < cur ? 'done' : i === cur ? 'now' : '' }))
+})
 </script>
 <style scoped>
 .steps { display: flex; gap: 6px; margin: 18px 0 24px; }
@@ -65,4 +81,17 @@ onMounted(async () => { o.value = (await api.get(`/orders/${route.params.code}`)
 .item { padding: 10px 0; border-bottom: 1px solid var(--border); }
 .card .row.between { margin-bottom: 6px; } .card p { margin-bottom: 6px; }
 .total { font-size: 1.1rem; font-weight: 700; } .ok { color: #86efac; }
+.track { margin: 24px 0; }
+.tl { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+.tl li { position: relative; padding-top: 32px; color: var(--muted); }
+.tl li::before { content: ''; position: absolute; top: 9px; left: 20px; right: -16px; height: 2px; background: rgba(255,255,255,.1); }
+.tl li:last-child::before { display: none; }
+.tl .dot { position: absolute; top: 0; left: 0; width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); background: #0b0c10; z-index: 1; }
+.tl li.done .dot, .tl li.now .dot { background: var(--primary); border-color: var(--primary); }
+.tl li.done::before { background: var(--primary); }
+.tl li.now .dot { box-shadow: 0 0 0 6px rgba(2,132,199,.25); }
+.tl li.cancel .dot { background: var(--danger); border-color: var(--danger); }
+.tl b { display: block; color: #fff; margin-bottom: 4px; } .tl li:not(.done):not(.now):not(.cancel) b { color: var(--muted); }
+.tl p { font-size: .85rem; } .tl small { font-size: .78rem; color: var(--accent); }
+@media (max-width: 800px) { .tl { grid-template-columns: 1fr 1fr; } }
 </style>

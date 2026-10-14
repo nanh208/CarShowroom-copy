@@ -5,7 +5,7 @@
       <div class="muted small" style="margin-bottom:16px"><router-link to="/auctions">Đấu giá</router-link> / {{ a.title }}</div>
       <div class="grid grid-2 top">
         <div>
-          <div class="card" style="padding:12px"><img :src="a.images?.[img] || '/images/bg-pagani.jpg'" class="photo" /></div>
+          <div class="hero-img"><img :src="a.images?.[img] || '/images/bg-pagani.jpg'" class="photo" /></div>
           <div v-if="a.images?.length > 1" class="row" style="margin-top:10px">
             <img v-for="(u, i) in a.images" :key="i" :src="u" :class="['th', { on: i === img }]" @click="img = i" /></div>
           <div class="card" style="margin-top:18px">
@@ -31,7 +31,7 @@
               <span>Bước giá: <b>{{ vnd(a.minIncrement) }}</b></span><span>{{ a.bidCount }} lượt đặt</span>
             </div>
             <template v-if="a.status === 'LIVE'">
-              <div v-if="leading" class="alert alert-success">🏆 Bạn đang dẫn đầu!</div>
+              <div v-if="leading" class="alert alert-success">Bạn đang dẫn đầu!</div>
               <template v-if="auth.loggedIn">
                 <label>Giá đặt (tối thiểu {{ vnd(a.nextMinBid) }})</label>
                 <div class="row" style="flex-wrap:nowrap">
@@ -45,7 +45,7 @@
               <router-link v-else :to="{ path: '/login', query: { redirect: $route.fullPath } }" class="btn btn-block">Đăng nhập để đặt giá</router-link>
               <p class="small muted" style="margin-top:10px">Đặt giá trong 2 phút cuối sẽ gia hạn phiên thêm 2 phút. Giá đặt là cam kết mua.</p>
             </template>
-            <div v-if="youWon" class="alert alert-success" style="margin-top:12px">🎉 Chúc mừng! Bạn đã thắng phiên đấu giá.
+            <div v-if="youWon" class="alert alert-success" style="margin-top:12px">Chúc mừng! Bạn đã thắng phiên đấu giá.
               <router-link :to="`/orders/${a.orderCode}`" class="btn btn-sm" style="margin-left:8px">Đặt cọc 10% ngay</router-link></div>
             <div v-else-if="a.status === 'ENDED'" class="alert alert-info" style="margin-top:12px">Phiên đã kết thúc{{ a.winner ? ' — người thắng: ' + mask(a.winner.fullName) : ' — không có lượt đặt giá' }}.</div>
             <div v-if="err" class="alert alert-error" style="margin-top:12px">{{ err }}</div>
@@ -55,7 +55,7 @@
             <h3>Lịch sử đặt giá <span class="muted small">(cập nhật trực tiếp)</span></h3>
             <div v-if="!bids.length" class="muted">Chưa có lượt đặt giá.</div>
             <div v-for="(b, i) in bids" :key="b.id" :class="['bidrow', { top: i === 0 }]">
-              <span>{{ i === 0 ? '🥇' : '#' + (i + 1) }} {{ b.bidderName }}</span><b>{{ vnd(b.amount) }}</b><span class="small muted">{{ dt(b.createdAt) }}</span>
+              <span>{{ i === 0 ? '' : '#' + (i + 1) }} {{ b.bidderName }}</span><b>{{ vnd(b.amount) }}</b><span class="small muted">{{ dt(b.createdAt) }}</span>
             </div>
           </div>
         </div>
@@ -99,4 +99,5 @@ onUnmounted(() => clearInterval(t))
 .bidrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .bidrow .small { grid-column: 1 / -1; } .bidrow.top b { color: var(--accent); }
 .table th { width: 40%; text-transform: none; font-size: .88rem; }
+.hero-img { border-radius: 20px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 16/10; } .hero-img .photo { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
 </style>

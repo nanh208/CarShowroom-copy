@@ -14,9 +14,11 @@ import java.util.*;
 public class DataSeeder implements CommandLineRunner {
     private static final long TR = 1_000_000L; // 1 triệu
     private final UserRepo users; private final BrandRepo brands; private final ProductRepo products;
+    private final ReviewRepo reviews;
     private final PromotionRepo promos; private final AuctionRepo auctions; private final PasswordEncoder enc;
 
-    public DataSeeder(UserRepo users, BrandRepo brands, ProductRepo products, PromotionRepo promos, AuctionRepo auctions, PasswordEncoder enc) {
+    public DataSeeder(UserRepo users, BrandRepo brands, ProductRepo products, PromotionRepo promos, AuctionRepo auctions, PasswordEncoder enc, ReviewRepo reviews) {
+        this.reviews = reviews;
         this.users = users; this.brands = brands; this.products = products; this.promos = promos; this.auctions = auctions; this.enc = enc;
     }
 
@@ -29,6 +31,27 @@ public class DataSeeder implements CommandLineRunner {
         }
         if (brands.count() == 0) seedCars();
         if (auctions.count() == 0) seedAuctions();
+        if (reviews.count() == 0) seedReviews();
+    }
+
+    private void seedReviews() {
+        String[][] r = {
+            {"5", "Xe vận hành êm, tiết kiệm nhiên liệu. Nhân viên ARES tư vấn rất kỹ, giao xe đúng hẹn."},
+            {"4", "Thiết kế đẹp, nội thất rộng rãi. Thủ tục trả góp nhanh, chỉ mất 2 ngày."},
+            {"3", "Xe đẹp, vận hành ổn nhưng phải chờ giao xe hơi lâu so với dự kiến."},
+            {"4", "Giá tốt so với thị trường, được tặng kèm phim cách nhiệt. Sẽ giới thiệu bạn bè."}};
+        var khach = users.findByEmailIgnoreCase("khach@ares.vn").orElse(null);
+        var binh = users.findByEmailIgnoreCase("tran.binh@ares.vn").orElse(null);
+        int i = 0;
+        for (Product p : products.findAll()) {
+            for (User u : new User[]{khach, binh}) {
+                if (u == null || (p.id + i) % 3 == 0) { i++; continue; }
+                String[] x = r[(int) ((p.id + i++) % r.length)];
+                Review v = new Review(); v.productId = p.id; v.productName = p.name; v.user = u; v.authorName = u.fullName;
+                v.rating = Integer.parseInt(x[0]); v.comment = x[1]; v.createdAt = java.time.LocalDateTime.now().minusDays(i % 40 + 1);
+                reviews.save(v);
+            }
+        }
     }
 
     private void seedCars() {
@@ -38,6 +61,8 @@ public class DataSeeder implements CommandLineRunner {
                 {"Ford", "Mỹ"}, {"VinFast", "Việt Nam"}, {"Mercedes-Benz", "Đức"}, {"BMW", "Đức"}, {"Porsche", "Đức"},
                 {"Lamborghini", "Ý"}, {"Ferrari", "Ý"}, {"Rolls-Royce", "Anh"}, {"ARES Accessories", "Việt Nam"}}) {
             Brand x = new Brand(); x.name = r[0]; x.country = r[1];
+            String slug = r[0].toLowerCase().replace("-benz", "").replace("-", "").replace(" ", "");
+            x.logoUrl = slug.equals("aresaccessories") ? "/images/logo.png" : slug.equals("vinfast") ? "/images/brands/vinfast.png" : "/images/brands/" + slug + ".svg";
             x.description = "Đại lý ủy quyền " + r[0] + " tại ARES Auto: xe mới chính hãng, bảo hành toàn quốc.";
             b.put(r[0], brands.save(x));
         }
@@ -62,10 +87,10 @@ public class DataSeeder implements CommandLineRunner {
         car(b, "Lamborghini Urus Performante", "Lamborghini", "SUV", "Xăng", 2025, 16_500, null, 2, 4, "4.0L V8 Twin-Turbo", "666 hp", 5, "AT 8 cấp", "#f97316", "urus", true, false);
         car(b, "Ferrari SF90 Spider", "Ferrari", "SUPERCAR", "Hybrid", 2024, 39_500, null, 1, 1, "4.0L V8 + 3 mô-tơ điện", "1.000 hp", 2, "F1 DCT 8 cấp", "#c1121f", "sf90", true, true);
         car(b, "Rolls-Royce Cullinan Series II", "Rolls-Royce", "SUV", "Xăng", 2025, 41_000, null, 0, 1, "6.75L V12 Twin-Turbo", "571 hp", 5, "AT 8 cấp", "#1e293b", "cullinan", true, false);
-        acc(b, "Phim cách nhiệt 3M Crystalline (trọn xe)", 18 * TR, 40, 210);
-        acc(b, "Camera 360° + cảm biến va chạm", 15 * TR, 30, 160);
-        acc(b, "Thảm sàn da 6D cao cấp", 4_500_000L, 60, 320);
-        acc(b, "Gói phủ ceramic 9H bảo vệ sơn", 12 * TR, 50, 140);
+        acc(b, "Phim cách nhiệt 3M Crystalline (trọn xe)", 18 * TR, 40, 210, "tint");
+        acc(b, "Camera 360° + cảm biến va chạm", 15 * TR, 30, 160, "camera");
+        acc(b, "Thảm sàn da 6D cao cấp", 4_500_000L, 60, 320, "mats");
+        acc(b, "Gói phủ ceramic 9H bảo vệ sơn", 12 * TR, 50, 140, "ceramic");
 
         promo("CHAOMUNG", "Chào khách hàng mới", "Giảm 1% giá xe cho đơn đầu tiên, tối đa 20 triệu", 1, 20 * TR, 0, "#0284c7");
         promo("THANG10", "Tháng vàng ARES", "Giảm 2% cho xe từ 1 tỷ, tối đa 50 triệu", 2, 50 * TR, 1_000 * TR, "#c1121f");
@@ -117,12 +142,13 @@ public class DataSeeder implements CommandLineRunner {
         products.save(p);
     }
 
-    private void acc(Map<String, Brand> b, String name, long price, int stock, int sold) {
+    private void acc(Map<String, Brand> b, String name, long price, int stock, int sold, String img) {
         Product p = new Product();
         p.name = name; p.brand = b.get("ARES Accessories"); p.type = Enums.ProductType.ACCESSORY; p.fuel = "Phụ kiện"; p.price = price;
         p.stock = stock; p.sold = sold; p.customizable = false; p.material = "Lắp đặt tại xưởng"; p.baseColor = "#64748b";
         p.description = name + " — phụ kiện chính hãng, lắp đặt miễn phí tại xưởng dịch vụ ARES, bảo hành 12 tháng.";
         p.specs.put("Loại", "Phụ kiện ô tô"); p.specs.put("Lắp đặt", "Miễn phí tại xưởng"); p.specs.put("Bảo hành", "12 tháng");
+        p.images.add("/images/acc/" + img + ".jpg");
         products.save(p);
     }
 

@@ -42,7 +42,7 @@
             <div class="row"><button v-for="m in [12, 24, 36, 48, 60, 84]" :key="m" :class="['btn btn-sm', f.installmentMonths === m ? '' : 'btn-outline']" @click="f.installmentMonths = m">{{ m }} tháng</button></div>
           </div>
           <div v-if="['FULL', 'DEPOSIT', 'INSTALLMENT'].includes(f.paymentMethod)" class="card mockpay">
-            <div class="small muted" style="margin-bottom:8px">💳 Cổng thanh toán thử nghiệm (không trừ tiền thật)</div>
+            <div class="small muted" style="margin-bottom:8px">Cổng thanh toán thử nghiệm (không trừ tiền thật)</div>
             <div class="form-grid">
               <div class="field"><label>Số thẻ</label><input v-model="card.no" class="input" placeholder="4111 1111 1111 1111" /></div>
               <div class="field"><label>Chủ thẻ</label><input v-model="card.name" class="input" placeholder="NGUYEN VAN A" /></div>
@@ -87,7 +87,7 @@ const cart = useCart(), auth = useAuth(), router = useRouter()
 const f = reactive({ buyerName: auth.user?.fullName || '', phone: auth.user?.phone || '', email: auth.user?.email || '', shippingAddress: '', note: '', paymentMethod: 'FULL', installmentMonths: 36 })
 const card = reactive({ no: '', name: '' })
 const addresses = ref([]), addrId = ref(0), promoCode = ref(''), promo = ref(null), promoMsg = ref(''), error = ref(''), busy = ref(false)
-const icons = { FULL: '💳', DEPOSIT: '🔖', INSTALLMENT: '📆', COD: '🚚' }
+const icons = { FULL: '', DEPOSIT: '', INSTALLMENT: '', COD: '' }
 const payDesc = { FULL: 'Thanh toán 100% ngay', DEPOSIT: 'Cọc 10% giữ xe, phần còn lại khi nhận xe', INSTALLMENT: 'Trả trước 20%, vay 12–84 tháng (đơn từ 300 triệu)', COD: 'Thanh toán khi nhận xe' }
 
 const discount = computed(() => {
@@ -109,7 +109,7 @@ async function checkPromo() {
   if (!promoCode.value) return
   try {
     const { data } = await api.post('/promotions/check', { code: promoCode.value, subtotal: cart.subtotal })
-    promo.value = data.promotion; promoMsg.value = `✔ Áp dụng "${data.promotion.title}"`
+    promo.value = data.promotion; promoMsg.value = `Áp dụng "${data.promotion.title}"`
   } catch (e) { promoMsg.value = errMsg(e) }
 }
 
@@ -135,20 +135,21 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+.layout { display: grid; grid-template-columns: 1fr 400px; gap: 32px; align-items: start; }
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
-.block { margin-bottom: 18px; }
-.addr-list, .pay-grid { display: grid; gap: 10px; margin-bottom: 12px; }
+.block { margin-bottom: 24px; }
+.addr-list, .pay-grid { display: grid; gap: 12px; margin-bottom: 16px; }
 .pay-grid { grid-template-columns: 1fr 1fr; }
 @media (max-width: 640px) { .pay-grid { grid-template-columns: 1fr; } }
-.addr, .pay { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; margin: 0; color: var(--text); }
+.addr, .pay { display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; border: 1px solid var(--border); border-radius: 14px; transition: .15s; cursor: pointer; margin: 0; color: var(--text); }
 .addr.on, .pay.on { border-color: var(--accent); background: rgba(56,189,248,.08); }
 .pay.disabled { opacity: .45; cursor: not-allowed; }
 .mockpay { margin-top: 14px; padding: 14px; box-shadow: none; }
-.summary { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 150px; }
-.item { padding-bottom: 8px; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.summary { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 96px; }
+.item { padding-bottom: 16px; border-bottom: 1px solid var(--border); align-items: flex-start; }
 .promo { flex-wrap: nowrap; } .promo .input { padding: 8px 12px; }
 .ok { color: #86efac; } .err { color: #fca5a5; }
-.total { font-size: 1.15rem; font-weight: 700; border-top: 1px solid var(--border); padding-top: 10px; }
-.payNow { background: rgba(2,132,199,.15); padding: 8px 10px; border-radius: 8px; }
+.total { font-size: 1.3rem; font-weight: 800; border-top: 1px solid var(--border); padding-top: 16px; }
+.payNow { background: rgba(2,132,199,.15); padding: 12px 16px; border-radius: 12px; }
+.addr:hover, .pay:hover { border-color: rgba(255,255,255,.25); }
 </style>

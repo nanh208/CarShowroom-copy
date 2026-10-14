@@ -1,7 +1,8 @@
 <template>
   <div class="container page">
+    <Breadcrumb :items="[{ label: 'Mẫu xe' }]" />
     <h1>Danh mục xe</h1>
-    <p class="muted" style="margin-bottom:20px">{{ total }} sản phẩm<span v-if="f.q"> cho "{{ f.q }}"</span></p>
+    <p class="muted">{{ total }} sản phẩm<span v-if="f.q"> cho "{{ f.q }}"</span></p>
     <div class="layout">
       <aside class="card filters">
         <div class="field"><label>Từ khoá</label><input v-model="f.q" class="input" placeholder="Tên xe, hãng..." @keyup.enter="apply" /></div>
@@ -27,10 +28,12 @@
           </select>
         </div>
         <div v-if="loading" class="spinner" />
-        <div v-else-if="!items.length" class="empty card">Không tìm thấy sản phẩm phù hợp 😢</div>
+        <div v-else-if="!items.length" class="empty card">Không tìm thấy sản phẩm phù hợp </div>
         <div v-else class="grid grid-4"><ProductCard v-for="p in items" :key="p.id" :p="p" /></div>
         <div v-if="pages > 1" class="row pager">
+          <button class="btn btn-sm btn-outline" :disabled="page === 0" @click="go(page - 1)">← Trước</button>
           <button v-for="i in pages" :key="i" :class="['btn btn-sm', i - 1 === page ? '' : 'btn-outline']" @click="go(i - 1)">{{ i }}</button>
+          <button class="btn btn-sm btn-outline" :disabled="page >= pages - 1" @click="go(page + 1)">Sau →</button>
         </div>
       </section>
     </div>
@@ -38,6 +41,7 @@
 </template>
 
 <script setup>
+import Breadcrumb from '../components/Breadcrumb.vue'
 import { ref, reactive, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api'

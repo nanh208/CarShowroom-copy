@@ -33,3 +33,12 @@
 - `taycan.jpg` — [Porsche Taycan Sport Turismo GTS 1X7A0416.jpg](https://commons.wikimedia.org/wiki/File:Porsche_Taycan_Sport_Turismo_GTS_1X7A0416.jpg) — CC BY-SA 4.0 (resized)
 - `urus.jpg` — [Lamborghini Urus Performante 1X7A6805.jpg](https://commons.wikimedia.org/wiki/File:Lamborghini_Urus_Performante_1X7A6805.jpg) — CC BY-SA 4.0 (resized)
 - `cullinan.jpg` — [Rolls-Royce Cullinan 001.jpg](https://commons.wikimedia.org/wiki/File:Rolls-Royce_Cullinan_001.jpg) — CC BY-SA 4.0 (resized)
+
+## Logo thương hiệu & ảnh phụ kiện
+- Logo hãng (`/images/brands/*.svg`): Simple Icons (CC0), https://simpleicons.org — nhãn hiệu thuộc chủ sở hữu tương ứng.
+- `/images/brands/vinfast.png`: "VinFast logo (simple variant).svg", Wikimedia Commons, Public domain.
+- `/images/acc/tint.jpg`: "Window tint car.jpg", Wikimedia Commons, CC BY 2.5.
+- `/images/acc/camera.jpg`: "360-degree surround-view parking camera display on an infotainment screen.jpg", Wikimedia Commons, CC BY 4.0.
+- `/images/acc/mats.jpg`: "Car mats fitted.jpg", Wikimedia Commons, CC BY-SA 3.0.
+- `/images/acc/ceramic.jpg`: "Aktivschaum.JPG", Wikimedia Commons, CC BY-SA 3.0.
+- `/images/hero-huracan.jpg`, `/images/hero-taycan.jpg`: bản lớn của huracan.jpg / taycan.jpg (cùng nguồn, CC BY-SA 4.0).
