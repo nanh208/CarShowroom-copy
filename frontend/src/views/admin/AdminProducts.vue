@@ -101,6 +101,6 @@ onMounted(load)
 </script>
 <style scoped>
 .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-.low { color: #c0392b; font-weight: 700; } .off { opacity: .5; }
+.low { color: #fca5a5; font-weight: 700; } .off { opacity: .5; }
 .modal { max-width: 760px; }
 </style>

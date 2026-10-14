@@ -1,7 +1,7 @@
 <template>
   <div class="container page">
-    <h1 class="page-title">Chương trình ưu đãi</h1>
-    <p class="page-sub">Nhập mã ở bước thanh toán để được giảm giá.</p>
+    <h1>Chương trình ưu đãi</h1>
+    <p class="muted" style="margin-bottom:24px">Nhập mã ở bước thanh toán để được giảm giá.</p>
     <div v-if="!list.length" class="empty card">Hiện chưa có chương trình ưu đãi nào.</div>
     <div class="grid promos">
       <div v-for="p in list" :key="p.id" class="promo" :style="{ background: `linear-gradient(135deg, ${p.bannerColor}, #0b0c10)` }">
@@ -27,7 +27,7 @@ onMounted(async () => { list.value = (await api.get('/promotions')).data })
 </script>
 <style scoped>
 .promos { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-.promo { border-radius: 2px; padding: 26px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; color: #fff; }
+.promo { border-radius: var(--radius); padding: 26px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
 .pct { font-size: 2.6rem; font-weight: 800; }
-.code { margin-top: 10px; align-self: flex-start; background: rgba(0,0,0,.35); color: #fff; border: 1px dashed rgba(255,255,255,.5); border-radius: 2px; padding: 8px 14px; font: 700 1rem Montserrat,sans-serif; cursor: pointer; }
+.code { margin-top: 10px; align-self: flex-start; background: rgba(0,0,0,.35); color: #fff; border: 1px dashed rgba(255,255,255,.5); border-radius: 8px; padding: 8px 14px; font: 700 1rem inherit; font-family: inherit; cursor: pointer; }
 </style>

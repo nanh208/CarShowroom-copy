@@ -1,6 +1,6 @@
 <template>
   <div class="container page">
-    <h1 class="page-title">Thanh toán</h1>
+    <h1 style="margin-bottom:20px">Thanh toán</h1>
     <div v-if="!cart.items.length" class="empty card">Giỏ hàng trống. <router-link to="/products">Mua sắm ngay →</router-link></div>
     <div v-else class="layout">
       <div>
@@ -141,13 +141,13 @@ onMounted(async () => {
 .pay-grid { grid-template-columns: 1fr 1fr; }
 @media (max-width: 640px) { .pay-grid { grid-template-columns: 1fr; } }
 .addr, .pay { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; margin: 0; color: var(--text); }
-.addr.on, .pay.on { border-color: var(--bronze); background: rgba(168,122,60,.08); }
+.addr.on, .pay.on { border-color: var(--accent); background: rgba(56,189,248,.08); }
 .pay.disabled { opacity: .45; cursor: not-allowed; }
 .mockpay { margin-top: 14px; padding: 14px; box-shadow: none; }
 .summary { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 150px; }
 .item { padding-bottom: 8px; border-bottom: 1px solid var(--border); align-items: flex-start; }
 .promo { flex-wrap: nowrap; } .promo .input { padding: 8px 12px; }
-.ok { color: #1e7a3a; } .err { color: #922b21; }
+.ok { color: #86efac; } .err { color: #fca5a5; }
 .total { font-size: 1.15rem; font-weight: 700; border-top: 1px solid var(--border); padding-top: 10px; }
-.payNow { background: rgba(168,122,60,.12); padding: 8px 10px; border-radius: 2px; }
+.payNow { background: rgba(2,132,199,.15); padding: 8px 10px; border-radius: 8px; }
 </style>

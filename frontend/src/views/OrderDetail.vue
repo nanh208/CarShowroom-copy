@@ -60,9 +60,9 @@ onMounted(async () => { o.value = (await api.get(`/orders/${route.params.code}`)
 </script>
 <style scoped>
 .steps { display: flex; gap: 6px; margin: 18px 0 24px; }
-.step { flex: 1; text-align: center; padding: 10px; border-radius: 2px; background: #eee; color: var(--muted); font-size: .85rem; font-weight: 600; }
-.step.done { background: var(--bronze); color: #fff; }
+.step { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: rgba(255,255,255,.05); color: var(--muted); font-size: .85rem; font-weight: 600; }
+.step.done { background: var(--primary); color: #fff; }
 .item { padding: 10px 0; border-bottom: 1px solid var(--border); }
 .card .row.between { margin-bottom: 6px; } .card p { margin-bottom: 6px; }
-.total { font-size: 1.1rem; font-weight: 700; } .ok { color: #1e7a3a; }
+.total { font-size: 1.1rem; font-weight: 700; } .ok { color: #86efac; }
 </style>

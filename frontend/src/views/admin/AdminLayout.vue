@@ -1,27 +1,23 @@
 <template>
   <div class="admin">
-    <header class="top">
-      <div class="container row between">
-        <div class="row">
-          <router-link to="/admin" class="brand">ARES <b>ADMIN</b></router-link>
-          <nav class="nav">
-            <router-link to="/admin" exact-active-class="on">Tổng quan</router-link>
-            <router-link to="/admin/products" active-class="on">Sản phẩm</router-link>
-            <router-link to="/admin/orders" active-class="on">Đơn hàng</router-link>
-            <router-link to="/admin/customers" active-class="on">Khách hàng</router-link>
-            <router-link to="/admin/promotions" active-class="on">Ưu đãi</router-link>
-            <router-link to="/admin/bookings" active-class="on">Lịch hẹn</router-link>
-            <router-link to="/admin/chat" active-class="on">Live chat</router-link>
-          </nav>
-        </div>
-        <div class="row">
-          <span class="small">{{ auth.user?.fullName }}</span>
-          <router-link to="/" class="btn btn-sm btn-outline light">Cửa hàng</router-link>
-          <button class="btn btn-sm light" @click="logout">Đăng xuất</button>
-        </div>
+    <aside class="side">
+      <router-link to="/" class="logo">ARES <b>ADMIN</b></router-link>
+      <nav>
+        <router-link to="/admin" exact-active-class="on">📊 Tổng quan</router-link>
+        <router-link to="/admin/products" active-class="on">🏎️ Sản phẩm</router-link>
+        <router-link to="/admin/orders" active-class="on">🧾 Đơn hàng</router-link>
+        <router-link to="/admin/customers" active-class="on">👥 Khách hàng</router-link>
+        <router-link to="/admin/promotions" active-class="on">🎁 Ưu đãi</router-link>
+        <router-link to="/admin/bookings" active-class="on">📅 Lịch hẹn</router-link>
+        <router-link to="/admin/chat" active-class="on">💬 Live chat</router-link>
+      </nav>
+      <div class="foot">
+        <div class="small muted">{{ auth.user?.fullName }}</div>
+        <router-link to="/" class="small">← Về cửa hàng</router-link>
+        <a href="#" class="small" @click.prevent="logout">Đăng xuất</a>
       </div>
-    </header>
-    <main class="content container"><router-view /></main>
+    </aside>
+    <main class="content"><router-view /></main>
   </div>
 </template>
 <script setup>
@@ -31,16 +27,13 @@ const auth = useAuth(), router = useRouter()
 const logout = () => { auth.logout(); router.push('/login') }
 </script>
 <style scoped>
-.admin { min-height: 100vh; background: #f5f5f5; }
-.top { background: var(--header); color: #fff; height: 52px; display: flex; align-items: center; position: sticky; top: 0; z-index: 40; }
-.brand { color: #fff; font: 700 1rem 'Montserrat', sans-serif; letter-spacing: .1em; margin-right: 18px; }
-.brand b { color: #fff; opacity: .9; } .brand:hover { color: #fff; }
-.nav { display: flex; gap: 2px; flex-wrap: wrap; }
-.nav a { color: rgba(255,255,255,.9); padding: 6px 10px; font: 500 .78rem 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: .03em; }
-.nav a:hover, .nav a.on { background: rgba(0,0,0,.18); color: #fff; }
-.light { border-color: rgba(255,255,255,.5); color: #fff; background: rgba(0,0,0,.15); }
-.light:hover { background: rgba(0,0,0,.3); color: #fff; }
-.content { padding: 24px 20px 50px; }
-:deep(h1) { margin-bottom: 16px; font-size: 1.45rem; }
-@media (max-width: 900px) { .nav { display: none; } }
+.admin { display: flex; min-height: 100vh; }
+.side { width: 230px; background: #08090c; border-right: 1px solid var(--border); padding: 22px 14px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.logo { color: #fff; font-size: 1.25rem; margin: 0 8px 26px; } .logo b { color: var(--accent); }
+nav a { display: block; color: var(--label); padding: 10px 12px; border-radius: 8px; margin-bottom: 4px; font-weight: 600; }
+nav a:hover { background: rgba(255,255,255,.05); color: #fff; }
+nav a.on { background: var(--primary); color: #fff; }
+.foot { margin-top: auto; display: flex; flex-direction: column; gap: 6px; padding: 0 8px; }
+.content { flex: 1; padding: 28px; min-width: 0; }
+:deep(h1) { margin-bottom: 18px; }
 </style>
