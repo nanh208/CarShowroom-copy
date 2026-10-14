@@ -19,17 +19,23 @@ public class CustomerOrder {
     public List<OrderItem> items = new ArrayList<>();
     public long subtotal;
     public long discount;
+    public long pointsDiscount;
     public long shippingFee;
     public long total;
     public String promoCode;
     @Enumerated(EnumType.STRING) public Enums.PaymentMethod paymentMethod;
     @Enumerated(EnumType.STRING) public Enums.PaymentStatus paymentStatus = Enums.PaymentStatus.UNPAID;
+    public String city;
     public long paidAmount;
+    public int pointsUsed;
+    public int pointsEarned;
     public int installmentMonths;
     public long monthlyInstallment;
     public String transactionRef;
     @Enumerated(EnumType.STRING) public Enums.OrderStatus status = Enums.OrderStatus.PENDING;
     public LocalDateTime createdAt = LocalDateTime.now();
+    public LocalDateTime paidAt;
+    public String cancelReason;
     /** Mốc thời gian từng trạng thái để hiển thị timeline theo dõi đơn. */
     @ElementCollection(fetch = FetchType.EAGER) public Map<String, LocalDateTime> timeline = new LinkedHashMap<>();
 }

@@ -35,3 +35,5 @@ node_modules/
 dist/
 *.db
 data/
+backend/uploads/
+uploads/

@@ -2,30 +2,59 @@
   <div class="container page">
     <div v-if="!o" class="spinner" />
     <template v-else>
-      <Breadcrumb :items="[{ label: 'Tài khoản', to: '/account' }, { label: 'Đơn ' + o.code }]" />
-      <div v-if="$route.query.new" class="alert alert-success">Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
-      <div class="row between"><h1>Đơn hàng {{ o.code }}</h1><span :class="['badge', 'badge-' + o.status]">{{ ORDER_STATUS[o.status] }}</span></div>
+      <Breadcrumb :items="[{ label: 'Tài khoản', to: '/account?tab=orders' }, { label: 'Đơn ' + o.code }]" />
+      <div v-if="$route.query.new" class="alert alert-success">🎉 Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
+      <div class="row between"><h1>Đơn hàng {{ o.code }}</h1>
+        <div class="row"><router-link :to="`/orders/${o.code}/invoice`" class="btn btn-sm btn-outline">🧾 Hoá đơn</router-link><span :class="['badge', 'badge-' + o.status]">{{ ORDER_STATUS[o.status] }}</span></div></div>
       <p class="muted">Đặt lúc {{ dt(o.createdAt) }}</p>
-      <div class="card track">
+
+      <div v-reveal class="card track">
         <h3>Theo dõi đơn hàng</h3>
+        <div class="road">
+          <div class="fill" :style="{ width: progress + '%' }" />
+          <span class="truck" :style="{ left: progress + '%' }">🚚</span>
+        </div>
         <ol class="tl">
           <li v-for="st in steps" :key="st.key" :class="st.state">
             <span class="dot" /><div><b>{{ st.label }}</b><p>{{ st.desc }}</p><small v-if="st.time">{{ dt(st.time) }}</small></div>
           </li>
         </ol>
       </div>
+
+      <div v-if="needPay" v-reveal class="card paybox">
+        <template v-if="o.paymentMethod === 'BANK_QR'">
+          <img :src="bank.qr" alt="VietQR" class="qr" />
+          <div><h3>Chuyển khoản qua VietQR</h3>
+            <p>Ngân hàng <b>{{ bank.bank }}</b> · STK <b>{{ bank.account }}</b> · {{ bank.holder }}</p>
+            <p>Số tiền <b class="price">{{ vnd(o.total - o.paidAmount) }}</b> · Nội dung <b>{{ o.code }}</b></p>
+            <p class="small muted">Môi trường demo: nhấn nút dưới để giả lập ngân hàng báo có.</p>
+            <button class="btn btn-sm" @click="act('pay')">Tôi đã chuyển khoản</button></div>
+        </template>
+        <template v-else-if="['MOMO', 'VNPAY'].includes(o.paymentMethod)">
+          <div><h3>Chưa hoàn tất thanh toán {{ o.paymentMethod }}</h3><router-link :to="`/pay/${o.code}`" class="btn btn-sm">Thanh toán ngay →</router-link></div>
+        </template>
+        <template v-else-if="o.paymentMethod === 'INSTALLMENT'">
+          <div><h3>Trả góp 0% · {{ o.installmentMonths }} kỳ × {{ vnd(o.monthlyInstallment) }}</h3>
+            <p class="small muted">Đã thanh toán {{ vnd(o.paidAmount) }} / {{ vnd(o.total) }}</p>
+            <button class="btn btn-sm" @click="act('pay')">Thanh toán kỳ tiếp theo (giả lập thẻ)</button></div>
+        </template>
+      </div>
+
       <div class="grid grid-2">
         <div class="card">
           <h3>Sản phẩm</h3>
-          <div v-for="i in o.items" :key="i.id" class="row between item">
-            <div class="grow"><router-link :to="`/products/${i.productId}`">{{ i.productName }}</router-link> × {{ i.quantity }}
-              <div class="small muted">{{ i.fuel }}<span v-if="i.options"> · {{ i.options }}</span></div></div>
+          <div v-for="i in o.items" :key="i.id" class="item">
+            <img v-if="i.image" :src="i.image" alt="" />
+            <div class="grow"><router-link v-if="i.productId" :to="`/products/${i.productId}`">{{ i.productName }}</router-link><span v-else>{{ i.productName }}</span> × {{ i.quantity }}
+              <div class="small muted">{{ i.variantName }}<span v-if="i.flashSale"> · ⚡ Flash sale</span><span v-if="i.warrantyMonths"> · BH {{ i.warrantyMonths }} tháng</span></div></div>
             <b>{{ vnd(i.unitPrice * i.quantity) }}</b>
           </div>
           <div class="row between"><span>Tạm tính</span><span>{{ vnd(o.subtotal) }}</span></div>
-          <div v-if="o.discount" class="row between"><span>Giảm giá ({{ o.promoCode }})</span><span>−{{ vnd(o.discount) }}</span></div>
-          <div class="row between"><span>Giao xe</span><span>{{ o.shippingFee ? vnd(o.shippingFee) : 'Miễn phí' }}</span></div>
+          <div v-if="o.discount" class="row between"><span>Voucher ({{ o.promoCode }})</span><span>−{{ vnd(o.discount) }}</span></div>
+          <div v-if="o.pointsDiscount" class="row between"><span>Dùng {{ o.pointsUsed }} điểm</span><span>−{{ vnd(o.pointsDiscount) }}</span></div>
+          <div class="row between"><span>Phí vận chuyển</span><span>{{ o.shippingFee ? vnd(o.shippingFee) : 'Miễn phí' }}</span></div>
           <div class="row between total"><span>Tổng cộng</span><span class="price">{{ vnd(o.total) }}</span></div>
+          <p v-if="o.pointsEarned" class="small ok">+{{ o.pointsEarned }} điểm thưởng đã được cộng</p>
         </div>
         <div>
           <div class="card" style="margin-bottom:18px">
@@ -36,14 +65,26 @@
           <div class="card">
             <h3>Thanh toán</h3>
             <p>{{ PAY_METHOD[o.paymentMethod] }} <span :class="['badge', 'badge-' + o.paymentStatus]">{{ PAY_STATUS[o.paymentStatus] }}</span></p>
-            <p v-if="o.paymentMethod === 'INSTALLMENT'" class="small muted">{{ vnd(o.monthlyInstallment) }}/tháng × {{ o.installmentMonths }} tháng</p>
             <div class="row between"><span>Đã thanh toán</span><b class="ok">{{ vnd(o.paidAmount) }}</b></div>
-            <div class="row between"><span>Còn lại</span><b>{{ vnd(o.total - o.paidAmount) }}</b></div>
             <p v-if="o.transactionRef" class="small muted">Mã giao dịch: {{ o.transactionRef }}</p>
-            <div class="row" style="margin-top:12px">
-              <button v-if="o.paidAmount < o.total && o.status !== 'CANCELLED'" class="btn btn-sm" @click="act('pay')">
-                {{ o.paymentMethod === 'INSTALLMENT' ? 'Thanh toán kỳ tiếp theo' : 'Thanh toán phần còn lại' }}</button>
-              <button v-if="['PENDING', 'CONFIRMED'].includes(o.status)" class="btn btn-sm btn-danger" @click="cancel">Huỷ đơn</button>
+            <div class="row" style="margin-top:12px; flex-wrap:wrap">
+              <button v-if="['PENDING', 'CONFIRMED'].includes(o.status)" class="btn btn-sm btn-danger" @click="cancelOpen = !cancelOpen">Huỷ đơn</button>
+              <button v-if="canReturn" class="btn btn-sm btn-outline" @click="retOpen = !retOpen">Đổi trả / Hoàn tiền</button>
+              <router-link :to="{ path: '/support', query: { order: o.code } }" class="btn btn-sm btn-outline">Cần hỗ trợ?</router-link>
+            </div>
+            <div v-if="cancelOpen" class="sub">
+              <select v-model="cancelReason" class="input"><option v-for="r in reasons" :key="r">{{ r }}</option></select>
+              <button class="btn btn-sm btn-danger" @click="cancel">Xác nhận huỷ</button>
+            </div>
+            <div v-if="retOpen" class="sub">
+              <div class="row"><label class="check"><input v-model="ret.kind" type="radio" value="RETURN" /> Đổi/trả hàng</label><label class="check"><input v-model="ret.kind" type="radio" value="REFUND" /> Hoàn tiền</label></div>
+              <textarea v-model="ret.reason" class="input" rows="3" placeholder="Mô tả lỗi / lý do (tối thiểu 10 ký tự)" />
+              <div class="row"><label class="up">📷 Ảnh minh chứng<input type="file" accept="image/*" multiple hidden @change="upload" /></label><img v-for="im in ret.images" :key="im" :src="im" class="ti" /></div>
+              <button class="btn btn-sm" @click="sendReturn">Gửi yêu cầu</button>
+            </div>
+            <div v-for="r in returns" :key="r.id" class="retbox">
+              <b>{{ r.kind === 'REFUND' ? 'Yêu cầu hoàn tiền' : 'Yêu cầu đổi trả' }}</b> <span :class="['badge', 'badge-' + r.status]">{{ RETURN_STATUS[r.status] }}</span>
+              <p class="small">{{ r.reason }}</p><p v-if="r.adminNote" class="small muted">Shop: {{ r.adminNote }}</p>
             </div>
             <div v-if="err" class="alert alert-error" style="margin-top:10px">{{ err }}</div>
           </div>
@@ -55,43 +96,50 @@
 </template>
 <script setup>
 import Breadcrumb from '../components/Breadcrumb.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import api, { errMsg } from '../api'
-import { vnd, dt, ORDER_STATUS, PAY_METHOD, PAY_STATUS } from '../format'
-const route = useRoute(), o = ref(null), err = ref('')
-const flow = ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED']
-async function act(a) { err.value = ''; try { o.value = (await api.post(`/orders/${o.value.code}/${a}`)).data } catch (e) { err.value = errMsg(e) } }
-const cancel = () => confirm('Bạn chắc chắn muốn huỷ đơn hàng này?') && act('cancel')
-onMounted(async () => { o.value = (await api.get(`/orders/${route.params.code}`)).data })
-const STEP_DESC = { PENDING: 'Đơn hàng đã được tạo, chờ ARES xác nhận.', CONFIRMED: 'Đã xác nhận, chuẩn bị xe & giấy tờ.', SHIPPING: 'Xe đang được vận chuyển tới bạn.', COMPLETED: 'Đã bàn giao xe. Cảm ơn bạn!', CANCELLED: 'Đơn hàng đã bị huỷ.' }
+import api, { errMsg, uploadImage } from '../api'
+import { vnd, dt, ORDER_STATUS, PAY_METHOD, PAY_STATUS, RETURN_STATUS } from '../format'
+import { toast } from '../stores/prefs'
+
+const route = useRoute()
+const o = ref(null), bank = ref({}), returns = ref([]), err = ref(''), cancelOpen = ref(false), retOpen = ref(false)
+const reasons = ['Đổi ý, không muốn mua nữa', 'Muốn đổi sang sản phẩm/màu khác', 'Tìm được giá tốt hơn', 'Thời gian giao quá lâu', 'Lý do khác']
+const cancelReason = ref(reasons[0]), ret = reactive({ kind: 'RETURN', reason: '', images: [] })
+const STEP_DESC = { PENDING: 'Shop đã nhận đơn', CONFIRMED: 'Đang đóng gói sản phẩm', SHIPPING: 'Đơn vị vận chuyển đang giao', COMPLETED: 'Giao hàng thành công' }
+const KEYS = ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED']
 const steps = computed(() => {
-  if (!o.value) return []
-  const tl = o.value.timeline || {}
-  const keys = o.value.status === 'CANCELLED' ? [...['PENDING', 'CONFIRMED', 'SHIPPING'].filter(k => tl[k] || k === 'PENDING'), 'CANCELLED'] : ['PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED']
-  const cur = keys.indexOf(o.value.status)
-  return keys.map((k, i) => ({ key: k, label: ORDER_STATUS[k], desc: STEP_DESC[k], time: tl[k] || (k === 'PENDING' ? o.value.createdAt : null),
-    state: k === 'CANCELLED' ? 'cancel' : i < cur ? 'done' : i === cur ? 'now' : '' }))
+  const tl = o.value.timeline || {}, idx = KEYS.indexOf(o.value.status)
+  const list = KEYS.map((k, i) => ({ key: k, label: ORDER_STATUS[k], desc: STEP_DESC[k], time: tl[k], state: idx < 0 ? (tl[k] ? 'done' : '') : i < idx ? 'done' : i === idx ? 'current' : '' }))
+  if (o.value.status === 'CANCELLED') list.push({ key: 'C', label: 'Đã huỷ', desc: o.value.cancelReason || '', time: tl.CANCELLED, state: 'cancel' })
+  if (o.value.status === 'RETURNED') list.push({ key: 'R', label: 'Đã trả hàng & hoàn tiền', desc: '', time: tl.RETURNED, state: 'cancel' })
+  return list
 })
+const progress = computed(() => { const i = KEYS.indexOf(o.value.status); return i < 0 ? 0 : i / 3 * 100 })
+const needPay = computed(() => o.value.status !== 'CANCELLED' && o.value.paymentMethod !== 'COD' && o.value.paidAmount < o.value.total)
+const canReturn = computed(() => o.value.status === 'COMPLETED' && !returns.value.some(r => ['PENDING', 'APPROVED'].includes(r.status)))
+const load = async () => { const { data } = await api.get(`/orders/${route.params.code}`); o.value = data.order; bank.value = data.bank; returns.value = data.returns }
+async function act(a) { err.value = ''; try { await api.post(`/orders/${o.value.code}/${a}`); toast('Thanh toán thành công'); await load() } catch (e) { err.value = errMsg(e) } }
+async function cancel() { err.value = ''; try { await api.post(`/orders/${o.value.code}/cancel`, { reason: cancelReason.value }); cancelOpen.value = false; toast('Đã huỷ đơn hàng'); await load() } catch (e) { err.value = errMsg(e) } }
+async function upload(e) { try { for (const f of [...e.target.files].slice(0, 4)) ret.images.push(await uploadImage(f)) } catch (x) { err.value = errMsg(x) } }
+async function sendReturn() { err.value = ''; try { await api.post(`/orders/${o.value.code}/returns`, ret); retOpen.value = false; toast('Đã gửi yêu cầu'); await load() } catch (e) { err.value = errMsg(e) } }
+onMounted(load)
 </script>
 <style scoped>
-.steps { display: flex; gap: 6px; margin: 18px 0 24px; }
-.step { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: rgba(0,0,0,.05); color: var(--muted); font-size: .85rem; font-weight: 600; }
-.step.done { background: var(--primary); color: var(--text); }
-.item { padding: 10px 0; border-bottom: 1px solid var(--border); }
-.card .row.between { margin-bottom: 6px; } .card p { margin-bottom: 6px; }
-.total { font-size: 1.1rem; font-weight: 700; } .ok { color: var(--success); }
-.track { margin: 24px 0; }
-.tl { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
-.tl li { position: relative; padding-top: 32px; color: var(--muted); }
-.tl li::before { content: ''; position: absolute; top: 9px; left: 20px; right: -16px; height: 2px; background: rgba(0,0,0,.1); }
-.tl li:last-child::before { display: none; }
-.tl .dot { position: absolute; top: 0; left: 0; width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(0,0,0,.2); background: var(--bg-2); z-index: 1; }
-.tl li.done .dot, .tl li.now .dot { background: var(--primary); border-color: var(--primary); }
-.tl li.done::before { background: var(--primary); }
-.tl li.now .dot { box-shadow: 0 0 0 6px rgba(168,122,60,.25); }
-.tl li.cancel .dot { background: var(--danger); border-color: var(--danger); }
-.tl b { display: block; color: var(--text); margin-bottom: 4px; } .tl li:not(.done):not(.now):not(.cancel) b { color: var(--muted); }
-.tl p { font-size: .85rem; } .tl small { font-size: .78rem; color: var(--accent); }
-@media (max-width: 800px) { .tl { grid-template-columns: 1fr 1fr; } }
+.track { margin: 18px 0; }
+.road { position: relative; height: 10px; margin: 26px 12px 8px; border-radius: 5px; background: #3a3a3e; }
+.road::after { content: ''; position: absolute; left: 0; right: 0; top: 4.5px; height: 1px; background: repeating-linear-gradient(90deg, #f5c400 0 10px, transparent 10px 20px); }
+.fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: linear-gradient(90deg, var(--bronze), #f5c400); transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
+.truck { position: absolute; top: -22px; transform: translateX(-50%) scaleX(-1); font-size: 1.4rem; transition: left 1.4s cubic-bezier(.2,.8,.2,1); }
+.tl { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; padding: 0; }
+.tl li { display: flex; gap: 8px; opacity: .45; } .tl li.done, .tl li.current, .tl li.cancel { opacity: 1; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: #ccc; margin-top: 3px; flex-shrink: 0; } .done .dot { background: var(--success); } .current .dot { background: var(--bronze); box-shadow: 0 0 0 4px var(--bronze-soft); } .cancel .dot { background: var(--danger); }
+.tl p { font-size: .8rem; color: var(--muted); } .tl small { font-size: .74rem; color: var(--muted); }
+.paybox { display: flex; gap: 20px; align-items: center; margin-bottom: 18px; border: 2px solid var(--bronze); } .qr { width: 170px; border-radius: 8px; background: #fff; }
+.paybox p { margin: 4px 0; }
+.item { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); } .item img { width: 60px; height: 44px; object-fit: cover; border-radius: 6px; }
+.total { font-weight: 700; margin-top: 8px; } .ok { color: var(--success); }
+.sub { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding: 12px; background: var(--bg-2); border-radius: 10px; }
+.check { display: flex; gap: 6px; align-items: center; font-size: .88rem; } .up { border: 1px dashed var(--bronze); color: var(--bronze); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: .85rem; } .ti { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
+.retbox { margin-top: 12px; padding: 10px; border-radius: 8px; background: var(--bg-2); }
 </style>

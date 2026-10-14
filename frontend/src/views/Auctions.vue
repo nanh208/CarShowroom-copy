@@ -1,7 +1,7 @@
 <template>
   <div class="container page">
-    <h1>Đấu giá xe hiếm</h1>
-    <p class="muted">Những mẫu xe sưu tầm hiếm có, đã được ARES thẩm định. Đăng nhập để đặt giá — người trả giá cao nhất khi hết giờ sẽ nhận đơn đặt cọc 10%.</p>
+    <h1>Đấu giá hàng hiếm</h1>
+    <p class="muted">Mô hình phiên bản giới hạn, bản gốc vintage và kit tuyệt bản đã được ARES thẩm định. Người trả giá cao nhất khi hết giờ sẽ nhận đơn thanh toán tự động.</p>
     <div class="tabs">
       <button v-for="(v, k) in filters" :key="k" :class="{ active: filter === k }" @click="filter = k">{{ v }}</button>
     </div>
@@ -9,7 +9,7 @@
     <div v-else-if="!shown.length" class="empty card">Chưa có phiên đấu giá.</div>
     <div v-else class="grid agrid">
       <router-link v-for="a in shown" :key="a.id" :to="`/auctions/${a.id}`" class="acard">
-        <div class="img"><img :src="a.images?.[0] || '/images/bg-pagani.jpg'" :alt="a.title" />
+        <div class="img"><img :src="a.images?.[0] || '/images/toys/hw-r34-0.jpg'" :alt="a.title" />
           <span :class="['badge', 'st-' + a.status]">{{ AUCTION_STATUS[a.status] }}</span></div>
         <div class="body">
           <b class="name">{{ a.title }}</b>

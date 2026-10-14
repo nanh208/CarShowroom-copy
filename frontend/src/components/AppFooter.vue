@@ -2,11 +2,11 @@
   <footer class="ftr">
     <div class="in">
       <div class="news">
-        <div><b>Nhận tin xe mới & ưu đãi</b><span>Mẫu xe vừa về, phiên đấu giá sắp mở, ưu đãi riêng cho thành viên.</span></div>
+        <div><b>Nhận tin hàng mới & ưu đãi</b><span>Mẫu xe vừa về, flash sale, phiên đấu giá hàng hiếm và voucher riêng cho thành viên.</span></div>
         <form @submit.prevent="subscribe"><input v-model="email" type="email" required placeholder="Email của bạn" /><button class="btn btn-sm" :disabled="busy">Đăng ký</button></form>
       </div>
       <div class="main">
-        <router-link to="/" class="logo"><img src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Store</span></router-link>
+        <router-link to="/" class="logo"><img src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span></router-link>
         <nav>
           <router-link to="/about">Về chúng tôi</router-link>
           <router-link to="/services">Liên hệ</router-link>
@@ -16,8 +16,8 @@
         </nav>
       </div>
       <div class="bottom">
-        <span>Showroom ô tô đa thương hiệu · 123 Nguyễn Văn Linh, Q.7, TP.HCM · Hotline {{ HOTLINE }} · Giá xe mang tính tham khảo.</span>
-        <span>© {{ new Date().getFullYear() }} ARES Auto</span>
+        <span>ARES Toys — xe mô hình, xe RC & phụ kiện chính hãng · 123 Nguyễn Văn Linh, Q.7, TP.HCM · Hotline {{ HOTLINE }}</span>
+        <span>© {{ new Date().getFullYear() }} ARES Toys</span>
       </div>
     </div>
   </footer>

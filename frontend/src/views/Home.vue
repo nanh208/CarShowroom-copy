@@ -1,65 +1,74 @@
 <template>
   <div class="home">
-    <!-- Hero carousel: menu đè lên phần trên của banner -->
+    <!-- Hero carousel (banner quản lý trong admin) — menu đè lên phần trên, ảnh parallax -->
     <section class="hero" @mouseenter="pause = true" @mouseleave="pause = false">
       <div class="slides">
-        <router-link v-for="(s, i) in slides" :key="s.title" :to="s.to" :class="['slide', { on: i === cur }]" :style="{ backgroundImage: `url(${s.img})` }">
+        <router-link v-for="(s, i) in hero" :key="s.id" :to="s.link || '/products'" :class="['slide', { on: i === cur }]">
+          <div class="bg" :style="{ backgroundImage: `url(${s.image})`, transform: `translate3d(0, ${par}px, 0) scale(1.12)` }" />
           <div class="shade" />
-          <div class="txt"><small>{{ s.kicker }}</small><h1>{{ s.title }}</h1><span>{{ s.sub }}</span></div>
+          <div class="txt" :style="{ transform: `translate3d(0, ${par * -0.4}px, 0)` }"><small>{{ s.kicker }}</small><h1>{{ s.title }}</h1><span>{{ s.subtitle }}</span></div>
         </router-link>
+        <div v-if="!hero.length" class="slide on sk" />
       </div>
     </section>
-    <div class="dots"><button v-for="(s, i) in slides" :key="i" :class="{ on: i === cur }" :aria-label="`Ảnh ${i + 1}`" @click="cur = i" /></div>
+    <div class="dots"><button v-for="(s, i) in hero" :key="i" :class="{ on: i === cur }" :aria-label="`Ảnh ${i + 1}`" @click="cur = i" /></div>
 
     <div class="container">
-      <router-link to="/promotions" class="promo-banner">
-        <img src="/images/cars/vf9.jpg" alt="" />
-        <div /><div class="pb-txt" style="z-index:1"><b>Tháng vàng ARES</b><i>Ưu đãi mùa thu</i></div>
-        <div class="pb-off"><small>Giảm đến</small><b>50 triệu</b><small>Mã THANG10</small></div>
-        <div class="pb-moon" />
+      <router-link v-if="promo" v-reveal="'zoom'" :to="promo.link || '/promotions'" class="promo-banner">
+        <img :src="promo.image" alt="" />
+        <div />
+        <div class="pb-txt"><b>{{ promo.title }}</b><i>{{ promo.kicker }}</i></div>
+        <div class="pb-off"><small>Ưu đãi</small><b>{{ promo.subtitle }}</b></div>
+        <div class="pb-moon"><svg class="wheel-ico" viewBox="0 0 40 40" width="74" height="74"><circle cx="20" cy="20" r="18" fill="#26262a"/><circle cx="20" cy="20" r="11" fill="#d9d9de"/><g stroke="#8a8a90" stroke-width="2.4"><path d="M20 9v22M9 20h22M12 12l16 16M28 12 12 28"/></g><circle cx="20" cy="20" r="3.5" fill="#555"/></svg></div>
       </router-link>
 
-      <section class="block">
+      <section v-reveal class="block">
         <h2>Danh mục</h2>
         <div class="cats">
-          <router-link v-for="c in cats" :key="c.label" :to="c.to" class="cat"><span>{{ c.label }}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" v-html="c.icon" /></router-link>
+          <router-link v-for="c in catalog.categories" :key="c.code" :to="{ path: '/products', query: { type: c.code } }" class="cat">
+            <span>{{ c.name }}</span>
+            <svg class="wheel-ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" v-html="icon(c.code)" />
+          </router-link>
         </div>
       </section>
 
-      <div v-if="loading" class="spinner" />
+      <div class="usp" v-reveal>
+        <div><b><CountUp :value="catalog.options.freeShipFrom / 1000" />K</b><span>Freeship từ</span></div>
+        <div><b><CountUp :value="totalProducts" />+</b><span>Mẫu xe & phụ kiện</span></div>
+        <div><b><CountUp :value="7" /> ngày</b><span>Đổi trả miễn phí</span></div>
+        <div><b>0%</b><span>Trả góp RC từ 3 triệu</span></div>
+      </div>
+
+      <Skeleton v-if="loading" :count="6" :cols="3" />
       <template v-else>
-        <section class="block">
-          <div class="bh"><h2>Bán chạy</h2><router-link :to="{ path: '/products', query: { sort: 'bestseller' } }">Xem tất cả →</router-link></div>
-          <div class="grid grid-3"><Tile v-for="p in best" :key="p.id" :p="p" /></div>
+        <section v-if="flash.length" v-reveal class="block">
+          <div class="bh"><h2>⚡ Flash sale <span class="cd">kết thúc sau <Countdown :to="flashEnd" /></span></h2><router-link to="/promotions">Xem tất cả →</router-link></div>
+          <div class="grid grid-4"><ProductCard v-for="(x, i) in flash" :key="x.flash.id" v-reveal:[i*80]="'right'" :p="x.product" :flash="x.flash" /></div>
         </section>
 
-        <section v-if="flash.length" class="block">
-          <div class="bh"><h2>Flash sale <span class="cd">kết thúc sau <Countdown :to="endOfDay" /></span></h2><router-link :to="{ path: '/products', query: { sort: 'price_asc' } }">Xem tất cả →</router-link></div>
-          <div class="grid grid-3"><Tile v-for="p in flash" :key="p.id" :p="p" sale /></div>
-        </section>
-
-        <section class="block">
-          <div class="bh"><h2>Siêu xe nổi bật</h2><router-link :to="{ path: '/products', query: { type: 'SUPERCAR' } }">Xem tất cả →</router-link></div>
-          <div class="grid grid-3"><Tile v-for="p in supercars" :key="p.id" :p="p" /></div>
-        </section>
-
-        <section class="block">
-          <div class="bh"><h2>SUV & xe điện nổi bật</h2><router-link :to="{ path: '/products', query: { type: 'SUV' } }">Xem tất cả →</router-link></div>
-          <div class="grid grid-3"><Tile v-for="p in suvs" :key="p.id" :p="p" /></div>
-        </section>
-
-        <section v-if="auctions.length" class="block">
-          <div class="bh"><h2>Đấu giá xe hiếm</h2><router-link to="/auctions">Tất cả phiên →</router-link></div>
+        <section v-for="(s, si) in sections" :key="s.title" class="block">
+          <div class="bh"><h2>{{ s.title }}</h2><router-link :to="s.to">Xem tất cả →</router-link></div>
           <div class="grid grid-3">
-            <router-link v-for="a in auctions" :key="a.id" :to="`/auctions/${a.id}`" class="tile">
-              <img :src="a.images?.[0]" :alt="a.title" />
-              <span :class="['live', a.status]">{{ a.status === 'LIVE' ? '● Đang đấu giá' : 'Sắp mở' }}</span>
-              <div class="cap"><span>{{ a.title }}</span><small>{{ ty(a.currentPrice) }} · <Countdown :to="a.status === 'LIVE' ? a.endTime : a.startTime" /></small></div>
+            <router-link v-for="(p, i) in s.items" :key="p.id" v-reveal:[i*90]="si % 2 ? 'right' : 'left'" v-tilt :to="`/products/${p.id}`" class="tile">
+              <img :src="p.images?.[0]" :alt="p.name" loading="lazy" />
+              <span v-if="p.oldPrice" class="off">−{{ Math.round(100 - p.price * 100 / p.oldPrice) }}%</span>
+              <div class="cap"><span>{{ p.name }}</span><small>{{ vnd(p.price) }}</small></div>
             </router-link>
           </div>
         </section>
 
-        <section v-if="prefs.recent.length" class="block">
+        <section v-if="auctions.length" class="block">
+          <div class="bh"><h2>Đấu giá hàng hiếm</h2><router-link to="/auctions">Tất cả phiên →</router-link></div>
+          <div class="grid grid-3">
+            <router-link v-for="(a, i) in auctions" :key="a.id" v-reveal:[i*90] v-tilt :to="`/auctions/${a.id}`" class="tile">
+              <img :src="a.images?.[0]" :alt="a.title" loading="lazy" />
+              <span :class="['live', a.status]">{{ a.status === 'LIVE' ? '● Đang đấu giá' : 'Sắp mở' }}</span>
+              <div class="cap"><span>{{ a.title }}</span><small>{{ vnd(a.currentPrice) }} · <Countdown :to="a.status === 'LIVE' ? a.endTime : a.startTime" /></small></div>
+            </router-link>
+          </div>
+        </section>
+
+        <section v-if="prefs.recent.length" v-reveal class="block">
           <div class="bh"><h2>Bạn đã xem gần đây</h2></div>
           <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b></router-link></div>
         </section>
@@ -67,10 +76,10 @@
         <section v-if="reviews.length" class="block">
           <div class="bh"><h2>Đánh giá của khách hàng</h2></div>
           <div class="grid grid-3">
-            <router-link v-for="r in reviews" :key="r.id" :to="`/products/${r.productId}`" class="rev">
-              <div class="rimg"><img :src="imgOf(r.productId)" alt="" /></div>
+            <router-link v-for="(r, i) in reviews" :key="r.id" v-reveal:[i*100] v-tilt :to="`/products/${r.productId}`" class="rev">
+              <div class="rimg"><img :src="imgOf(r.productId)" alt="" loading="lazy" /></div>
               <div class="rbody">
-                <div class="rh"><b>{{ r.author }}</b><span class="rate"><Stars :value="r.rating" size=".95rem" /></span></div>
+                <div class="rh"><b>{{ r.author }}</b><span class="rate">★ {{ r.rating }}</span></div>
                 <p>“{{ r.comment }}”</p>
                 <small>Đã mua {{ r.productName }} · {{ d(r.createdAt) }}</small>
               </div>
@@ -83,95 +92,106 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, h } from 'vue'
-import { RouterLink } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '../api'
 import Countdown from '../components/Countdown.vue'
-import Stars from '../components/Stars.vue'
-import { ty, vnd, d } from '../format'
+import CountUp from '../components/CountUp.vue'
+import Skeleton from '../components/Skeleton.vue'
+import ProductCard from '../components/ProductCard.vue'
+import { vnd, d, catalog, loadCatalog } from '../format'
 import { usePrefs } from '../stores/prefs'
-
-// Thẻ ảnh có tên đè lên (wireframe "Model Name")
-const Tile = (props) => h(RouterLink, { to: `/products/${props.p.id}`, class: 'tile' }, () => [
-  h('img', { src: props.p.images?.[0], alt: props.p.name }),
-  props.sale && props.p.oldPrice ? h('span', { class: 'off' }, `−${Math.round(100 - props.p.price * 100 / props.p.oldPrice)}%`) : null,
-  h('div', { class: 'cap' }, [h('span', props.p.name), h('small', vnd(props.p.price))])])
-Tile.props = ['p', 'sale']
+import { reduced } from '../motion'
 
 const prefs = usePrefs()
-const all = ref([]), loading = ref(true), auctions = ref([]), reviews = ref([]), home = ref({})
-const slides = [
-  { title: 'HURACÁN', kicker: 'Lamborghini · 2024', sub: 'V10 640 mã lực — cấu hình riêng tại ARES', img: '/images/hero-huracan.jpg', to: '/products/17' },
-  { title: 'TAYCAN', kicker: 'Porsche · Xe điện', sub: 'Sport Turismo GTS — lái thử ngay hôm nay', img: '/images/hero-taycan.jpg', to: '/products/16' },
-  { title: 'SF90 SPIDER', kicker: 'Ferrari · Hybrid 1.000 hp', sub: 'Đặt cọc chỉ 10%, giao xe toàn quốc', img: '/images/cars/sf90b.jpg', to: '/products/19' },
-  { title: 'F40', kicker: 'Đấu giá xe hiếm', sub: 'Phiên đấu giá Ferrari F40 1990 đang diễn ra', img: '/images/cars/f40.jpg', to: '/auctions/1' },
-  { title: 'VF 9', kicker: 'VinFast · Xe điện 7 chỗ', sub: 'Trả góp đến 84 tháng', img: '/images/cars/vf9.jpg', to: '/products/10' }]
-const cur = ref(0), pause = ref(false); let t
-const I = { car: '<path d="M5 17h14l-1.5-6.5A2 2 0 0 0 15.6 9H8.4a2 2 0 0 0-1.9 1.5zM7 17v2m10-2v2"/>', suv: '<path d="M3 16h18v-4l-2-5H6L3 12zM7 16v2m10-2v2M3 12h18"/>',
-  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', flag: '<path d="M4 22V4m0 0h13l-2 4 2 4H4"/>', tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/>' }
-const cats = [
-  { label: 'Sedan', icon: I.car, to: { path: '/products', query: { type: 'SEDAN' } } },
-  { label: 'SUV / Crossover', icon: I.suv, to: { path: '/products', query: { type: 'SUV' } } },
-  { label: 'Siêu xe', icon: I.flag, to: { path: '/products', query: { type: 'SUPERCAR' } } },
-  { label: 'Xe điện', icon: I.bolt, to: { path: '/products', query: { type: 'ELECTRIC' } } },
-  { label: 'Phụ kiện', icon: I.tool, to: { path: '/products', query: { type: 'ACCESSORY' } } }]
-const cars = computed(() => all.value.filter(p => p.type !== 'ACCESSORY'))
-const best = computed(() => (home.value.bestsellers || []).filter(p => p.type !== 'ACCESSORY').slice(0, 3))
-const flash = computed(() => cars.value.filter(p => p.oldPrice && p.stock > 0 && !best.value.some(b => b.id === p.id)).slice(0, 3))
-const supercars = computed(() => cars.value.filter(p => ['SUPERCAR', 'SPORT'].includes(p.type)).slice(0, 3))
-const suvs = computed(() => cars.value.filter(p => ['SUV', 'ELECTRIC'].includes(p.type) && !flash.value.includes(p)).slice(0, 3))
-const imgOf = id => all.value.find(p => p.id === id)?.images?.[0] || '/images/hero-taycan.jpg'
-const endOfDay = (() => { const x = new Date(); x.setHours(23, 59, 59, 0); return x.toISOString() })()
+const all = ref([]), loading = ref(true), auctions = ref([]), reviews = ref([]), banners = ref([]), flash = ref([]), totalProducts = ref(0)
+const hero = computed(() => banners.value.filter(b => b.position === 'HERO'))
+const promo = computed(() => banners.value.find(b => b.position === 'PROMO'))
+const cur = ref(0), pause = ref(false), par = ref(0); let t, raf
+const onScroll = () => { if (reduced()) return; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { par.value = Math.min(scrollY, 500) * 0.3 }) }
+const I = {
+  MODEL: '<path d="M3 15h18l-1.5-4.5A2 2 0 0 0 17.6 9H9l-3 3H4a1 1 0 0 0-1 1z"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/>',
+  RC: '<path d="M4 15h16l-2-5H7z"/><circle cx="7" cy="16" r="2.4"/><circle cx="17" cy="16" r="2.4"/><path d="M15 10V4m0 0 3 1"/>',
+  DISPLAY: '<rect x="3" y="4" width="18" height="15" rx="2"/><path d="M6 14h12l-1-3H8z"/><path d="M3 19h18"/>',
+  KIT: '<rect x="4" y="9" width="16" height="10" rx="1"/><rect x="6" y="6" width="4" height="3"/><rect x="14" y="6" width="4" height="3"/>',
+  BATTERY: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10v4M11 9l-2 3h4l-2 3"/>',
+  REMOTE: '<path d="M8 21v-6l-3-3V6a2 2 0 0 1 2-2h6l5 5v3l-4 3v6z"/><circle cx="12" cy="9" r="1.6"/>',
+  WHEEL: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5m0 8v5M3 12h5m8 0h5"/>',
+  PART: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/>' }
+const icon = c => I[c] || I.PART
+const pick = (types, n = 3, skip = []) => all.value.filter(p => types.includes(p.type) && !skip.includes(p.id)).slice(0, n)
+const sections = computed(() => {
+  const best = all.value.filter(p => p.grp === 'TOY').slice(0, 3)
+  const used = best.map(p => p.id)
+  return [
+    { title: 'Bán chạy', to: { path: '/products', query: { sort: 'bestseller' } }, items: best },
+    { title: 'Xe RC nổi bật', to: { path: '/products', query: { type: 'RC' } }, items: pick(['RC'], 3, used) },
+    { title: 'Xe Model & Trưng Bày', to: { path: '/products', query: { type: 'MODEL,DISPLAY' } }, items: pick(['DISPLAY', 'MODEL'], 3, used) },
+    { title: 'Lắp ráp LEGO & Tamiya', to: { path: '/products', query: { type: 'KIT' } }, items: pick(['KIT'], 3, used) },
+    { title: 'Phụ kiện RC', to: { path: '/products', query: { grp: 'ACCESSORY' } }, items: all.value.filter(p => p.grp === 'ACCESSORY').slice(0, 3) }
+  ].filter(s => s.items.length)
+})
+const flashEnd = computed(() => flash.value.filter(x => x.live).map(x => x.flash.endTime).sort()[0])
+const imgOf = id => all.value.find(p => p.id === id)?.images?.[0] || '/images/toys/hw-r34-0.jpg'
 onMounted(async () => {
-  t = setInterval(() => { if (!pause.value) cur.value = (cur.value + 1) % slides.length }, 5000)
-  const [hm, list] = await Promise.all([api.get('/products/home'), api.get('/products', { params: { size: 60, sort: 'bestseller' } })])
-  home.value = hm.data; all.value = list.data.content; loading.value = false
+  loadCatalog()
+  addEventListener('scroll', onScroll, { passive: true })
+  t = setInterval(() => { if (!pause.value && hero.value.length) cur.value = (cur.value + 1) % hero.value.length }, 5500)
+  api.get('/banners').then(r => { banners.value = r.data })
+  const [list, fl] = await Promise.all([api.get('/products', { params: { size: 60, sort: 'bestseller' } }), api.get('/flash-sales')])
+  all.value = list.data.content; totalProducts.value = list.data.totalElements; flash.value = fl.data.filter(x => x.live).slice(0, 4); loading.value = false
   api.get('/auctions').then(r => { auctions.value = r.data.filter(a => a.status === 'LIVE' || a.status === 'SCHEDULED').slice(0, 3) })
   api.get('/products/reviews/latest', { params: { limit: 3 } }).then(r => { reviews.value = r.data })
 })
-onUnmounted(() => clearInterval(t))
+onUnmounted(() => { clearInterval(t); removeEventListener('scroll', onScroll) })
 </script>
 
 <style scoped>
 .hero { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
-.slides { position: relative; height: 400px; border-radius: 0 0 12px 12px; overflow: hidden; background: #111; }
-.slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity .8s; color: #fff; }
+.slides { position: relative; height: 420px; border-radius: 0 0 12px 12px; overflow: hidden; background: #111; }
+.slide { position: absolute; inset: 0; opacity: 0; transition: opacity .9s; color: #fff; overflow: hidden; }
 .slide.on { opacity: 1; z-index: 1; }
-.shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 35%, rgba(0,0,0,.15) 60%, rgba(0,0,0,.65) 100%); }
-.txt { position: absolute; left: 0; right: 0; top: 84px; text-align: center; }
+.bg { position: absolute; inset: -40px 0; background-size: cover; background-position: center; will-change: transform; }
+.slide.on .bg { animation: kb 7s ease-out both; }
+@keyframes kb { from { scale: 1.08; } to { scale: 1; } }
+.shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,.1) 38%, rgba(0,0,0,.2) 60%, rgba(0,0,0,.7) 100%); }
+.txt { position: absolute; left: 0; right: 0; top: 90px; text-align: center; }
 .txt small { letter-spacing: .3em; text-transform: uppercase; font-size: .75rem; opacity: .85; }
-.txt h1 { font-family: var(--head); font-size: 5.2rem; letter-spacing: .28em; font-weight: 500; line-height: 1; margin: 6px 0 0 .28em; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
-.txt span { position: absolute; left: 0; right: 0; top: 250px; font-size: .95rem; }
+.txt h1 { font-family: var(--head); font-size: 4.2rem; letter-spacing: .14em; font-weight: 600; line-height: 1.05; margin: 8px 0 0; text-transform: uppercase; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+.slide.on .txt h1 { animation: drive .9s cubic-bezier(.16,.84,.3,1) both; }
+@keyframes drive { from { opacity: 0; transform: translateX(-80px) skewX(8deg); } to { opacity: 1; transform: none; } }
+.txt span { display: block; margin-top: 170px; font-size: .95rem; }
 .dots { display: flex; justify-content: center; gap: 6px; margin: 12px 0 18px; }
-.dots button { width: 8px; height: 8px; border-radius: 50%; border: none; background: #cfcfcf; cursor: pointer; padding: 0; transition: .2s; }
-.dots button.on { background: #555; width: 20px; border-radius: 4px; }
-.promo-banner { position: relative; display: grid; grid-template-columns: 1fr 1.2fr .8fr; padding-left: 0; align-items: center; height: 96px; border-radius: 10px; overflow: hidden; background: #13235a; color: #fff; }
-.promo-banner img { position: absolute; left: 0; top: 0; height: 100%; width: 40%; object-fit: cover; opacity: .55; mask-image: linear-gradient(90deg, #000 40%, transparent); }
-.pb-txt { text-align: center; } .pb-txt b { display: block; font-family: var(--head); font-size: 2rem; color: #f6c445; line-height: 1; } .pb-txt i { font-family: Georgia, serif; font-size: 1.05rem; }
-.pb-off { z-index: 1; } .pb-off small { display: block; font-size: .75rem; color: #f6c445; } .pb-off b { font-family: var(--head); font-size: 1.6rem; color: #f6c445; line-height: 1.1; }
-.pb-moon { position: absolute; right: 36px; top: 10px; width: 120px; height: 120px; border-radius: 50%; background: #f2b632; box-shadow: 0 0 40px rgba(242,182,50,.5); }
-.block { margin-top: 22px; }
+.dots button { width: 8px; height: 8px; border-radius: 50%; border: none; background: #cfcfcf; cursor: pointer; padding: 0; transition: .3s; }
+.dots button.on { background: #555; width: 22px; border-radius: 4px; }
+.promo-banner { position: relative; display: grid; grid-template-columns: 1fr 1.2fr .8fr; align-items: center; height: 100px; border-radius: 10px; overflow: hidden; background: #13235a; color: #fff; }
+.promo-banner img { position: absolute; left: 0; top: 0; height: 100%; width: 42%; object-fit: cover; opacity: .6; mask-image: linear-gradient(90deg, #000 40%, transparent); }
+.pb-txt { text-align: center; z-index: 1; } .pb-txt b { display: block; font-family: var(--head); font-size: 2rem; color: #f6c445; line-height: 1; } .pb-txt i { font-family: Georgia, serif; }
+.pb-off { z-index: 1; } .pb-off small { display: block; font-size: .75rem; color: #f6c445; } .pb-off b { font-family: var(--head); font-size: 1.15rem; color: #fff; line-height: 1.2; }
+.pb-moon { position: absolute; right: 34px; top: 13px; }
+.promo-banner:hover .wheel-ico { transform: rotate(360deg); }
+.block { margin-top: 24px; }
 .block h2, .bh h2 { font-size: 1.15rem; color: #5a5a5f; margin-bottom: 10px; }
 .bh { display: flex; justify-content: space-between; align-items: baseline; } .bh a { color: var(--muted); font-size: .85rem; } .bh a:hover { color: var(--bronze); }
 .bh .cd { font-family: 'Be Vietnam Pro'; font-size: .8rem; color: var(--danger); margin-left: 8px; font-weight: 600; }
-.cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-.cat { display: flex; justify-content: space-between; align-items: center; height: 40px; padding: 0 14px; border-radius: 8px; background: var(--tile-2); color: #3a3a3f; font-size: .88rem; font-weight: 500; transition: .15s; }
-.cat:hover { background: var(--bronze); color: #fff; }
+.cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.cat { display: flex; justify-content: space-between; align-items: center; height: 42px; padding: 0 14px; border-radius: 8px; background: var(--tile-2); color: #3a3a3f; font-size: .88rem; font-weight: 500; transition: .2s; }
+.cat:hover { background: var(--bronze); color: #fff; transform: translateY(-2px); }
+.usp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
+.usp div { background: var(--bronze-soft); border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; }
+.usp b { font-family: var(--head); font-size: 1.35rem; color: var(--bronze-3); } .usp span { font-size: .8rem; color: var(--text-2); }
 .grid-3 { gap: 12px; }
-:deep(.tile) { aspect-ratio: 16/7.6; }
-:deep(.off) { position: absolute; top: 10px; left: 10px; background: var(--danger); color: #fff; font-size: .75rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
-.live { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: .72rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
+.tile { aspect-ratio: 16/9.5; }
+.off { position: absolute; top: 10px; left: 10px; background: var(--danger); color: #fff; font-size: .75rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; z-index: 1; }
+.live { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: .72rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; z-index: 1; }
 .live.LIVE { background: var(--danger); }
 .recent { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
 .rc { color: var(--text); font-size: .82rem; } .rc img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 8px; margin-bottom: 6px; } .rc b { font-weight: 500; }
-.rev { display: block; border-radius: 10px; overflow: hidden; background: var(--tile); color: var(--text); transition: .2s; }
-.rev:hover { box-shadow: var(--shadow); color: var(--text); transform: translateY(-2px); }
-.rimg { height: 120px; background: #222; } .rimg img { width: 100%; height: 100%; object-fit: cover; }
+.rev { position: relative; display: block; border-radius: 10px; overflow: hidden; background: var(--tile); color: var(--text); }
+.rimg { height: 130px; background: #222; } .rimg img { width: 100%; height: 100%; object-fit: cover; }
 .rbody { padding: 12px 16px 14px; }
 .rh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; } .rh b { font-family: var(--head); font-size: 1rem; color: #3a3a3f; }
-.rate { background: var(--tile-2); border-radius: 4px; padding: 2px 8px; }
-.rate :deep(.s) { color: #bdbdbd; } .rate :deep(.s.on) { color: #f5c400; }
+.rate { background: var(--tile-2); border-radius: 4px; padding: 2px 8px; color: #b58a00; font-weight: 700; font-size: .85rem; }
 .rbody p { font-size: .85rem; color: #4a4a4f; line-height: 1.5; min-height: 3em; }
 .rbody small { display: block; margin-top: 8px; color: #8a8a8f; font-size: .74rem; }
-@media (max-width: 860px) { .cats { grid-template-columns: repeat(2, 1fr); } .recent { grid-template-columns: repeat(3, 1fr); } .txt h1 { font-size: 3rem; } }
+@media (max-width: 860px) { .cats, .usp { grid-template-columns: repeat(2, 1fr); } .recent { grid-template-columns: repeat(3, 1fr); } .txt h1 { font-size: 2.6rem; } }
 </style>

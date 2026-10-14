@@ -13,6 +13,9 @@ public class Review {
     public String authorName;
     public int rating;
     @Column(length = 2000) public String comment;
+    @ElementCollection(fetch = FetchType.EAGER) @OrderColumn public java.util.List<String> images = new java.util.ArrayList<>();
+    public String variantName;
+    public boolean verified;
     public boolean approved = true;
     public LocalDateTime createdAt = LocalDateTime.now();
 }

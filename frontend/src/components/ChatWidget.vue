@@ -18,7 +18,7 @@
       </form>
       <a class="call" :href="`tel:${HOTLINE.replace(/ /g, '')}`">📞 Gọi hotline {{ HOTLINE }}</a>
     </div>
-    <button class="fab" @click="toggle">{{ open ? '✕' : '💬' }}<span v-if="unread && !open" class="dot" /></button>
+    <button class="fab" @click="toggle"><span v-if="open">✕</span><svg v-else class="wheel-ico" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span v-if="unread && !open" class="dot" /></button>
   </div>
 </template>
 
@@ -49,8 +49,9 @@ async function send() {
   await poll()
 }
 const toggle = () => { open.value = !open.value; unread.value = false; scroll() }
-onMounted(() => { poll(); timer = setInterval(poll, 4000) })
-onUnmounted(() => clearInterval(timer))
+const openEv = () => { if (!open.value) toggle() }
+onMounted(() => { poll(); timer = setInterval(poll, 4000); addEventListener('open-chat', openEv) })
+onUnmounted(() => { clearInterval(timer); removeEventListener('open-chat', openEv) })
 </script>
 
 <style scoped>

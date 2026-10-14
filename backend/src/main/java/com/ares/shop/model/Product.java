@@ -8,24 +8,31 @@ import java.util.*;
 public class Product {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
     public String name;
+    @Column(unique = true) public String sku;
     @ManyToOne(fetch = FetchType.EAGER) public Brand brand;
-    @Enumerated(EnumType.STRING) public Enums.ProductType type;
-    public String fuel;            // Xăng, Dầu, Hybrid, Điện
-    public long price;              // VND
+    /** Mã danh mục (Category.code), VD: MODEL, RC, BATTERY. */
+    public String type;
+    /** TOY | ACCESSORY — suy ra từ danh mục. */
+    public String grp = "TOY";
+    public String scale;            // 1:64, 1:18, 1:10...
+    public int ageMin = 8;          // độ tuổi khuyến nghị
+    public String material;
+    public int warrantyMonths;
+    public long price;
     public Long oldPrice;
     public int stock;
     public int sold;
-    @Column(name = "model_year") public Integer year;
-    public String material;         // Hộp số / ghi chú ngắn
-    public String baseColor = "#c1121f";
+    public double rating;
+    public int reviewCount;
+    public String baseColor = "#a87a3c";
     @Column(length = 3000) public String description;
     @ElementCollection(fetch = FetchType.EAGER) @OrderColumn
     public List<String> images = new ArrayList<>();
     @ElementCollection(fetch = FetchType.EAGER) @MapKeyColumn(name = "spec_key") @Column(name = "spec_value")
     public Map<String, String> specs = new LinkedHashMap<>();
+    public boolean hasVariants;
     public boolean isNew;
     public boolean featured;
-    public boolean customizable = true;
     public boolean active = true;
     public LocalDateTime createdAt = LocalDateTime.now();
 }

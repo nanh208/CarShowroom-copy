@@ -18,3 +18,9 @@ api.interceptors.response.use(r => r, err => {
 
 export const errMsg = e => e?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại'
 export default api
+
+/** Tải ảnh lên server, trả về URL. */
+export async function uploadImage(file) {
+  const fd = new FormData(); fd.append('file', file)
+  return (await api.post('/uploads', fd)).data.url
+}

@@ -2,25 +2,25 @@
   <header :class="['hdr', { dark: onDark, scrolled }]" @mouseleave="mega = ''">
     <div class="wrap">
       <router-link to="/" class="logo" @mouseenter="mega = ''">
-        <img src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Store</span>
+        <img src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span>
       </router-link>
       <nav class="pill">
         <div class="menu">
           <router-link to="/" exact-active-class="on" @mouseenter="mega = ''">Trang chủ</router-link>
           <router-link to="/products" :class="{ on: isCars }" @mouseenter="mega = 'cars'">Danh mục xe</router-link>
-          <router-link :to="{ path: '/products', query: { type: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
+          <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
           <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">Đấu giá</router-link>
-          <router-link to="/services" active-class="on" @mouseenter="mega = ''">Dịch vụ</router-link>
+          <router-link to="/support" active-class="on" @mouseenter="mega = ''">Dịch vụ</router-link>
           <router-link to="/faq" active-class="on" @mouseenter="mega = ''">Hỗ trợ</router-link>
           <router-link to="/about" active-class="on" @mouseenter="mega = ''">Về chúng tôi</router-link>
         </div>
         <div class="tools" @mouseenter="mega = ''">
           <div class="search" :class="{ open: sOpen }">
             <button class="ib" title="Tìm kiếm" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
-            <input ref="sInput" v-model="q" placeholder="Tìm mẫu xe…" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
+            <input ref="sInput" v-model="q" placeholder="Tìm xe đồ chơi, hãng…" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
             <div v-if="sOpen && q.trim() && (sugg.length || searched)" class="sugg">
               <router-link v-for="(x, i) in sugg" :key="x.id" :to="`/products/${x.id}`" :class="['si', { hl: i === hl }]" @mousedown.prevent="go(x)">
-                <img :src="x.images?.[0]" alt="" /><div><b v-html="mark(x.name)" /><small>{{ x.brand?.name }} · {{ vnd(x.price) }}</small></div></router-link>
+                <img :src="x.image" alt="" /><div><b v-html="mark(x.name)" /><small>{{ x.brand }} · {{ vnd(x.price) }}</small></div></router-link>
               <div v-if="!sugg.length" class="none">Không tìm thấy “{{ q }}”</div>
               <button v-else class="all" @mousedown.prevent="search">Xem tất cả kết quả →</button>
             </div>
@@ -39,9 +39,9 @@
                 <b>{{ n.title }}</b><p>{{ n.body }}</p><small>{{ dt(n.createdAt) }}</small></router-link>
             </div>
           </div>
-          <router-link to="/cart" class="cartpill">
+          <router-link id="cart-target" to="/cart" :class="['cartpill', { bump }]">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
-            <span>{{ cart.count }} xe</span>
+            <span>{{ cart.count }} món</span>
           </router-link>
           <div class="userwrap">
             <router-link :to="auth.loggedIn ? '/account' : '/login'" class="avatar" :title="auth.loggedIn ? auth.user.fullName : 'Đăng nhập'">
@@ -52,7 +52,7 @@
               <b>{{ auth.user.fullName }}</b><small>{{ auth.user.email }}</small>
               <router-link to="/account">Tài khoản của tôi</router-link>
               <router-link to="/compare">So sánh xe ({{ prefs.compare.length }})</router-link>
-              <router-link v-if="auth.isAdmin" to="/admin">Trang quản trị</router-link>
+              <router-link v-if="auth.isStaff" to="/admin">Trang quản trị</router-link>
               <button @click="logout">Đăng xuất</button>
             </div>
           </div>
@@ -83,28 +83,29 @@ import { useCart } from '../stores/cart'
 import { usePrefs } from '../stores/prefs'
 import { vnd, dt } from '../format'
 const auth = useAuth(), cart = useCart(), prefs = usePrefs(), router = useRouter(), route = useRoute()
+const bump = ref(false)
+watch(() => cart.fly, () => { bump.value = false; requestAnimationFrame(() => { bump.value = true; setTimeout(() => bump.value = false, 600) }) })
 const mega = ref(''), scrolled = ref(false), scrollY = ref(0)
-const isAcc = computed(() => route.path === '/products' && route.query.type === 'ACCESSORY')
-const isCars = computed(() => (route.path === '/products' && route.query.type !== 'ACCESSORY') || route.path.startsWith('/products/'))
+const isAcc = computed(() => route.path === '/products' && route.query.grp === 'ACCESSORY')
+const isCars = computed(() => (route.path === '/products' && route.query.grp !== 'ACCESSORY') || route.path.startsWith('/products/'))
 // Chữ logo đổi trắng/đen theo độ sáng nền: trên hero tối (trang chủ, đầu trang) => chữ trắng
 const onDark = computed(() => route.meta.darkHero && scrollY.value < 380)
 const onScroll = () => { scrollY.value = window.scrollY; scrolled.value = window.scrollY > 8 }
 const megaData = {
-  cars: { title: 'Danh mục xe', all: '/products', tiles: [
-    { label: 'Sedan', img: '/images/cars/camry.jpg', to: { path: '/products', query: { type: 'SEDAN' } } },
-    { label: 'SUV / Crossover', img: '/images/cars/santafe.jpg', to: { path: '/products', query: { type: 'SUV' } } },
-    { label: 'Siêu xe', img: '/images/cars/sf90.jpg', to: { path: '/products', query: { type: 'SUPERCAR' } } }] },
-  acc: { title: 'Phụ kiện', all: { path: '/products', query: { type: 'ACCESSORY' } }, tiles: [
-    { label: 'Phim cách nhiệt', img: '/images/acc/tint.jpg', to: '/products/21' },
-    { label: 'Camera 360°', img: '/images/acc/camera.jpg', to: '/products/22' },
-    { label: 'Thảm sàn 6D', img: '/images/acc/mats.jpg', to: '/products/23' }] }
+  cars: { title: 'Danh mục xe', all: { path: '/products', query: { grp: 'TOY' } }, tiles: [
+    { label: 'Xe Model', img: '/images/toys/hw-r34-0.jpg', to: { path: '/products', query: { type: 'MODEL' } } },
+    { label: 'Xe RC', img: '/images/toys/traxxas-slash-0.jpg', to: { path: '/products', query: { type: 'RC' } } },
+    { label: 'Xe Trưng Bày', img: '/images/toys/kyosho-countach-0.jpg', to: { path: '/products', query: { type: 'DISPLAY' } } }] },
+  acc: { title: 'Phụ kiện', all: { path: '/products', query: { grp: 'ACCESSORY' } }, tiles: [
+    { label: 'Pin', img: '/images/toys/lipo-2s-0.jpg', to: { path: '/products', query: { type: 'BATTERY' } } },
+    { label: 'Khiển RC', img: '/images/toys/futaba-0.jpg', to: { path: '/products', query: { type: 'REMOTE' } } },
+    { label: 'Bánh xe RC', img: '/images/toys/wheels-sc-0.jpg', to: { path: '/products', query: { type: 'WHEEL' } } }] }
 }
-// ===== Tìm kiếm + gợi ý =====
 const q = ref(''), sugg = ref([]), sOpen = ref(false), hl = ref(-1), searched = ref(false), sInput = ref(null)
 const openSearch = async () => { if (sOpen.value && q.value.trim()) return search(); sOpen.value = !sOpen.value; await nextTick(); sInput.value?.focus() }
 let timer
 const suggest = () => { clearTimeout(timer); hl.value = -1; searched.value = false; const term = q.value.trim(); if (!term) { sugg.value = []; return }
-  timer = setTimeout(async () => { const r = await api.get('/products', { params: { q: term, size: 5 } }); if (q.value.trim() === term) { sugg.value = r.data.content; searched.value = true } }, 200) }
+  timer = setTimeout(async () => { const r = await api.get('/products/suggest', { params: { q: term } }); if (q.value.trim() === term) { sugg.value = r.data; searched.value = true } }, 200) }
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 const mark = name => { const t = q.value.trim(); const i = name.toLowerCase().indexOf(t.toLowerCase()); return i < 0 ? esc(name) : esc(name.slice(0, i)) + '<mark>' + esc(name.slice(i, i + t.length)) + '</mark>' + esc(name.slice(i + t.length)) }
 const move = d => { if (sugg.value.length) hl.value = (hl.value + d + sugg.value.length) % sugg.value.length }
@@ -187,4 +188,6 @@ const logout = () => { auth.logout(); router.push('/') }
 .kind { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--bronze); } .kind.AUCTION { color: #c62828; }
 @media (max-width: 1100px) { .menu a { padding: 0 9px; font-size: .82rem; } }
 @media (max-width: 900px) { .menu { overflow-x: auto; } .logo span { display: none; } }
+.cartpill.bump { animation: bump .6s cubic-bezier(.3,1.6,.5,1); }
+@keyframes bump { 30% { transform: scale(1.18); } 60% { transform: scale(.94); } }
 </style>

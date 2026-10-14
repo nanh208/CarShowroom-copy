@@ -11,10 +11,10 @@ import java.util.*;
 @RestController @RequestMapping("/api/account")
 public class AccountController {
     private final UserRepo users; private final AddressRepo addresses; private final OrderRepo orders;
-    private final BookingRepo bookings; private final PasswordEncoder enc;
+    private final PointRepo points; private final ReturnRepo returns; private final PasswordEncoder enc;
 
-    public AccountController(UserRepo users, AddressRepo addresses, OrderRepo orders, BookingRepo bookings, PasswordEncoder enc) {
-        this.users = users; this.addresses = addresses; this.orders = orders; this.bookings = bookings; this.enc = enc;
+    public AccountController(UserRepo users, AddressRepo addresses, OrderRepo orders, PointRepo points, ReturnRepo returns, PasswordEncoder enc) {
+        this.users = users; this.addresses = addresses; this.orders = orders; this.points = points; this.returns = returns; this.enc = enc;
     }
 
     public record ProfileReq(String fullName, String phone, String avatarUrl) {}
@@ -74,6 +74,14 @@ public class AccountController {
     @GetMapping("/orders")
     public List<CustomerOrder> orders() { return orders.findByUserIdOrderByCreatedAtDesc(Current.user().id); }
 
-    @GetMapping("/bookings")
-    public List<Booking> bookings() { return bookings.findByUserIdOrderByCreatedAtDesc(Current.user().id); }
+    /** Điểm thành viên + lịch sử. */
+    @GetMapping("/points")
+    public Map<String, Object> points() {
+        User u = users.findById(Current.user().id).orElseThrow();
+        return Map.of("points", u.points, "tier", u.tier == null ? "Đồng" : u.tier, "history", points.findByUserIdOrderByCreatedAtDesc(u.id),
+                "pointValue", com.ares.shop.service.OrderService.POINT_VALUE, "earnPer", com.ares.shop.service.OrderService.EARN_PER);
+    }
+
+    @GetMapping("/returns")
+    public List<ReturnRequest> returns() { return returns.findByUserIdOrderByCreatedAtDesc(Current.user().id); }
 }
