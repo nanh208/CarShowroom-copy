@@ -1,6 +1,6 @@
 <template>
   <div class="auth-bg">
-    <router-link to="/" class="brand"><img src="/images/logo.png" alt="" @error="e => e.target.style.display = 'none'" /><span>ARES <b>TOYS</b></span></router-link>
+    <router-link to="/" class="brand"><img loading="lazy" decoding="async" src="/images/logo.png" alt="" @error="e => e.target.style.display = 'none'" /><span>ARES <b>TOYS</b></span></router-link>
     <div class="auth-card"><slot /></div>
     <router-link to="/" class="back">← Về trang chủ</router-link>
   </div>

@@ -5,7 +5,7 @@
       <Breadcrumb :items="[{ label: isAcc(p) ? 'Phụ kiện' : 'Danh mục xe', to: { path: '/products', query: { grp: p.grp } } }, { label: TYPES[p.type], to: { path: '/products', query: { type: p.type } } }, { label: p.name }]" />
 
       <div ref="gal" class="carousel">
-        <transition name="fade" mode="out-in"><img :key="curImg" :src="curImg" :alt="p.name" class="photo" /></transition>
+        <transition name="fade" mode="out-in"><img fetchpriority="high" :key="curImg" :src="curImg" :alt="p.name" class="photo" /></transition>
         <button v-if="imgs.length > 1" class="arr l" aria-label="Ảnh trước" @click="step(-1)">‹</button>
         <button v-if="imgs.length > 1" class="arr r" aria-label="Ảnh sau" @click="step(1)">›</button>
         <span v-if="fs" class="flashtag">⚡ Flash sale · còn <Countdown :to="fs.endTime" /></span>
@@ -15,11 +15,11 @@
           <button title="Chia sẻ" @click="share"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
         </div>
       </div>
-      <div class="thumbs"><button v-for="(im, i) in imgs" :key="im + i" :class="{ on: im === curImg }" @click="view = i"><img :src="im" alt="" /></button></div>
+      <div class="thumbs"><button v-for="(im, i) in imgs" :key="im + i" :class="{ on: im === curImg }" @click="view = i"><img loading="lazy" decoding="async" :src="im" alt="" /></button></div>
 
       <div class="head">
         <div>
-          <div class="brandline"><img v-if="p.brand?.logoUrl" :src="p.brand.logoUrl" alt="" />{{ p.brand?.name }} · {{ TYPES[p.type] }}<span v-if="p.scale"> · Tỷ lệ {{ p.scale }}</span> · {{ p.ageMin }}+ tuổi<span v-if="p.isNew" class="badge tag-yellow">Mới</span></div>
+          <div class="brandline"><img loading="lazy" decoding="async" v-if="p.brand?.logoUrl" :src="p.brand.logoUrl" alt="" />{{ p.brand?.name }} · {{ TYPES[p.type] }}<span v-if="p.scale"> · Tỷ lệ {{ p.scale }}</span> · {{ p.ageMin }}+ tuổi<span v-if="p.isNew" class="badge tag-yellow">Mới</span></div>
           <h1 class="title">{{ p.name }}</h1>
           <a v-if="rv.count" href="#reviews" class="ratingline"><Stars :value="rv.avg" /><b>{{ rv.avg }}</b><span>{{ rv.count }} đánh giá · Đã bán {{ p.sold }} · SKU {{ p.sku }}</span></a>
         </div>
@@ -63,7 +63,7 @@
           <div v-for="r in filtered.slice(0, showAll ? 99 : 3)" :key="r.id" class="rv">
             <div class="rv-h"><span class="av">{{ r.authorName?.split(' ').pop()[0] }}</span><div><b>{{ r.authorName }}</b><div class="muted small">{{ d(r.createdAt) }}<span v-if="r.verified" class="vb"> · ✓ Đã mua hàng</span><span v-if="r.variantName"> · {{ r.variantName }}</span></div></div><span class="rate-pill sm">★ {{ r.rating }}</span></div>
             <p>{{ r.comment }}</p>
-            <div v-if="r.images?.length" class="rimgs"><a v-for="im in r.images" :key="im" :href="im" target="_blank"><img :src="im" alt="" /></a></div>
+            <div v-if="r.images?.length" class="rimgs"><a v-for="im in r.images" :key="im" :href="im" target="_blank"><img loading="lazy" decoding="async" :src="im" alt="" /></a></div>
           </div>
         </div>
         <form v-if="auth.loggedIn && !rv.mine" class="rv-form" @submit.prevent="sendReview">
@@ -71,7 +71,7 @@
           <textarea v-model="mine.comment" class="input" rows="2" placeholder="Chia sẻ cảm nhận về sản phẩm…" />
           <div class="rf2">
             <label class="up">📷 Thêm ảnh<input type="file" accept="image/*" multiple hidden @change="upload" /></label>
-            <img v-for="(im, i) in mine.images" :key="im" :src="im" class="thumb-up" :title="'Xoá ảnh'" @click="mine.images.splice(i, 1)" />
+            <img loading="lazy" decoding="async" v-for="(im, i) in mine.images" :key="im" :src="im" class="thumb-up" :title="'Xoá ảnh'" @click="mine.images.splice(i, 1)" />
             <span v-if="uploading" class="muted small">Đang tải ảnh…</span>
             <button class="btn btn-sm" :disabled="sending">Gửi đánh giá</button>
           </div>
@@ -90,10 +90,10 @@
         </div>
       </section>
 
-      <router-link v-reveal="'zoom'" to="/promotions" class="promo"><img :src="imgs[1] || imgs[0]" alt="" /><div><small>Voucher tháng này</small><b>Freeship từ 199K · Giảm 50K đơn từ 500K</b><span>Xem tất cả mã giảm giá →</span></div></router-link>
+      <router-link v-reveal to="/promotions" class="promo"><img loading="lazy" decoding="async" :src="imgs[1] || imgs[0]" alt="" /><div><small>Voucher tháng này</small><b>Freeship từ 199K · Giảm 50K đơn từ 500K</b><span>Xem tất cả mã giảm giá →</span></div></router-link>
 
-      <section v-if="!isAcc(p) && imgs.length" v-reveal="'left'" class="feature">
-        <img :src="imgs[imgs.length - 1]" alt="" />
+      <section v-if="!isAcc(p) && imgs.length" v-reveal class="feature">
+        <img loading="lazy" decoding="async" :src="imgs[imgs.length - 1]" alt="" />
         <div><span class="eyebrow">Điểm nổi bật</span><h2>{{ p.scale ? 'Tỷ lệ ' + p.scale : p.name }} · {{ p.material }}</h2>
           <p class="muted">{{ p.description }}</p>
           <router-link to="/support" class="btn btn-outline btn-sm">Cần tư vấn? Chat với ARES →</router-link></div>
@@ -101,17 +101,17 @@
 
       <section v-if="likes.length" class="block">
         <div class="ph"><h2>Có thể bạn thích</h2><router-link :to="{ path: '/products', query: { type: p.type } }" class="link">Xem tất cả →</router-link></div>
-        <div class="grid grid-4"><ProductCard v-for="(r, i) in likes" :key="r.id" v-reveal:[i*80]="'right'" :p="r" /></div>
+        <div class="grid grid-4"><ProductCard v-for="(r, i) in likes" :key="r.id" v-reveal :p="r" /></div>
       </section>
       <section v-if="recent.length" class="block">
         <div class="ph"><h2>Bạn đã xem gần đây</h2></div>
-        <div class="recent"><router-link v-for="r in recent" :key="r.id" :to="`/products/${r.id}`" class="rc"><img :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b><span>{{ vnd(r.price) }}</span></router-link></div>
+        <div class="recent"><router-link v-for="r in recent" :key="r.id" :to="`/products/${r.id}`" class="rc"><img loading="lazy" decoding="async" :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b><span>{{ vnd(r.price) }}</span></router-link></div>
       </section>
 
       <div class="buybar">
         <div class="bb-in">
           <div class="bb-l">
-            <img :src="curImg" alt="" />
+            <img loading="lazy" decoding="async" :src="curImg" alt="" />
             <div><b>{{ p.name }}</b>
               <select v-if="variants.length" v-model="variantId" class="input mode">
                 <option v-for="v in variants" :key="v.id" :value="v.id" :disabled="v.stock <= 0">{{ v.name }} — {{ vnd(v.price) }}{{ v.stock <= 0 ? ' (hết)' : '' }}</option>
@@ -203,9 +203,9 @@ watch(() => route.params.id, id => id && load(), { immediate: true })
 .pd { padding-bottom: 120px; }
 .carousel { position: relative; height: 500px; border-radius: 12px; overflow: hidden; background: var(--tile); }
 .photo { width: 100%; height: 100%; object-fit: contain; background: #f1f1f1; }
-.fade-enter-active, .fade-leave-active { transition: opacity .3s, transform .4s; } .fade-enter-from { opacity: 0; transform: translateX(30px); } .fade-leave-to { opacity: 0; transform: translateX(-30px); }
+.fade-enter-active { transition: opacity .15s ease-out; } .fade-enter-from { opacity: 0; }
 .arr { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.9); font-size: 1.8rem; line-height: 1; cursor: pointer; color: #333; transition: .2s; }
-.arr.l { left: 16px; } .arr.r { right: 16px; } .arr:hover { background: #fff; transform: translateY(-50%) scale(1.08); }
+.arr.l { left: 16px; } .arr.r { right: 16px; } .arr:hover { background: #fff; }
 .flashtag { position: absolute; left: 14px; top: 14px; background: #c62828; color: #fff; font-weight: 700; font-size: .82rem; padding: 6px 12px; border-radius: 6px; }
 .iconbtns { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
 .iconbtns button { width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(255,255,255,.92); color: #333; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -230,7 +230,7 @@ watch(() => route.params.id, id => id && load(), { immediate: true })
 .desc { color: var(--text-2); white-space: pre-line; line-height: 1.7; margin: 18px 0; max-width: 880px; }
 .specs { margin-top: 8px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .specs-h { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 16px 0; background: none; border: none; cursor: pointer; font: 600 1.05rem var(--head); color: var(--text); }
-.specs-h i { font-style: normal; transition: .3s; font-size: 1.3rem; } .specs-h i.open { transform: rotate(180deg); }
+.specs-h i { font-style: normal; transition: transform .18s ease-out; font-size: 1.3rem; } .specs-h i.open { transform: rotate(180deg); }
 .spec { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; column-gap: 32px; padding-bottom: 12px; overflow: hidden; }
 .collapse-enter-active, .collapse-leave-active { transition: opacity .3s, transform .3s; } .collapse-enter-from, .collapse-leave-to { opacity: 0; transform: translateY(-8px); }
 .spec dt, .spec dd { padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: .9rem; } .spec dt { color: var(--muted); } .spec dd { font-weight: 600; text-align: right; }
@@ -265,7 +265,7 @@ watch(() => route.params.id, id => id && load(), { immediate: true })
 .block { margin-top: 32px; }
 .recent { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
 .rc { display: flex; flex-direction: column; gap: 4px; color: var(--text); font-size: .82rem; } .rc img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 8px; } .rc b { font-weight: 500; } .rc span { color: var(--muted); }
-.buybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: #fff; box-shadow: 0 -6px 24px rgba(0,0,0,.1); border-top: 1px solid var(--border); animation: up .5s cubic-bezier(.2,.8,.2,1) both .3s; }
+.buybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: #fff; box-shadow: 0 -6px 24px rgba(0,0,0,.1); border-top: 1px solid var(--border); animation: up .2s ease-out; }
 @keyframes up { from { transform: translateY(100%); } }
 .bb-in { max-width: 1180px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 14px; }
 .bb-l { display: flex; gap: 12px; align-items: center; flex: 1; min-width: 0; }

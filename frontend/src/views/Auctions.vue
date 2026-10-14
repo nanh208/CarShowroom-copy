@@ -9,7 +9,7 @@
     <div v-else-if="!shown.length" class="empty card">Chưa có phiên đấu giá.</div>
     <div v-else class="grid agrid">
       <router-link v-for="a in shown" :key="a.id" :to="`/auctions/${a.id}`" class="acard">
-        <div class="img"><img :src="a.images?.[0] || '/images/toys/hw-r34-0.jpg'" :alt="a.title" />
+        <div class="img"><img loading="lazy" decoding="async" :src="a.images?.[0] || '/images/toys/hw-r34-0.jpg'" :alt="a.title" />
           <span :class="['badge', 'st-' + a.status]">{{ AUCTION_STATUS[a.status] }}</span></div>
         <div class="body">
           <b class="name">{{ a.title }}</b>
@@ -40,17 +40,17 @@ onUnmounted(() => clearInterval(t))
 </script>
 <style scoped>
 .acard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; color: var(--text); transition: .25s; display: flex; flex-direction: column; }
-.acard:hover { transform: translateY(-4px); border-color: rgba(168,122,60,.35); color: var(--text); }
+.acard:hover { border-color: rgba(168,122,60,.35); color: var(--text); }
 .img { position: relative; } .img img { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
 .img .badge { position: absolute; top: 10px; left: 10px; }
 .st-LIVE { background: var(--danger); color: var(--text); } .st-SCHEDULED { background: var(--primary); color: var(--text); } .st-ENDED { background: #475569; }
 .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .name { font-size: 1.02rem; }
 .agrid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
-.acard { border-radius: var(--radius) !important; transition: .3s; }
-.acard:hover { transform: translateY(-4px); }
-.acard .img { aspect-ratio: 16/10; overflow: hidden; } .acard .img img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
-.acard:hover .img img { transform: scale(1.05); }
+.acard { border-radius: var(--radius) !important; transition: border-color .15s ease-out; }
+
+.acard .img { aspect-ratio: 16/10; overflow: hidden; } .acard .img img { width: 100%; height: 100%; object-fit: cover; }
+
 .acard .body { padding: 24px !important; gap: 12px !important; }
 .acard .name { font-size: 1.2rem; }
 .acard .price { font-size: 1.3rem; }

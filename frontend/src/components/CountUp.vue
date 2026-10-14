@@ -3,7 +3,7 @@
 // Số đếm tăng dần khi xuất hiện trên màn hình
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { reduced } from '../motion'
-const props = defineProps({ value: { type: Number, default: 0 }, format: Function, duration: { type: Number, default: 1200 } })
+const props = defineProps({ value: { type: Number, default: 0 }, format: Function, duration: { type: Number, default: 600 } })
 const el = ref(null), cur = ref(0); let io, raf
 const shown = computed(() => props.format ? props.format(Math.round(cur.value)) : Math.round(cur.value).toLocaleString('vi-VN'))
 const run = () => {

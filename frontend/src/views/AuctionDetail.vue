@@ -5,9 +5,9 @@
       <div class="muted small" style="margin-bottom:16px"><router-link to="/auctions">Đấu giá</router-link> / {{ a.title }}</div>
       <div class="grid grid-2 top">
         <div>
-          <div class="hero-img"><img :src="a.images?.[img] || '/images/toys/hw-r34-0.jpg'" class="photo" /></div>
+          <div class="hero-img"><img loading="lazy" decoding="async" :src="a.images?.[img] || '/images/toys/hw-r34-0.jpg'" class="photo" /></div>
           <div v-if="a.images?.length > 1" class="row" style="margin-top:10px">
-            <img v-for="(u, i) in a.images" :key="i" :src="u" :class="['th', { on: i === img }]" @click="img = i" /></div>
+            <img loading="lazy" decoding="async" v-for="(u, i) in a.images" :key="i" :src="u" :class="['th', { on: i === img }]" @click="img = i" /></div>
           <div class="card" style="margin-top:18px">
             <h3>Thông tin sản phẩm</h3>
             <p class="muted" style="margin-bottom:12px">{{ a.description }}</p>

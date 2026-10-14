@@ -4,9 +4,9 @@
     <section class="hero" @mouseenter="pause = true" @mouseleave="pause = false">
       <div class="slides">
         <router-link v-for="(s, i) in hero" :key="s.id" :to="s.link || '/products'" :class="['slide', { on: i === cur }]">
-          <div class="bg" :style="{ backgroundImage: `url(${s.image})`, transform: `translate3d(0, ${par}px, 0) scale(1.12)` }" />
+          <div class="bg" :style="{ backgroundImage: `url(${s.image})` }" />
           <div class="shade" />
-          <div class="txt" :style="{ transform: `translate3d(0, ${par * -0.4}px, 0)` }"><small>{{ s.kicker }}</small><h1>{{ s.title }}</h1><span>{{ s.subtitle }}</span></div>
+          <div class="txt"><small>{{ s.kicker }}</small><h1>{{ s.title }}</h1><span>{{ s.subtitle }}</span></div>
         </router-link>
         <div v-if="!hero.length" class="slide on sk" />
       </div>
@@ -14,8 +14,8 @@
     <div class="dots"><button v-for="(s, i) in hero" :key="i" :class="{ on: i === cur }" :aria-label="`Ảnh ${i + 1}`" @click="cur = i" /></div>
 
     <div class="container">
-      <router-link v-if="promo" v-reveal="'zoom'" :to="promo.link || '/promotions'" class="promo-banner">
-        <img :src="promo.image" alt="" />
+      <router-link v-if="promo" v-reveal :to="promo.link || '/promotions'" class="promo-banner">
+        <img loading="lazy" decoding="async" :src="promo.image" alt="" />
         <div />
         <div class="pb-txt"><b>{{ promo.title }}</b><i>{{ promo.kicker }}</i></div>
         <div class="pb-off"><small>Ưu đãi</small><b>{{ promo.subtitle }}</b></div>
@@ -43,13 +43,13 @@
       <template v-else>
         <section v-if="flash.length" v-reveal class="block">
           <div class="bh"><h2>⚡ Flash sale <span class="cd">kết thúc sau <Countdown :to="flashEnd" /></span></h2><router-link to="/promotions">Xem tất cả →</router-link></div>
-          <div class="grid grid-4"><ProductCard v-for="(x, i) in flash" :key="x.flash.id" v-reveal:[i*80]="'right'" :p="x.product" :flash="x.flash" /></div>
+          <div class="grid grid-4"><ProductCard v-for="(x, i) in flash" :key="x.flash.id" v-reveal :p="x.product" :flash="x.flash" /></div>
         </section>
 
         <section v-for="(s, si) in sections" :key="s.title" class="block">
           <div class="bh"><h2>{{ s.title }}</h2><router-link :to="s.to">Xem tất cả →</router-link></div>
           <div class="grid grid-3">
-            <router-link v-for="(p, i) in s.items" :key="p.id" v-reveal:[i*90]="si % 2 ? 'right' : 'left'" v-tilt :to="`/products/${p.id}`" class="tile">
+            <router-link v-for="(p, i) in s.items" :key="p.id" v-reveal :to="`/products/${p.id}`" class="tile">
               <img :src="p.images?.[0]" :alt="p.name" loading="lazy" />
               <span v-if="p.oldPrice" class="off">−{{ Math.round(100 - p.price * 100 / p.oldPrice) }}%</span>
               <div class="cap"><span>{{ p.name }}</span><small>{{ vnd(p.price) }}</small></div>
@@ -60,7 +60,7 @@
         <section v-if="auctions.length" class="block">
           <div class="bh"><h2>Đấu giá hàng hiếm</h2><router-link to="/auctions">Tất cả phiên →</router-link></div>
           <div class="grid grid-3">
-            <router-link v-for="(a, i) in auctions" :key="a.id" v-reveal:[i*90] v-tilt :to="`/auctions/${a.id}`" class="tile">
+            <router-link v-for="(a, i) in auctions" :key="a.id" v-reveal :to="`/auctions/${a.id}`" class="tile">
               <img :src="a.images?.[0]" :alt="a.title" loading="lazy" />
               <span :class="['live', a.status]">{{ a.status === 'LIVE' ? '● Đang đấu giá' : 'Sắp mở' }}</span>
               <div class="cap"><span>{{ a.title }}</span><small>{{ vnd(a.currentPrice) }} · <Countdown :to="a.status === 'LIVE' ? a.endTime : a.startTime" /></small></div>
@@ -70,13 +70,13 @@
 
         <section v-if="prefs.recent.length" v-reveal class="block">
           <div class="bh"><h2>Bạn đã xem gần đây</h2></div>
-          <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b></router-link></div>
+          <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img loading="lazy" decoding="async" :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b></router-link></div>
         </section>
 
         <section v-if="reviews.length" class="block">
           <div class="bh"><h2>Đánh giá của khách hàng</h2></div>
           <div class="grid grid-3">
-            <router-link v-for="(r, i) in reviews" :key="r.id" v-reveal:[i*100] v-tilt :to="`/products/${r.productId}`" class="rev">
+            <router-link v-for="(r, i) in reviews" :key="r.id" v-reveal :to="`/products/${r.productId}`" class="rev">
               <div class="rimg"><img :src="imgOf(r.productId)" alt="" loading="lazy" /></div>
               <div class="rbody">
                 <div class="rh"><b>{{ r.author }}</b><span class="rate">★ {{ r.rating }}</span></div>
@@ -100,14 +100,12 @@ import Skeleton from '../components/Skeleton.vue'
 import ProductCard from '../components/ProductCard.vue'
 import { vnd, d, catalog, loadCatalog } from '../format'
 import { usePrefs } from '../stores/prefs'
-import { reduced } from '../motion'
 
 const prefs = usePrefs()
 const all = ref([]), loading = ref(true), auctions = ref([]), reviews = ref([]), banners = ref([]), flash = ref([]), totalProducts = ref(0)
 const hero = computed(() => banners.value.filter(b => b.position === 'HERO'))
 const promo = computed(() => banners.value.find(b => b.position === 'PROMO'))
-const cur = ref(0), pause = ref(false), par = ref(0); let t, raf
-const onScroll = () => { if (reduced()) return; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { par.value = Math.min(scrollY, 500) * 0.3 }) }
+const cur = ref(0), pause = ref(false); let t
 const I = {
   MODEL: '<path d="M3 15h18l-1.5-4.5A2 2 0 0 0 17.6 9H9l-3 3H4a1 1 0 0 0-1 1z"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/>',
   RC: '<path d="M4 15h16l-2-5H7z"/><circle cx="7" cy="16" r="2.4"/><circle cx="17" cy="16" r="2.4"/><path d="M15 10V4m0 0 3 1"/>',
@@ -134,7 +132,6 @@ const flashEnd = computed(() => flash.value.filter(x => x.live).map(x => x.flash
 const imgOf = id => all.value.find(p => p.id === id)?.images?.[0] || '/images/toys/hw-r34-0.jpg'
 onMounted(async () => {
   loadCatalog()
-  addEventListener('scroll', onScroll, { passive: true })
   t = setInterval(() => { if (!pause.value && hero.value.length) cur.value = (cur.value + 1) % hero.value.length }, 5500)
   api.get('/banners').then(r => { banners.value = r.data })
   const [list, fl] = await Promise.all([api.get('/products', { params: { size: 60, sort: 'bestseller' } }), api.get('/flash-sales')])
@@ -142,40 +139,36 @@ onMounted(async () => {
   api.get('/auctions').then(r => { auctions.value = r.data.filter(a => a.status === 'LIVE' || a.status === 'SCHEDULED').slice(0, 3) })
   api.get('/products/reviews/latest', { params: { limit: 3 } }).then(r => { reviews.value = r.data })
 })
-onUnmounted(() => { clearInterval(t); removeEventListener('scroll', onScroll) })
+onUnmounted(() => { clearInterval(t) })
 </script>
 
 <style scoped>
 .hero { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
 .slides { position: relative; height: 420px; border-radius: 0 0 12px 12px; overflow: hidden; background: #111; }
-.slide { position: absolute; inset: 0; opacity: 0; transition: opacity .9s; color: #fff; overflow: hidden; }
+.slide { position: absolute; inset: 0; opacity: 0; transition: opacity .25s ease-out; color: #fff; overflow: hidden; }
 .slide.on { opacity: 1; z-index: 1; }
-.bg { position: absolute; inset: -40px 0; background-size: cover; background-position: center; will-change: transform; }
-.slide.on .bg { animation: kb 7s ease-out both; }
-@keyframes kb { from { scale: 1.08; } to { scale: 1; } }
+.bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
 .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,.1) 38%, rgba(0,0,0,.2) 60%, rgba(0,0,0,.7) 100%); }
 .txt { position: absolute; left: 0; right: 0; top: 90px; text-align: center; }
 .txt small { letter-spacing: .3em; text-transform: uppercase; font-size: .75rem; opacity: .85; }
 .txt h1 { font-family: var(--head); font-size: 4.2rem; letter-spacing: .14em; font-weight: 600; line-height: 1.05; margin: 8px 0 0; text-transform: uppercase; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
-.slide.on .txt h1 { animation: drive .9s cubic-bezier(.16,.84,.3,1) both; }
-@keyframes drive { from { opacity: 0; transform: translateX(-80px) skewX(8deg); } to { opacity: 1; transform: none; } }
+
 .txt span { display: block; margin-top: 170px; font-size: .95rem; }
 .dots { display: flex; justify-content: center; gap: 6px; margin: 12px 0 18px; }
-.dots button { width: 8px; height: 8px; border-radius: 50%; border: none; background: #cfcfcf; cursor: pointer; padding: 0; transition: .3s; }
+.dots button { width: 8px; height: 8px; border-radius: 50%; border: none; background: #cfcfcf; cursor: pointer; padding: 0; transition: background-color .2s ease-out, width .2s ease-out; }
 .dots button.on { background: #555; width: 22px; border-radius: 4px; }
 .promo-banner { position: relative; display: grid; grid-template-columns: 1fr 1.2fr .8fr; align-items: center; height: 100px; border-radius: 10px; overflow: hidden; background: #13235a; color: #fff; }
 .promo-banner img { position: absolute; left: 0; top: 0; height: 100%; width: 42%; object-fit: cover; opacity: .6; mask-image: linear-gradient(90deg, #000 40%, transparent); }
 .pb-txt { text-align: center; z-index: 1; } .pb-txt b { display: block; font-family: var(--head); font-size: 2rem; color: #f6c445; line-height: 1; } .pb-txt i { font-family: Georgia, serif; }
 .pb-off { z-index: 1; } .pb-off small { display: block; font-size: .75rem; color: #f6c445; } .pb-off b { font-family: var(--head); font-size: 1.15rem; color: #fff; line-height: 1.2; }
 .pb-moon { position: absolute; right: 34px; top: 13px; }
-.promo-banner:hover .wheel-ico { transform: rotate(360deg); }
 .block { margin-top: 24px; }
 .block h2, .bh h2 { font-size: 1.15rem; color: #5a5a5f; margin-bottom: 10px; }
 .bh { display: flex; justify-content: space-between; align-items: baseline; } .bh a { color: var(--muted); font-size: .85rem; } .bh a:hover { color: var(--bronze); }
 .bh .cd { font-family: 'Be Vietnam Pro'; font-size: .8rem; color: var(--danger); margin-left: 8px; font-weight: 600; }
 .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .cat { display: flex; justify-content: space-between; align-items: center; height: 42px; padding: 0 14px; border-radius: 8px; background: var(--tile-2); color: #3a3a3f; font-size: .88rem; font-weight: 500; transition: .2s; }
-.cat:hover { background: var(--bronze); color: #fff; transform: translateY(-2px); }
+.cat:hover { background: var(--bronze); color: #fff; }
 .usp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
 .usp div { background: var(--bronze-soft); border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; }
 .usp b { font-family: var(--head); font-size: 1.35rem; color: var(--bronze-3); } .usp span { font-size: .8rem; color: var(--text-2); }

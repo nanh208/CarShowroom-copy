@@ -4,7 +4,7 @@
     <div v-if="!cart.items.length" class="empty card">Giỏ hàng trống. <router-link to="/products">Mua sắm ngay →</router-link></div>
     <div v-else class="layout">
       <div>
-        <div v-reveal class="card block">
+        <div class="card block">
           <h3>1. Thông tin người nhận</h3>
           <div v-if="addresses.length" class="addr-list">
             <label v-for="a in addresses" :key="a.id" :class="['addr', { on: addrId === a.id }]">
@@ -12,8 +12,9 @@
               <div><b>{{ a.label || 'Địa chỉ' }}</b> <span v-if="a.isDefault" class="badge">Mặc định</span><br />
                 <span class="small">{{ a.receiverName }} · {{ a.phone }}</span><br /><span class="small muted">{{ fmtAddr(a) }}</span></div>
             </label>
-            <label :class="['addr', { on: addrId === 0 }]"><input v-model="addrId" type="radio" :value="0" /> <div>Nhập địa chỉ khác</div></label>
+            <label :class="['addr', { on: addrId === 0 }]"><input v-model="addrId" type="radio" :value="0" @change="f.shippingAddress = ''" /> <div>Nhập địa chỉ khác</div></label>
           </div>
+          <template v-if="!addresses.length || addrId === 0">
           <div class="form-grid">
             <div class="field"><label>Họ và tên *</label><input v-model="f.buyerName" class="input" /></div>
             <div class="field"><label>Số điện thoại *</label><input v-model="f.phone" class="input" /></div>
@@ -22,11 +23,12 @@
             <div class="field"><label>Email</label><input v-model="f.email" class="input" type="email" /></div>
             <div class="field"><label>Tỉnh / Thành phố *</label><select v-model="f.city" class="input"><option value="">-- Chọn --</option><option v-for="c in catalog.options.cities" :key="c">{{ c }}</option></select></div>
           </div>
-          <div v-if="!addresses.length || addrId === 0" class="field"><label>Địa chỉ *</label><input v-model="f.shippingAddress" class="input" placeholder="Số nhà, đường, phường/xã, quận/huyện" /></div>
+          <div class="field"><label>Địa chỉ *</label><input v-model="f.shippingAddress" class="input" placeholder="Số nhà, đường, phường/xã, quận/huyện" /></div>
+          </template>
           <div class="field"><label>Ghi chú</label><input v-model="f.note" class="input" placeholder="VD: Gói quà sinh nhật, giao giờ hành chính…" /></div>
         </div>
 
-        <div v-reveal class="card block">
+        <div class="card block">
           <h3>2. Phương thức thanh toán</h3>
           <div class="pay-grid">
             <label v-for="(v, k) in PAY_METHOD" :key="k" :class="['pay', { on: f.paymentMethod === k, disabled: k === 'INSTALLMENT' && total < instMin }]">
@@ -45,7 +47,7 @@
       <div class="card summary">
         <h3>Đơn hàng ({{ cart.count }} sản phẩm)</h3>
         <div v-for="i in cart.items" :key="i.key" class="item">
-          <img :src="i.image" alt="" /><span class="grow">{{ i.name }} × {{ i.quantity }}<br /><span class="muted">{{ i.variantName }}</span></span><b>{{ vnd(i.unitPrice * i.quantity) }}</b>
+          <img loading="lazy" decoding="async" :src="i.image" alt="" /><span class="grow">{{ i.name }} × {{ i.quantity }}<br /><span class="muted">{{ i.variantName }}</span></span><b>{{ vnd(i.unitPrice * i.quantity) }}</b>
         </div>
         <div class="row promo">
           <input v-model="promoCode" class="input grow" placeholder="Mã giảm giá" @keyup.enter="checkPromo" />
@@ -80,7 +82,8 @@ import { vnd, PAY_METHOD, catalog, loadCatalog } from '../format'
 import { toast } from '../stores/prefs'
 
 const cart = useCart(), auth = useAuth(), router = useRouter()
-const f = reactive({ buyerName: auth.user?.fullName || '', phone: auth.user?.phone || '', email: auth.user?.email || '', shippingAddress: '', city: '', note: '', paymentMethod: 'COD', installmentMonths: 6 })
+const f = reactive({ buyerName: auth.user?.fullName || '', phone: auth.user?.phone || '', email: auth.user?.email || '', shippingAddress: '', city: '', note: '', paymentMethod: localStorage.getItem('lastPay') || 'COD', installmentMonths: 6 })
+watch(() => f.paymentMethod, v => localStorage.setItem('lastPay', v))
 const addresses = ref([]), addrId = ref(0), vouchers = ref([]), pts = ref({ points: 0 }), usePts = ref(false)
 const promoCode = ref(''), promo = ref(null), discount = ref(0), freeShip = ref(false), promoMsg = ref(''), error = ref(''), busy = ref(false), ship = ref({ fee: 0, eta: '' })
 const icons = { COD: '💵', BANK_QR: '▦', MOMO: 'M', VNPAY: 'V', INSTALLMENT: '💳' }
@@ -95,6 +98,7 @@ const fmtAddr = a => [a.line, a.ward, a.district, a.city].filter(Boolean).join('
 const useAddr = a => { f.buyerName = a.receiverName; f.phone = a.phone; f.shippingAddress = [a.line, a.ward, a.district].filter(Boolean).join(', '); f.city = catalog.options.cities.includes(a.city) ? a.city : 'Tỉnh khác' }
 const quote = async () => { ship.value = (await api.get('/shipping/quote', { params: { city: f.city || undefined, amount: after.value - ptsDiscount.value } })).data }
 watch([() => f.city, after, ptsDiscount], quote)
+watch(total, v => { if (f.paymentMethod === 'INSTALLMENT' && v < instMin.value) f.paymentMethod = 'COD' })
 
 async function checkPromo() {
   promoMsg.value = ''; promo.value = null; discount.value = 0; freeShip.value = false

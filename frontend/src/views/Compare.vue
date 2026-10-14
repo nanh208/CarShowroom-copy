@@ -12,7 +12,7 @@
             <th v-for="p in items" :key="p.id">
               <div class="head">
                 <button class="rm" title="Bỏ khỏi so sánh" @click="prefs.toggleCompare(p)">×</button>
-                <router-link :to="`/products/${p.id}`"><img :src="p.images?.[0]" alt="" /></router-link>
+                <router-link :to="`/products/${p.id}`"><img loading="lazy" decoding="async" :src="p.images?.[0]" alt="" /></router-link>
                 <small>{{ p.brand?.name }}</small>
                 <router-link :to="`/products/${p.id}`" class="nm">{{ p.name }}</router-link>
                 <div class="price">{{ vnd(p.price) }}</div>

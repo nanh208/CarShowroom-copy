@@ -21,7 +21,7 @@ svg { width: 100%; overflow: visible; }
 .track, .val { fill: none; stroke-width: 9; stroke-linecap: round; } .track { stroke: #ececec; }
 .val { stroke: url(#g) var(--bronze); stroke: var(--bronze); stroke-dasharray: 151; transition: stroke-dashoffset 1.2s cubic-bezier(.3,1.3,.5,1); }
 .tick { stroke: #bbb; stroke-width: 1.5; }
-.needle { transform-origin: 60px 64px; transition: transform 1.2s cubic-bezier(.3,1.4,.5,1); fill: #c62828; } .needle circle { fill: #333; }
+.needle { transform-origin: 60px 64px; transition: transform .5s ease-out; fill: #c62828; } .needle circle { fill: #333; }
 .lbl { margin-top: -6px; } .lbl b { display: block; font-family: var(--head); font-size: 1.1rem; } .lbl small { color: var(--muted); font-size: .72rem; }
 @media (prefers-reduced-motion: reduce) { .val, .needle { transition: none; } }
 </style>

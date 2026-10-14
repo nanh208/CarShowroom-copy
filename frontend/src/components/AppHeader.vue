@@ -2,7 +2,7 @@
   <header :class="['hdr', { dark: onDark, scrolled }]" @mouseleave="mega = ''">
     <div class="wrap">
       <router-link to="/" class="logo" @mouseenter="mega = ''">
-        <img src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span>
+        <img loading="lazy" decoding="async" src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span>
       </router-link>
       <nav class="pill">
         <div class="menu">
@@ -17,10 +17,10 @@
         <div class="tools" @mouseenter="mega = ''">
           <div class="search" :class="{ open: sOpen }">
             <button class="ib" title="Tìm kiếm" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
-            <input ref="sInput" v-model="q" placeholder="Tìm xe đồ chơi, hãng…" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
+            <input ref="sInput" v-model="q" placeholder="Tìm xe đồ chơi, hãng… (phím /)" aria-label="Tìm kiếm" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
             <div v-if="sOpen && q.trim() && (sugg.length || searched)" class="sugg">
               <router-link v-for="(x, i) in sugg" :key="x.id" :to="`/products/${x.id}`" :class="['si', { hl: i === hl }]" @mousedown.prevent="go(x)">
-                <img :src="x.image" alt="" /><div><b v-html="mark(x.name)" /><small>{{ x.brand }} · {{ vnd(x.price) }}</small></div></router-link>
+                <img loading="lazy" decoding="async" :src="x.image" alt="" /><div><b v-html="mark(x.name)" /><small>{{ x.brand }} · {{ vnd(x.price) }}</small></div></router-link>
               <div v-if="!sugg.length" class="none">Không tìm thấy “{{ q }}”</div>
               <button v-else class="all" @mousedown.prevent="search">Xem tất cả kết quả →</button>
             </div>
@@ -65,7 +65,7 @@
         <div class="mega-in">
           <div class="mtitle">{{ megaData[mega].title }}</div>
           <router-link v-for="t in megaData[mega].tiles" :key="t.label" :to="t.to" class="mtile" @click="mega = ''">
-            <img :src="t.img" :alt="t.label" /><span>{{ t.label }}</span>
+            <img loading="lazy" decoding="async" :src="t.img" :alt="t.label" /><span>{{ t.label }}</span>
           </router-link>
           <router-link :to="megaData[mega].all" class="mall" @click="mega = ''">Tất cả<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></router-link>
         </div>
@@ -84,7 +84,7 @@ import { usePrefs } from '../stores/prefs'
 import { vnd, dt } from '../format'
 const auth = useAuth(), cart = useCart(), prefs = usePrefs(), router = useRouter(), route = useRoute()
 const bump = ref(false)
-watch(() => cart.fly, () => { bump.value = false; requestAnimationFrame(() => { bump.value = true; setTimeout(() => bump.value = false, 600) }) })
+watch(() => cart.fly, () => { bump.value = false; requestAnimationFrame(() => { bump.value = true; setTimeout(() => bump.value = false, 250) }) })
 const mega = ref(''), scrolled = ref(false), scrollY = ref(0)
 const isAcc = computed(() => route.path === '/products' && route.query.grp === 'ACCESSORY')
 const isCars = computed(() => (route.path === '/products' && route.query.grp !== 'ACCESSORY') || route.path.startsWith('/products/'))
@@ -118,11 +118,16 @@ let poll
 const loadNotes = async () => { if (!auth.loggedIn) return; try { const r = await api.get('/account/notifications'); notes.value = r.data.items; unread.value = r.data.unread } catch {} }
 const toggleBell = () => { bell.value = !bell.value; if (bell.value) loadNotes() }
 const readAll = async () => { await api.post('/account/notifications/read'); notes.value.forEach(n => (n.read = true)); unread.value = 0 }
+// Phím tắt: "/" mở ô tìm kiếm, Esc đóng menu/panel
+const hotkey = e => {
+  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) { e.preventDefault(); sOpen.value = true; nextTick(() => sInput.value?.focus()) }
+  if (e.key === 'Escape') { mega.value = ''; bell.value = false; if (sOpen.value) { sOpen.value = false; q.value = ''; sugg.value = [] } }
+}
 const outside = e => { if (bell.value && !e.target.closest('.bellwrap')) bell.value = false }
 watch(() => auth.loggedIn, v => { v ? loadNotes() : (notes.value = [], unread.value = 0) })
 watch(() => route.fullPath, () => { mega.value = ''; bell.value = false })
-onMounted(() => { window.addEventListener('scroll', onScroll); document.addEventListener('click', outside); onScroll(); loadNotes(); poll = setInterval(loadNotes, 30000) })
-onUnmounted(() => { window.removeEventListener('scroll', onScroll); document.removeEventListener('click', outside); clearInterval(poll) })
+onMounted(() => { window.addEventListener('scroll', onScroll, { passive: true }); document.addEventListener('keydown', hotkey); document.addEventListener('click', outside); onScroll(); loadNotes(); poll = setInterval(loadNotes, 30000) })
+onUnmounted(() => { window.removeEventListener('scroll', onScroll); document.removeEventListener('keydown', hotkey); document.removeEventListener('click', outside); clearInterval(poll) })
 const logout = () => { auth.logout(); router.push('/') }
 </script>
 
@@ -163,7 +168,7 @@ const logout = () => { auth.logout(); router.push('/') }
 .mega-in { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr .45fr; gap: 10px; padding: 10px; border-radius: 12px; background: var(--bronze); box-shadow: 0 24px 48px -16px rgba(0,0,0,.45); }
 .mtitle { display: flex; align-items: center; padding-left: 14px; color: #fff; font-family: var(--head); font-size: 1.3rem; }
 .mtile { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1.1; background: #eee; }
-.mtile img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; } .mtile:hover img { transform: scale(1.06); }
+.mtile img { width: 100%; height: 100%; object-fit: cover; } 
 .mtile span { position: absolute; left: 0; right: 0; bottom: 0; padding: 24px 10px 8px; background: linear-gradient(transparent, rgba(0,0,0,.6)); color: #fff; font-family: var(--head); font-weight: 600; }
 .mall { border-radius: 8px; background: var(--bronze-3); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-family: var(--head); font-weight: 600; }
 .mall:hover { background: #5a3f19; color: #fff; }
@@ -188,6 +193,6 @@ const logout = () => { auth.logout(); router.push('/') }
 .kind { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--bronze); } .kind.AUCTION { color: #c62828; }
 @media (max-width: 1100px) { .menu a { padding: 0 9px; font-size: .82rem; } }
 @media (max-width: 900px) { .menu { overflow-x: auto; } .logo span { display: none; } }
-.cartpill.bump { animation: bump .6s cubic-bezier(.3,1.6,.5,1); }
-@keyframes bump { 30% { transform: scale(1.18); } 60% { transform: scale(.94); } }
+.cartpill.bump { animation: bump .22s ease-out; }
+@keyframes bump { 50% { transform: scale(1.08); } }
 </style>

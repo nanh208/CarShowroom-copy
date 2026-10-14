@@ -27,13 +27,13 @@
       <div class="grid grid-2" style="margin-top:24px">
         <div class="card">
           <h3>Top sản phẩm bán chạy</h3>
-          <div v-for="(p, i) in s.topProducts" :key="p.id" class="row tp"><span class="rank">{{ i + 1 }}</span><img :src="p.image" alt="" />
+          <div v-for="(p, i) in s.topProducts" :key="p.id" class="row tp"><span class="rank">{{ i + 1 }}</span><img loading="lazy" decoding="async" :src="p.image" alt="" />
             <div style="flex:1;min-width:0"><b class="ell">{{ p.name }}</b><div class="small muted">{{ p.qty }} đã bán</div></div><b class="price">{{ ty(p.revenue) }}</b></div>
         </div>
         <div class="card">
           <div class="row between"><h3>⚠ Cảnh báo tồn kho thấp</h3><router-link to="/admin/inventory" class="small">Nhập hàng →</router-link></div>
           <div v-if="!s.lowStockItems.length" class="muted">Tồn kho ổn định.</div>
-          <div v-for="p in s.lowStockItems" :key="p.id" class="row tp"><img :src="p.images?.[0]" alt="" /><div style="flex:1;min-width:0"><b class="ell">{{ p.name }}</b><div class="small muted">{{ p.sku }}</div></div>
+          <div v-for="p in s.lowStockItems" :key="p.id" class="row tp"><img loading="lazy" decoding="async" :src="p.images?.[0]" alt="" /><div style="flex:1;min-width:0"><b class="ell">{{ p.name }}</b><div class="small muted">{{ p.sku }}</div></div>
             <span :class="['badge', p.stock ? 'badge-PENDING' : 'badge-CANCELLED']">{{ p.stock ? 'Còn ' + p.stock : 'Hết hàng' }}</span></div>
         </div>
       </div>

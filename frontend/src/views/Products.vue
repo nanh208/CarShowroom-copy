@@ -1,6 +1,7 @@
 <template>
   <div class="container page">
     <Breadcrumb :items="[{ label: title }]" />
+    <div class="filters">
     <div class="fbar">
       <div class="chips">
         <button :class="['chip', { on: !f.type }]" @click="setType('')">Tất cả</button>
@@ -12,7 +13,7 @@
       </select>
     </div>
     <div class="fbar2">
-      <input v-model="f.q" class="input" placeholder="Tìm tên, hãng, mã SKU..." @keyup.enter="apply()" />
+      <input v-model="f.q" class="input" type="search" aria-label="Tìm sản phẩm" placeholder="Tìm tên, hãng, mã SKU..." @input="typed" @keyup.enter="apply()" />
       <select v-model="f.brandId" class="input" @change="apply()"><option value="">Mọi thương hiệu</option><option v-for="b in catalog.brands" :key="b.id" :value="String(b.id)">{{ b.name }}</option></select>
       <select v-model="price" class="input" @change="apply()">
         <option value="">Mọi mức giá</option><option value="0-300000">Dưới 300K</option><option value="300000-1000000">300K – 1 triệu</option>
@@ -24,11 +25,12 @@
       <label class="check"><input v-model="f.inStock" type="checkbox" @change="apply()" /> Còn hàng</label>
       <button class="btn btn-sm btn-outline" @click="reset">Xoá lọc</button>
     </div>
+    </div>
     <p class="muted small cnt">{{ total }} sản phẩm<span v-if="f.q"> cho “{{ f.q }}”</span> · Trang {{ page + 1 }}/{{ Math.max(pages, 1) }}</p>
     <section>
-      <Skeleton v-if="loading" :count="8" />
-      <div v-else-if="!items.length" class="empty card">Không tìm thấy sản phẩm phù hợp. <button class="link" @click="reset">Xoá bộ lọc</button></div>
-      <div v-else class="grid grid-4"><ProductCard v-for="(p, i) in items" :key="p.id" v-reveal:[i%4*70]="'up'" :p="p" :flash="flashOf(p.id)" /></div>
+      <Skeleton v-if="loading && !items.length" :count="8" />
+      <div v-else-if="!items.length && !loading" class="empty card">Không tìm thấy sản phẩm phù hợp. <button class="link" @click="reset">Xoá bộ lọc</button></div>
+      <div v-else class="grid grid-4" :class="{ dim: loading }" :aria-busy="loading"><ProductCard v-for="(p, i) in items" :key="p.id" :p="p" :flash="flashOf(p.id)" /></div>
       <div v-if="pages > 1" class="row pager">
         <button class="btn btn-sm btn-outline" :disabled="page === 0" @click="go(page - 1)">← Trước</button>
         <button v-for="i in pages" :key="i" :class="['btn btn-sm', i - 1 === page ? '' : 'btn-outline']" @click="go(i - 1)">{{ i }}</button>
@@ -60,20 +62,26 @@ function fromQuery() {
   Object.assign(f, { q: q.q || '', brandId: q.brandId || '', type: q.type || '', grp: q.grp || '', scale: q.scale || '', age: q.age || '', minRating: q.minRating || '', inStock: q.inStock === '1', sort: q.sort || 'featured' })
   price.value = q.price || ''; page.value = Number(q.page || 0)
 }
+let reqId = 0
 async function load() {
   loading.value = true
   const [min, max] = price.value ? price.value.split('-') : []
   const params = { ...f, inStock: f.inStock || undefined, minPrice: min || undefined, maxPrice: max || undefined, page: page.value, size: 12 }
   Object.keys(params).forEach(k => (params[k] === '' || params[k] === undefined) && delete params[k])
+  const id = ++reqId
   const { data } = await api.get('/products', { params })
+  if (id !== reqId) return // bỏ kết quả cũ khi gõ nhanh
   items.value = data.content; total.value = data.totalElements; pages.value = data.totalPages; loading.value = false
 }
 function apply(p = 0) {
   const query = { ...f, inStock: f.inStock ? '1' : '', price: price.value, page: p || '' }
   Object.keys(query).forEach(k => !query[k] && delete query[k])
   if (query.sort === 'featured') delete query.sort
-  router.push({ path: '/products', query })
+  router.replace({ path: '/products', query })
+  if (p) scrollTo({ top: 0 })
 }
+let deb
+const typed = () => { clearTimeout(deb); deb = setTimeout(() => apply(), 300) }
 const setType = c => { f.type = c; apply() }
 const go = p => apply(p)
 const reset = () => router.push({ path: '/products', query: f.grp ? { grp: f.grp } : {} })
@@ -82,9 +90,11 @@ onMounted(() => { fromQuery(); load(); loadCatalog(); api.get('/flash-sales').th
 </script>
 
 <style scoped>
+.filters { position: sticky; top: 64px; z-index: 20; background: #fff; padding: 8px 0 2px; margin: 0 -4px; }
+.dim { opacity: .55; transition: opacity .15s ease-out; pointer-events: none; }
 .fbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 12px; background: var(--bg-2); border-radius: 10px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { background: #fff; border: 1px solid var(--border); color: var(--text-2); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-family: inherit; font-size: .85rem; transition: .2s; }
+.chip { background: #fff; border: 1px solid var(--border); color: var(--text-2); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-family: inherit; font-size: .85rem; transition: background-color .15s ease-out, border-color .15s ease-out; }
 .chip:hover { border-color: var(--bronze); } .chip.on { background: var(--bronze); color: #fff; border-color: var(--bronze); }
 .sort { width: 200px; padding: 8px 12px; }
 .fbar2 { display: grid; grid-template-columns: 1.5fr repeat(5, 1fr) auto auto; gap: 8px; align-items: center; margin: 12px 0 6px; }

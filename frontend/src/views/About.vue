@@ -3,7 +3,7 @@
     <Breadcrumb :items="[{ label: 'Về chúng tôi' }]" />
     <h1>Về ARES Toys</h1>
     <p>Cửa hàng xe đồ chơi cho mọi lứa tuổi tại TP.HCM: xe mô hình die-cast, xe RC, xe trưng bày, bộ lắp ráp và phụ kiện RC chính hãng — kèm sân chơi RC và đấu giá hàng hiếm cho nhà sưu tầm.</p>
-    <div class="hero-img"><img src="/images/toys/hw-r34-1.jpg" alt="ARES Toys" /></div>
+    <div class="hero-img"><img loading="lazy" decoding="async" src="/images/toys/hw-r34-1.jpg" alt="ARES Toys" /></div>
     <div class="grid grid-3 facts">
       <div class="card"><b>17</b><span>thương hiệu chính hãng</span></div>
       <div class="card"><b>300 m²</b><span>cửa hàng & sân chạy thử RC</span></div>
