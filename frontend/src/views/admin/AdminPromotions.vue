@@ -3,9 +3,9 @@
     <div class="row between"><h1>Chương trình ưu đãi</h1><button class="btn" @click="edit()">+ Tạo ưu đãi</button></div>
     <div class="card table-wrap">
       <table class="table">
-        <thead><tr><th>Mã</th><th>Tiêu đề</th><th>Giảm</th><th>Tối đa</th><th>Đơn tối thiểu</th><th>Thời gian</th><th>Trạng thái</th><th /></tr></thead>
+        <thead><tr><th>Mã</th><th>Tiêu đề</th><th>Loại</th><th>Giảm</th><th>Tối đa</th><th>Đơn tối thiểu</th><th>Thời gian</th><th>Trạng thái</th><th /></tr></thead>
         <tbody><tr v-for="p in list" :key="p.id">
-          <td><b>{{ p.code }}</b></td><td>{{ p.title }}<div class="small muted">{{ p.description }}</div></td><td>{{ p.discountPercent }}%</td>
+          <td><b>{{ p.code }}</b></td><td>{{ p.title }}<div class="small muted">{{ p.description }}</div></td><td class="small">{{ VOUCHER_KIND[p.kind] }}</td><td>{{ p.kind === 'FIXED' ? vnd(p.amount) : p.kind === 'FREESHIP' ? 'Phí ship' : p.discountPercent + '%' }}<div v-if="p.usageLimit" class="small muted">{{ p.usedCount }}/{{ p.usageLimit }} lượt</div></td>
           <td>{{ p.maxDiscount ? vnd(p.maxDiscount) : '—' }}</td><td>{{ vnd(p.minOrder) }}</td>
           <td class="small">{{ d(p.startDate) }} → {{ d(p.endDate) }}</td>
           <td><span :class="['badge', p.validNow ? 'badge-COMPLETED' : 'badge-CANCELLED']">{{ p.validNow ? 'Đang chạy' : (p.active ? 'Ngoài thời hạn' : 'Tắt') }}</span></td>
@@ -20,7 +20,11 @@
         <div class="form-grid" style="margin-top:12px">
           <div class="field"><label>Mã *</label><input v-model="form.code" class="input" /></div>
           <div class="field"><label>Tiêu đề</label><input v-model="form.title" class="input" /></div>
-          <div class="field"><label>% giảm</label><input v-model.number="form.discountPercent" type="number" class="input" /></div>
+          <div class="field"><label>Loại</label><select v-model="form.kind" class="input"><option v-for="(v, k) in VOUCHER_KIND" :key="k" :value="k">{{ v }}</option></select></div>
+          <div v-if="form.kind === 'PERCENT'" class="field"><label>% giảm</label><input v-model.number="form.discountPercent" type="number" class="input" /></div>
+          <div v-if="form.kind === 'FIXED'" class="field"><label>Số tiền giảm (đ)</label><input v-model.number="form.amount" type="number" class="input" /></div>
+          <div class="field"><label>Giới hạn lượt (0 = không)</label><input v-model.number="form.usageLimit" type="number" class="input" /></div>
+          <div class="field"><label class="check"><input v-model="form.isPublic" type="checkbox" /> Hiển thị công khai</label><label class="check"><input v-model="form.active" type="checkbox" /> Kích hoạt</label></div>
           <div class="field"><label>Giảm tối đa (đ, 0 = không giới hạn)</label><input v-model.number="form.maxDiscount" type="number" class="input" /></div>
           <div class="field"><label>Đơn tối thiểu (đ)</label><input v-model.number="form.minOrder" type="number" class="input" /></div>
           <div class="field"><label>Màu banner</label><input v-model="form.bannerColor" type="color" class="input" style="height:44px;padding:4px" /></div>
@@ -37,10 +41,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api, { errMsg } from '../../api'
-import { vnd, d } from '../../format'
+import { vnd, d, VOUCHER_KIND } from '../../format'
 const list = ref([]), form = ref(null), err = ref('')
 async function load() { list.value = (await api.get('/admin/promotions')).data }
-const edit = p => { err.value = ''; form.value = p ? { ...p } : { code: '', title: '', discountPercent: 10, maxDiscount: 0, minOrder: 0, active: true, bannerColor: '#0284c7', startDate: new Date().toISOString().slice(0, 10), endDate: '' } }
+const edit = p => { err.value = ''; form.value = p ? { ...p } : { code: '', title: '', kind: 'PERCENT', discountPercent: 10, amount: 0, usageLimit: 0, isPublic: true, maxDiscount: 0, minOrder: 0, active: true, bannerColor: '#a87a3c', startDate: new Date().toISOString().slice(0, 10), endDate: '' } }
 async function save() {
   const f = { ...form.value }; delete f.validNow
   if (!f.endDate) f.endDate = null

@@ -13,10 +13,10 @@ import java.util.stream.Collectors;
 @RestController @RequestMapping("/api")
 public class ExtrasController {
     private final ReviewRepo reviews; private final NotificationRepo notes; private final SubscriberRepo subs;
-    private final ProductRepo products; private final OrderRepo orders;
+    private final ProductRepo products; private final OrderRepo orders; private final QuestionRepo questions;
 
-    public ExtrasController(ReviewRepo reviews, NotificationRepo notes, SubscriberRepo subs, ProductRepo products, OrderRepo orders) {
-        this.reviews = reviews; this.notes = notes; this.subs = subs; this.products = products; this.orders = orders;
+    public ExtrasController(ReviewRepo reviews, NotificationRepo notes, SubscriberRepo subs, ProductRepo products, OrderRepo orders, QuestionRepo questions) {
+        this.questions = questions; this.reviews = reviews; this.notes = notes; this.subs = subs; this.products = products; this.orders = orders;
     }
 
     // ===== Đánh giá =====
@@ -47,7 +47,7 @@ public class ExtrasController {
                         Math.round(e.getValue().stream().mapToInt(r -> r.rating).average().orElse(0) * 10) / 10.0, e.getValue().size()}));
     }
 
-    public record ReviewReq(int rating, String comment) {}
+    public record ReviewReq(int rating, String comment, List<String> images, String variantName) {}
 
     @PostMapping("/products/{id}/reviews")
     public Review addReview(@PathVariable Long id, @RequestBody ReviewReq r) {
@@ -57,8 +57,10 @@ public class ExtrasController {
         if (r.comment() == null || r.comment().trim().length() < 5) throw ApiException.bad("Nội dung đánh giá tối thiểu 5 ký tự");
         if (reviews.existsByProductIdAndUserId(id, u.id)) throw ApiException.bad("Bạn đã đánh giá sản phẩm này");
         Review x = new Review(); x.productId = id; x.productName = p.name; x.user = u; x.authorName = u.fullName;
-        x.rating = r.rating(); x.comment = r.comment().trim();
-        return reviews.save(x);
+        x.rating = r.rating(); x.comment = r.comment().trim(); x.variantName = r.variantName();
+        if (r.images() != null) x.images = new ArrayList<>(r.images().stream().filter(Objects::nonNull).limit(5).toList());
+        x.verified = orders.findByUserIdOrderByCreatedAtDesc(u.id).stream().anyMatch(o -> o.status == Enums.OrderStatus.COMPLETED && o.items.stream().anyMatch(i -> id.equals(i.productId)));
+        Review saved = reviews.save(x); recalc(id); return saved;
     }
 
     @GetMapping("/admin/reviews")
@@ -68,11 +70,56 @@ public class ExtrasController {
     public Review moderate(@PathVariable Long id, @RequestBody Map<String, Boolean> body) {
         Review r = reviews.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy đánh giá"));
         r.approved = Boolean.TRUE.equals(body.get("approved"));
-        return reviews.save(r);
+        Review saved = reviews.save(r); recalc(r.productId); return saved;
     }
 
     @DeleteMapping("/admin/reviews/{id}")
-    public void deleteReview(@PathVariable Long id) { reviews.deleteById(id); }
+    public void deleteReview(@PathVariable Long id) { reviews.findById(id).ifPresent(r -> { reviews.delete(r); recalc(r.productId); }); }
+
+    /** Cập nhật điểm trung bình trên sản phẩm (phục vụ lọc/sắp xếp theo đánh giá). */
+    public void recalc(Long productId) {
+        products.findById(productId).ifPresent(p -> {
+            var list = reviews.findByProductIdAndApprovedTrueOrderByCreatedAtDesc(productId);
+            p.reviewCount = list.size(); p.rating = Math.round(list.stream().mapToInt(r -> r.rating).average().orElse(0) * 10) / 10.0;
+            products.save(p);
+        });
+    }
+
+    // ===== Hỏi đáp sản phẩm =====
+    @GetMapping("/products/{id}/questions")
+    public List<Question> questions(@PathVariable Long id) { return questions.findByProductIdAndVisibleTrueOrderByCreatedAtDesc(id); }
+
+    @PostMapping("/products/{id}/questions")
+    public Question ask(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        User u = Current.user();
+        Product p = products.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy sản phẩm"));
+        String q = body.getOrDefault("question", "").trim();
+        if (q.length() < 5) throw ApiException.bad("Câu hỏi tối thiểu 5 ký tự");
+        Question x = new Question(); x.productId = id; x.productName = p.name; x.user = u; x.authorName = u.fullName; x.question = q;
+        return questions.save(x);
+    }
+
+    @GetMapping("/admin/questions")
+    public List<Question> allQuestions() { return questions.findAllByOrderByCreatedAtDesc(); }
+
+    @PatchMapping("/admin/questions/{id}")
+    public Question answer(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Question q = questions.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy câu hỏi"));
+        if (body.get("answer") instanceof String a && !a.isBlank()) {
+            q.answer = a.trim(); q.answeredBy = "ARES Toys"; q.answeredAt = java.time.LocalDateTime.now();
+            if (q.user != null) notifyAnswer(q);
+        }
+        if (body.get("visible") instanceof Boolean v) q.visible = v;
+        return questions.save(q);
+    }
+
+    @DeleteMapping("/admin/questions/{id}")
+    public void deleteQuestion(@PathVariable Long id) { questions.deleteById(id); }
+
+    private void notifyAnswer(Question q) {
+        Notification n = new Notification(); n.user = q.user; n.kind = "SYSTEM"; n.title = "Câu hỏi của bạn đã được trả lời";
+        n.body = q.productName + ": " + q.answer; n.link = "/products/" + q.productId + "#qa"; notes.save(n);
+    }
 
     // ===== Thông báo =====
     @GetMapping("/account/notifications")
@@ -103,7 +150,7 @@ public class ExtrasController {
         List<Map<String, Object>> out = new ArrayList<>();
         for (int i = days - 1; i >= 0; i--) {
             LocalDate d = LocalDate.now().minusDays(i);
-            long sum = all.stream().filter(o -> o.status != Enums.OrderStatus.CANCELLED && o.createdAt.toLocalDate().equals(d)).mapToLong(o -> o.paidAmount).sum();
+            long sum = all.stream().filter(o -> o.status != Enums.OrderStatus.CANCELLED && o.status != Enums.OrderStatus.RETURNED && o.createdAt.toLocalDate().equals(d)).mapToLong(o -> o.paidAmount).sum();
             long cnt = all.stream().filter(o -> o.createdAt.toLocalDate().equals(d)).count();
             out.add(Map.of("date", d.toString(), "revenue", sum, "orders", cnt));
         }

@@ -1,7 +1,7 @@
-# ARES Auto — Showroom ô tô đa thương hiệu
+# ARES Toys — Cửa hàng xe đồ chơi
 
-Website **showroom ô tô đa thương hiệu** (xe thật, giá VND) kèm **đấu giá xe hiếm**, cho khách hàng và trang quản trị admin.
-Giao diện giữ nguyên phong cách gốc của repo (auth.css) (nền tối, thẻ kính mờ, màu xanh `#0284c7`, font Plus Jakarta Sans, ảnh nền Pagani, logo).
+Website bán **xe đồ chơi**: xe mô hình die-cast, xe RC, xe trưng bày, bộ kit và phụ kiện RC (pin, tay khiển, bánh xe), kèm **đấu giá hàng hiếm**.
+Có trang cho khách hàng và trang quản trị ADMIN/STAFF. Giao diện màu đồng sáng (light bronze), hiệu ứng chuyển động theo chủ đề xe.
 
 | Thư mục | Công nghệ |
 |---|---|
@@ -15,26 +15,76 @@ Yêu cầu: JDK 21, Maven 3.9+, Node 18+.
 ```bash
 # 1. Backend (http://localhost:8080)
 cd backend
-mvn spring-boot:run           # hoặc: mvn package && java -jar target/model-car-shop-1.0.0.jar
+mvn spring-boot:run
 
-# 2. Frontend (http://localhost:5173) – Vite proxy /api -> 8080
+# 2. Frontend (http://localhost:5173) – Vite proxy /api và /uploads -> 8080
 cd frontend
 npm install
-npm run dev                   # build production: npm run build
+npm run dev
 ```
 
-Dữ liệu mẫu (14 thương hiệu, 20 mẫu xe, 4 phụ kiện, 3 mã ưu đãi, 5 phiên đấu giá) được tạo tự động khi DB trống.
-Database H2 lưu ở `backend/data/` (xoá thư mục này để reset). H2 console: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:file:./data/modelshop`, user `sa`).
+> **Nâng cấp từ bản showroom ô tô: BẮT BUỘC xoá `backend/data/`** (Windows: `backend\data`) trước khi chạy, để seed lại dữ liệu đồ chơi.
+
+Dữ liệu mẫu (tạo tự động khi DB trống):
+- 8 danh mục: Xe Model, Xe RC, Xe Trưng Bày, Bộ kit; Pin, Khiển RC, Bánh xe RC, Linh kiện.
+- 17 thương hiệu, 42 sản phẩm (11 có biến thể), flash sale, banner, 5 phiên đấu giá, đánh giá, hỏi đáp và đơn hàng mẫu.
+- Ảnh sản phẩm lấy từ Wikimedia Commons theo giấy phép tự do. Nguồn ghi ở `frontend/public/images/toys/CREDITS.md`.
 
 ### Tài khoản mặc định
 
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
 | Admin | `admin@ares.vn` | `admin123` |
-| Khách hàng | `khach@ares.vn` | `123456` |
-| Khách hàng 2 (thử đấu giá) | `tran.binh@ares.vn` | `123456` |
+| Nhân viên (STAFF) | `staff@ares.vn` | `staff123` |
+| Khách hàng (có điểm và đơn mẫu) | `khach@ares.vn` | `123456` |
+| Khách hàng 2 | `tran.binh@ares.vn` | `123456` |
 
-Mã ưu đãi mẫu: `CHAOMUNG` (-1%, tối đa 20 triệu), `THANG10` (-2% xe từ 1 tỷ, tối đa 50 triệu), `PHUKIEN10` (-10% phụ kiện).
+Voucher mẫu:
+- `CHAOBAN`: giảm 10%, tối đa 100k.
+- `GIAM50K`: giảm 50k cho đơn từ 500k.
+- `FREESHIP`: miễn phí vận chuyển.
+- `RCFAN`: ưu đãi cho xe RC.
+
+## Tính năng
+
+**Khách hàng**
+- **Tài khoản:** đăng ký, đăng nhập (email; Google/Facebook nếu cấu hình), hồ sơ, sổ địa chỉ.
+- **Tìm kiếm và duyệt sản phẩm:**
+  - Tìm kiếm có gợi ý.
+  - Lọc theo danh mục, hãng, giá, tỷ lệ, độ tuổi, đánh giá và còn hàng. Có sắp xếp và phân trang.
+  - Chi tiết sản phẩm: gallery ảnh, biến thể có giá và tồn kho riêng.
+- **Tương tác:**
+  - Đánh giá kèm ảnh (đánh dấu "đã mua") và hỏi đáp.
+  - Yêu thích, so sánh, đã xem gần đây.
+- **Giỏ hàng và ưu đãi:** lưu để mua sau, voucher, flash sale, miễn phí ship từ 500k, phí ship theo tỉnh/thành.
+- **Thanh toán:** COD, chuyển khoản VietQR, MoMo, VNPay, trả góp 3/6/12 tháng (đơn từ 3 triệu).
+- **Sau mua hàng:**
+  - Timeline trạng thái đơn.
+  - Huỷ đơn, yêu cầu đổi trả/hoàn tiền trong 7 ngày (kèm ảnh).
+  - Xem và in hoá đơn.
+  - Điểm thưởng và hạng thành viên, thông báo.
+- **Hỗ trợ:** live chat, phiếu hỗ trợ, FAQ, hotline, tra cứu bảo hành, đấu giá hàng hiếm.
+
+**Quản trị** (`/admin`)
+- **Dashboard:** doanh thu, top sản phẩm, cảnh báo tồn kho thấp, việc cần xử lý.
+- **Hàng hoá:**
+  - Sản phẩm có biến thể và upload ảnh.
+  - Danh mục và thương hiệu.
+  - Kho: nhập/xuất, lịch sử xuất nhập.
+- **Đơn hàng:**
+  - Quy trình PENDING→CONFIRMED→SHIPPING→COMPLETED, huỷ đơn.
+  - Đánh dấu đã thu tiền, in hoá đơn, xử lý đổi trả/hoàn tiền.
+- **Khách hàng:** khoá tài khoản, cộng/trừ điểm, phân quyền USER/STAFF/ADMIN.
+- **Marketing:** voucher, flash sale, banner, đấu giá.
+- **Chăm sóc khách hàng:** duyệt đánh giá, hỏi đáp, phiếu hỗ trợ, live chat.
+- **Báo cáo CSV:** đơn hàng, sản phẩm, khách hàng, kho. Chỉ ADMIN được xuất; STAFF dùng được các mục còn lại.
+
+**Phần giả lập (mock)**
+- MoMo, VNPay và trả góp đi qua trang cổng thanh toán giả `/pay/:code`.
+- Mã VietQR là thật về định dạng (img.vietqr.io), nhưng việc xác nhận chuyển khoản là giả lập.
+- Đăng nhập Google/Facebook cần cấu hình key thật qua biến môi trường.
+- "Lưu để mua sau" chỉ lưu trên trình duyệt (localStorage).
+- Không gửi email hay SMS thật.
 
 ### Dùng MySQL
 

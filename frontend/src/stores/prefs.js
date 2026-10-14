@@ -1,7 +1,7 @@
 // Yêu thích, so sánh (tối đa 3), xem gần đây — lưu localStorage
 import { defineStore } from 'pinia'
 const load = (k, d = []) => { try { return JSON.parse(localStorage.getItem(k)) || d } catch { return d } }
-const slim = p => ({ id: p.id, name: p.name, price: p.price, oldPrice: p.oldPrice, images: p.images, type: p.type, fuel: p.fuel, year: p.year,
+const slim = p => ({ id: p.id, name: p.name, price: p.price, oldPrice: p.oldPrice, images: p.images, type: p.type, grp: p.grp, scale: p.scale, ageMin: p.ageMin, rating: p.rating, reviewCount: p.reviewCount, hasVariants: p.hasVariants, warrantyMonths: p.warrantyMonths, material: p.material,
   stock: p.stock, sold: p.sold, isNew: p.isNew, baseColor: p.baseColor, brand: p.brand && { id: p.brand.id, name: p.brand.name, logoUrl: p.brand.logoUrl }, specs: p.specs })
 
 export const usePrefs = defineStore('prefs', {
@@ -17,8 +17,8 @@ export const usePrefs = defineStore('prefs', {
     inCompare(id) { return this.compare.some(x => x.id === id) },
     toggleCompare(p) {
       if (this.inCompare(p.id)) { this.compare = this.compare.filter(x => x.id !== p.id); this.save(); return }
-      if (p.type === 'ACCESSORY') return toast('Chỉ so sánh được xe, không gồm phụ kiện', 'error')
-      if (this.compare.length >= 3) return toast('Chỉ so sánh tối đa 3 xe', 'error')
+      if (this.compare.length && this.compare[0].grp !== p.grp) return toast('Chỉ so sánh các sản phẩm cùng nhóm (xe hoặc phụ kiện)', 'error')
+      if (this.compare.length >= 3) return toast('Chỉ so sánh tối đa 3 sản phẩm', 'error')
       this.compare = [...this.compare, slim(p)]; this.save(); toast(`Đã thêm vào so sánh (${this.compare.length}/3)`)
     },
     clearCompare() { this.compare = []; this.save() },

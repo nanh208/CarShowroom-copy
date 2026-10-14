@@ -15,5 +15,7 @@ public class User {
     @Enumerated(EnumType.STRING) public Enums.Role role = Enums.Role.USER;
     public String provider = "LOCAL";
     public boolean locked = false;
+    public int points;
+    public String tier = "Đồng";
     public LocalDateTime createdAt = LocalDateTime.now();
 }

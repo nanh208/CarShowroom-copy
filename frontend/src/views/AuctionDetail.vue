@@ -5,14 +5,14 @@
       <div class="muted small" style="margin-bottom:16px"><router-link to="/auctions">Đấu giá</router-link> / {{ a.title }}</div>
       <div class="grid grid-2 top">
         <div>
-          <div class="hero-img"><img :src="a.images?.[img] || '/images/bg-pagani.jpg'" class="photo" /></div>
+          <div class="hero-img"><img :src="a.images?.[img] || '/images/toys/hw-r34-0.jpg'" class="photo" /></div>
           <div v-if="a.images?.length > 1" class="row" style="margin-top:10px">
             <img v-for="(u, i) in a.images" :key="i" :src="u" :class="['th', { on: i === img }]" @click="img = i" /></div>
           <div class="card" style="margin-top:18px">
-            <h3>Thông tin xe</h3>
+            <h3>Thông tin sản phẩm</h3>
             <p class="muted" style="margin-bottom:12px">{{ a.description }}</p>
             <table class="table"><tbody>
-              <tr><th>Hãng</th><td>{{ a.brandName }}</td></tr><tr><th>Năm</th><td>{{ a.year }}</td></tr><tr><th>Odo</th><td>{{ a.mileage }}</td></tr>
+              <tr><th>Hãng</th><td>{{ a.brandName }}</td></tr><tr><th>Năm</th><td>{{ a.year }}</td></tr><tr><th>Phiên bản</th><td>{{ a.mileage }}</td></tr>
               <tr v-for="(v, k) in a.specs" :key="k"><th>{{ k }}</th><td>{{ v }}</td></tr>
             </tbody></table>
           </div>
@@ -46,7 +46,7 @@
               <p class="small muted" style="margin-top:10px">Đặt giá trong 2 phút cuối sẽ gia hạn phiên thêm 2 phút. Giá đặt là cam kết mua.</p>
             </template>
             <div v-if="youWon" class="alert alert-success" style="margin-top:12px">Chúc mừng! Bạn đã thắng phiên đấu giá.
-              <router-link :to="`/orders/${a.orderCode}`" class="btn btn-sm" style="margin-left:8px">Đặt cọc 10% ngay</router-link></div>
+              <router-link :to="`/orders/${a.orderCode}`" class="btn btn-sm" style="margin-left:8px">Thanh toán ngay</router-link></div>
             <div v-else-if="a.status === 'ENDED'" class="alert alert-info" style="margin-top:12px">Phiên đã kết thúc{{ a.winner ? ' — người thắng: ' + mask(a.winner.fullName) : ' — không có lượt đặt giá' }}.</div>
             <div v-if="err" class="alert alert-error" style="margin-top:12px">{{ err }}</div>
             <div v-if="ok" class="alert alert-success" style="margin-top:12px">{{ ok }}</div>

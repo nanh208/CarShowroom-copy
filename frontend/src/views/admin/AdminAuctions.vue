@@ -30,8 +30,8 @@
         <div class="field" style="margin-top:12px"><label>Tên xe *</label><input v-model="form.title" class="input" placeholder="Ferrari F40 (1990)" /></div>
         <div class="form-grid">
           <div class="field"><label>Hãng</label><input v-model="form.brandName" class="input" /></div>
-          <div class="field"><label>Năm</label><input v-model.number="form.year" type="number" class="input" /></div>
-          <div class="field"><label>Odo</label><input v-model="form.mileage" class="input" placeholder="12.000 km" /></div>
+          <div class="field"><label>Năm phát hành</label><input v-model.number="form.year" type="number" class="input" /></div>
+          <div class="field"><label>Phiên bản</label><input v-model="form.mileage" class="input" placeholder="Limited 1/500" /></div>
           <div class="field"><label>Giá khởi điểm (đ) *</label><input v-model.number="form.startPrice" type="number" class="input" :disabled="form.bidCount > 0" /></div>
           <div class="field"><label>Bước giá tối thiểu (đ) *</label><input v-model.number="form.minIncrement" type="number" class="input" /></div>
           <div></div>
@@ -67,7 +67,7 @@ async function load() { list.value = (await api.get('/admin/auctions')).data }
 function edit(a) {
   ferr.value = ''
   const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-  const base = a || { title: '', brandName: '', year: 1990, mileage: '', startPrice: 0, minIncrement: 100000000, images: [], specs: {}, bidCount: 0,
+  const base = a || { title: '', brandName: '', year: 1990, mileage: '', startPrice: 0, minIncrement: 100000, images: [], specs: {}, bidCount: 0,
     startTime: now.toISOString(), endTime: new Date(now.getTime() + 3 * 86400000).toISOString() }
   form.value = { ...base, startTime: local(base.startTime), endTime: local(base.endTime), imagesText: (base.images || []).join('\n'),
     specsText: Object.entries(base.specs || {}).map(([k, v]) => `${k}: ${v}`).join('\n') }

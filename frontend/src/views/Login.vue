@@ -1,7 +1,7 @@
 <template>
   <AuthShell>
     <h2>Đăng nhập</h2>
-    <p class="muted small" style="margin:4px 0 20px">Chào mừng trở lại với ARES Auto</p>
+    <p class="muted small" style="margin:4px 0 20px">Chào mừng trở lại với ARES Toys</p>
     <div v-if="$route.query.expired" class="alert alert-info">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.</div>
     <div v-if="err" class="alert alert-error">{{ err }}</div>
     <form @submit.prevent="submit">
@@ -25,7 +25,7 @@ const auth = useAuth(), route = useRoute(), router = useRouter()
 const email = ref(''), password = ref(''), err = ref(route.query.error || ''), busy = ref(false)
 async function submit() {
   err.value = ''; busy.value = true
-  try { await auth.login(email.value, password.value); router.push(route.query.redirect || (auth.isAdmin ? '/admin' : '/')) }
+  try { await auth.login(email.value, password.value); router.push(route.query.redirect || (auth.isStaff ? '/admin' : '/')) }
   catch (e) { err.value = errMsg(e) } finally { busy.value = false }
 }
 </script>

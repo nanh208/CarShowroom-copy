@@ -5,7 +5,8 @@ export const useAuth = defineStore('auth', {
   state: () => ({ user: null, token: localStorage.getItem('token'), ready: false }),
   getters: {
     loggedIn: s => !!s.user,
-    isAdmin: s => s.user?.role === 'ADMIN'
+    isAdmin: s => s.user?.role === 'ADMIN',
+    isStaff: s => s.user?.role === 'ADMIN' || s.user?.role === 'STAFF'
   },
   actions: {
     setSession(token, user) {

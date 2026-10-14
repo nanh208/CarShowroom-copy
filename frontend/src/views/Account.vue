@@ -56,17 +56,38 @@
       </table>
     </div>
 
-    <!-- Lịch hẹn -->
-    <div v-if="tab === 'bookings'" class="card table-wrap">
-      <div v-if="!bookings.length" class="empty">Chưa có lịch hẹn. <router-link to="/services">Đặt lịch</router-link></div>
+    <!-- Điểm thưởng -->
+    <div v-if="tab === 'points'" class="grid grid-2">
+      <div class="card pcard">
+        <Gauge :value="pts.points || 0" :max="nextTier.at" :label="`${pts.points || 0} điểm`" :sub="`Hạng ${pts.tier}`" :size="220" />
+        <p class="muted small" style="text-align:center">1 điểm = {{ vnd(pts.pointValue) }} khi thanh toán · tích 1 điểm mỗi {{ vnd(pts.earnPer) }} đơn hoàn tất</p>
+        <div class="tiers"><span v-for="t in TIERS" :key="t.name" :class="{ on: t.name === pts.tier }">{{ t.name }}<small>{{ t.label }}</small></span></div>
+      </div>
+      <div class="card table-wrap">
+        <h3>Lịch sử điểm</h3>
+        <div v-if="!pts.history?.length" class="empty">Chưa có giao dịch điểm.</div>
+        <table v-else class="table"><tbody><tr v-for="h in pts.history" :key="h.id"><td>{{ dt(h.createdAt) }}</td><td>{{ h.reason }}</td><td :class="h.delta > 0 ? 'ok' : 'err'">{{ h.delta > 0 ? '+' : '' }}{{ h.delta }}</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Đổi trả -->
+    <div v-if="tab === 'returns'" class="card table-wrap">
+      <div v-if="!returnsList.length" class="empty">Chưa có yêu cầu đổi trả. Bạn có thể gửi yêu cầu trong trang chi tiết đơn đã giao (trong 7 ngày).</div>
       <table v-else class="table">
-        <thead><tr><th>#</th><th>Loại</th><th>Nội dung</th><th>Ngày / giờ</th><th>Trạng thái</th><th /></tr></thead>
-        <tbody><tr v-for="b in bookings" :key="b.id">
-          <td>{{ b.id }}</td><td>{{ BOOKING_TYPE[b.type] }}</td><td class="small">{{ b.productName || b.serviceType }}<br /><span class="muted">{{ b.note }}</span></td>
-          <td>{{ d(b.date) }}<br /><span class="small muted">{{ b.timeSlot }}</span></td>
-          <td><span :class="['badge', 'badge-' + b.status]">{{ BOOKING_STATUS[b.status] }}</span></td>
-          <td><button v-if="b.status === 'PENDING'" class="btn btn-sm btn-outline" @click="cancelBooking(b)">Huỷ</button></td>
-        </tr></tbody>
+        <thead><tr><th>Đơn</th><th>Loại</th><th>Lý do</th><th>Trạng thái</th><th>Phản hồi</th><th>Ngày</th></tr></thead>
+        <tbody><tr v-for="r in returnsList" :key="r.id"><td><router-link :to="`/orders/${r.orderCode}`">{{ r.orderCode }}</router-link></td><td>{{ r.kind === 'REFUND' ? 'Hoàn tiền' : 'Đổi trả' }}</td>
+          <td class="small">{{ r.reason }}</td><td><span :class="['badge', 'badge-' + r.status]">{{ RETURN_STATUS[r.status] }}</span></td><td class="small">{{ r.adminNote }}</td><td>{{ d(r.createdAt) }}</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Phiếu hỗ trợ -->
+    <div v-if="tab === 'tickets'" class="card table-wrap">
+      <div class="row between" style="margin-bottom:10px"><span class="muted">Phiếu hỗ trợ của bạn</span><router-link to="/support#ticket" class="btn btn-sm">+ Tạo phiếu</router-link></div>
+      <div v-if="!ticketsList.length" class="empty">Chưa có phiếu hỗ trợ.</div>
+      <table v-else class="table">
+        <thead><tr><th>Mã</th><th>Chủ đề</th><th>Loại</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead>
+        <tbody><tr v-for="t in ticketsList" :key="t.id"><td><router-link :to="`/support/tickets/${t.code}`">{{ t.code }}</router-link></td><td>{{ t.subject }}</td><td>{{ t.category }}</td>
+          <td><span :class="['badge', 'badge-' + t.status]">{{ TICKET_STATUS[t.status] }}</span></td><td>{{ dt(t.updatedAt) }}</td></tr></tbody>
       </table>
     </div>
 
@@ -78,7 +99,7 @@
           <td><router-link :to="`/auctions/${b.auctionId}`">{{ b.auctionTitle }}</router-link></td>
           <td class="price">{{ vnd(b.amount) }}</td><td>{{ vnd(b.currentPrice) }}</td><td class="small">{{ dt(b.createdAt) }}</td>
           <td><span :class="['badge', b.won ? 'badge-COMPLETED' : 'badge-' + (b.status === 'LIVE' ? 'CONFIRMED' : 'PENDING')]">{{ b.won ? 'Thắng' : AUCTION_STATUS[b.status] }}</span></td>
-          <td><router-link v-if="b.won && b.orderCode" :to="`/orders/${b.orderCode}`" class="btn btn-sm">Đặt cọc</router-link></td>
+          <td><router-link v-if="b.won && b.orderCode" :to="`/orders/${b.orderCode}`" class="btn btn-sm">Thanh toán</router-link></td>
         </tr></tbody>
       </table>
     </div>
@@ -104,19 +125,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
+import Gauge from '../components/Gauge.vue'
+const TIERS = [{ name: 'Đồng', label: 'mặc định', at: 0 }, { name: 'Bạc', label: 'chi 3 tr', at: 300 }, { name: 'Vàng', label: 'chi 10 tr', at: 1000 }, { name: 'Kim cương', label: 'chi 20 tr', at: 2000 }]
 import { useAuth } from '../stores/auth'
-import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, BOOKING_TYPE, BOOKING_STATUS, AUCTION_STATUS } from '../format'
+import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, AUCTION_STATUS, RETURN_STATUS, TICKET_STATUS } from '../format'
 
 const auth = useAuth(), route = useRoute(), router = useRouter()
-const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Lịch sử giao dịch', bookings: 'Lịch sử đặt lịch', bids: 'Đấu giá của tôi' }
+const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Đơn hàng', points: 'Điểm thưởng', returns: 'Đổi trả', tickets: 'Hỗ trợ', bids: 'Đấu giá của tôi' }
+const nextTier = computed(() => TIERS.find(t => t.at > (pts.value.points || 0)) || { at: 2000 })
 const tab = ref(tabs[route.query.tab] ? route.query.tab : 'profile')
 const profile = reactive({ fullName: auth.user.fullName, phone: auth.user.phone, avatarUrl: auth.user.avatarUrl })
 const pw = reactive({ currentPassword: '', newPassword: '' })
 const bids = ref([])
-const msg = reactive({}), addresses = ref([]), orders = ref([]), bookings = ref([]), addr = ref(null)
+const msg = reactive({}), addresses = ref([]), orders = ref([]), pts = ref({}), returnsList = ref([]), ticketsList = ref([]), addr = ref(null)
 
 const setTab = k => router.replace({ query: { tab: k } })
 watch(() => route.query.tab, t => { tab.value = tabs[t] ? t : 'profile'; load() })
@@ -125,7 +149,9 @@ async function load() {
   if (tab.value === 'addresses') addresses.value = (await api.get('/account/addresses')).data
   if (tab.value === 'orders') orders.value = (await api.get('/account/orders')).data
   if (tab.value === 'bids') bids.value = (await api.get('/account/bids')).data
-  if (tab.value === 'bookings') bookings.value = (await api.get('/account/bookings')).data
+  if (tab.value === 'points') pts.value = (await api.get('/account/points')).data
+  if (tab.value === 'returns') returnsList.value = (await api.get('/account/returns')).data
+  if (tab.value === 'tickets') ticketsList.value = (await api.get('/tickets')).data
 }
 async function saveProfile() { auth.user = (await api.put('/account/profile', profile)).data; msg.profile = 'Đã lưu thông tin' }
 async function changePw() {
@@ -140,9 +166,11 @@ async function saveAddr() {
   addr.value = null; load()
 }
 async function delAddr(a) { if (confirm('Xoá địa chỉ này?')) { await api.delete(`/account/addresses/${a.id}`); load() } }
-async function cancelBooking(b) { if (confirm('Huỷ lịch hẹn này?')) { await api.post(`/bookings/${b.id}/cancel`); load() } }
 onMounted(load)
 </script>
 <style scoped>
 .addr p { margin: 8px 0; }
+.pcard { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.tiers { display: flex; gap: 6px; } .tiers span { padding: 6px 10px; border-radius: 8px; background: var(--bg-2); font-size: .82rem; text-align: center; } .tiers span.on { background: var(--bronze); color: #fff; } .tiers small { display: block; font-size: .68rem; opacity: .8; }
+.ok { color: var(--success); font-weight: 700; } .err { color: var(--danger); font-weight: 700; }
 </style>
