@@ -6,17 +6,18 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
+import java.time.*;
 import java.util.*;
 
-/** Dữ liệu mẫu: tài khoản admin/khách, thương hiệu, mô hình, phụ kiện, mã ưu đãi. Chỉ chạy khi DB trống. */
+/** Dữ liệu mẫu showroom ô tô đa thương hiệu: tài khoản, hãng xe, xe, phụ kiện, ưu đãi, phiên đấu giá. Chỉ chạy khi DB trống. */
 @Component
 public class DataSeeder implements CommandLineRunner {
+    private static final long TR = 1_000_000L; // 1 triệu
     private final UserRepo users; private final BrandRepo brands; private final ProductRepo products;
-    private final PromotionRepo promos; private final PasswordEncoder enc;
+    private final PromotionRepo promos; private final AuctionRepo auctions; private final PasswordEncoder enc;
 
-    public DataSeeder(UserRepo users, BrandRepo brands, ProductRepo products, PromotionRepo promos, PasswordEncoder enc) {
-        this.users = users; this.brands = brands; this.products = products; this.promos = promos; this.enc = enc;
+    public DataSeeder(UserRepo users, BrandRepo brands, ProductRepo products, PromotionRepo promos, AuctionRepo auctions, PasswordEncoder enc) {
+        this.users = users; this.brands = brands; this.products = products; this.promos = promos; this.auctions = auctions; this.enc = enc;
     }
 
     @Override
@@ -24,43 +25,70 @@ public class DataSeeder implements CommandLineRunner {
         if (users.count() == 0) {
             user("admin@ares.vn", "admin123", "Quản trị viên", Enums.Role.ADMIN);
             user("khach@ares.vn", "123456", "Nguyễn Văn Khách", Enums.Role.USER);
+            user("tran.binh@ares.vn", "123456", "Trần Thị Bình", Enums.Role.USER);
         }
-        if (brands.count() > 0) return;
+        if (brands.count() == 0) seedCars();
+        if (auctions.count() == 0) seedAuctions();
+    }
+
+    private void seedCars() {
         Map<String, Brand> b = new LinkedHashMap<>();
         for (String[] r : new String[][]{
-                {"Ferrari", "Ý"}, {"Lamborghini", "Ý"}, {"Porsche", "Đức"}, {"Mercedes-Benz", "Đức"}, {"BMW", "Đức"},
-                {"Toyota", "Nhật Bản"}, {"Nissan", "Nhật Bản"}, {"Pagani", "Ý"}, {"Bugatti", "Pháp"}, {"Ford", "Mỹ"},
-                {"VinFast", "Việt Nam"}, {"ARES Parts", "Việt Nam"}}) {
+                {"Toyota", "Nhật Bản"}, {"Honda", "Nhật Bản"}, {"Mazda", "Nhật Bản"}, {"Hyundai", "Hàn Quốc"}, {"Kia", "Hàn Quốc"},
+                {"Ford", "Mỹ"}, {"VinFast", "Việt Nam"}, {"Mercedes-Benz", "Đức"}, {"BMW", "Đức"}, {"Porsche", "Đức"},
+                {"Lamborghini", "Ý"}, {"Ferrari", "Ý"}, {"Rolls-Royce", "Anh"}, {"ARES Accessories", "Việt Nam"}}) {
             Brand x = new Brand(); x.name = r[0]; x.country = r[1];
-            x.description = "Mô hình xe " + r[0] + " chính hãng, tỉ lệ chuẩn, chi tiết sắc nét.";
+            x.description = "Đại lý ủy quyền " + r[0] + " tại ARES Auto: xe mới chính hãng, bảo hành toàn quốc.";
             b.put(r[0], brands.save(x));
         }
-        P(b, "Ferrari SF90 Stradale", "Ferrari", "SUPERCAR", "1:18", 3_290_000L, 3_590_000L, 12, 87, "Bburago Signature", "#c1121f", true, true);
-        P(b, "Ferrari 488 Pista", "Ferrari", "SUPERCAR", "1:24", 890_000L, null, 25, 140, "Bburago", "#facc15", false, false);
-        P(b, "Lamborghini Aventador SVJ", "Lamborghini", "SUPERCAR", "1:18", 3_850_000L, null, 6, 64, "AUTOart", "#65a30d", true, true);
-        P(b, "Lamborghini Urus", "Lamborghini", "SUV", "1:24", 1_150_000L, 1_290_000L, 18, 51, "Maisto", "#f97316", false, false);
-        P(b, "Porsche 911 GT3 RS (992)", "Porsche", "RACING", "1:18", 4_200_000L, null, 4, 39, "Minichamps", "#f8fafc", true, true);
-        P(b, "Porsche 356 Speedster 1955", "Porsche", "CLASSIC", "1:43", 650_000L, null, 30, 22, "Schuco", "#94a3b8", false, false);
-        P(b, "Mercedes-AMG G63", "Mercedes-Benz", "SUV", "1:18", 2_750_000L, null, 9, 77, "Norev", "#111827", true, false);
-        P(b, "Mercedes-Benz 300SL Gullwing", "Mercedes-Benz", "CLASSIC", "1:18", 2_490_000L, 2_790_000L, 5, 33, "Norev", "#e5e7eb", false, true);
-        P(b, "BMW M4 GT3", "BMW", "RACING", "1:24", 980_000L, null, 20, 58, "Welly", "#1d4ed8", true, false);
-        P(b, "Toyota Supra MK4 (A80)", "Toyota", "SEDAN", "1:24", 750_000L, null, 35, 210, "Jada Toys", "#ea580c", false, true);
-        P(b, "Nissan Skyline GT-R R34", "Nissan", "SEDAN", "1:18", 2_190_000L, null, 0, 160, "AUTOart", "#1e3a8a", false, true);
-        P(b, "Pagani Huayra Roadster", "Pagani", "SUPERCAR", "1:18", 5_990_000L, null, 3, 18, "LCD Models", "#3f3f46", true, true);
-        P(b, "Bugatti Chiron Sport", "Bugatti", "SUPERCAR", "1:18", 4_590_000L, 4_990_000L, 7, 45, "Bburago Plus", "#0c4a6e", true, false);
-        P(b, "Ford F-150 Raptor", "Ford", "TRUCK", "1:24", 820_000L, null, 15, 49, "Maisto", "#475569", false, false);
-        P(b, "Ford Mustang Shelby GT500 1967", "Ford", "CLASSIC", "1:18", 1_890_000L, null, 10, 96, "Greenlight", "#b91c1c", false, false);
-        P(b, "VinFast VF 8", "VinFast", "SUV", "1:18", 1_590_000L, null, 22, 120, "VinFast Official", "#0369a1", true, true);
-        P(b, "VinFast Lux A2.0", "VinFast", "SEDAN", "1:43", 590_000L, null, 40, 75, "VinFast Official", "#7f1d1d", false, false);
-        P(b, "Toyota GR86 Hot Wheels Premium", "Toyota", "RACING", "1:64", 180_000L, null, 80, 330, "Hot Wheels", "#dc2626", true, false);
-        A(b, "Tủ kính trưng bày mica 1:18 có đèn LED", 450_000L, 50, 140);
-        A(b, "Đế xoay trưng bày 360° (chạy pin)", 290_000L, 60, 88);
-        A(b, "Bộ dụng cụ vệ sinh mô hình (cọ, khăn, bình xịt)", 190_000L, 100, 205);
-        A(b, "Diorama gara mini 1:64", 350_000L, 25, 41);
+        //   tên, hãng, loại, nhiên liệu, năm, giá (triệu), giá cũ, tồn, đã bán, động cơ, công suất, chỗ, hộp số, màu, ảnh, mới, nổi bật
+        car(b, "Toyota Camry 2.5HEV", "Toyota", "SEDAN", "Hybrid", 2025, 1_530, null, 8, 64, "2.5L Hybrid", "227 hp", 5, "e-CVT", "#e5e7eb", "camry", false, true);
+        car(b, "Toyota Fortuner Legender 2.8 4x4", "Toyota", "SUV", "Dầu", 2025, 1_350, 1_395L, 6, 58, "2.8L Diesel", "201 hp", 7, "AT 6 cấp", "#f8fafc", "fortuner", false, false);
+        car(b, "Honda CR-V e:HEV RS", "Honda", "SUV", "Hybrid", 2025, 1_259, null, 10, 71, "2.0L Hybrid", "204 hp", 7, "e-CVT", "#111827", "crv", true, true);
+        car(b, "Mazda CX-60 Premium", "Mazda", "SUV", "Xăng", 2025, 1_249, 1_299L, 5, 22, "2.5L Skyactiv-G", "188 hp", 5, "AT 8 cấp", "#7f1d1d", "cx60", true, false);
+        car(b, "Hyundai Santa Fe 2.5 Turbo", "Hyundai", "SUV", "Xăng", 2025, 1_365, null, 7, 40, "2.5L Turbo", "277 hp", 7, "DCT 8 cấp", "#1e3a8a", "santafe", false, false);
+        car(b, "Kia Carnival 2.2D Signature", "Kia", "SUV", "Dầu", 2025, 1_589, null, 4, 37, "2.2L Diesel", "199 hp", 7, "AT 8 cấp", "#3f3f46", "carnival", false, false);
+        car(b, "Ford Ranger Raptor 2.0 Bi-Turbo", "Ford", "PICKUP", "Dầu", 2025, 1_299, null, 9, 88, "2.0L Bi-Turbo Diesel", "210 hp", 5, "AT 10 cấp", "#475569", "ranger", false, true);
+        car(b, "Ford Mustang GT 5.0 V8", "Ford", "SPORT", "Xăng", 2024, 3_499, null, 2, 6, "5.0L V8", "480 hp", 4, "AT 10 cấp", "#b91c1c", "mustang", false, false);
+        car(b, "VinFast VF 8 Plus", "VinFast", "ELECTRIC", "Điện", 2025, 1_199, 1_359L, 15, 120, "2 mô-tơ điện AWD", "402 hp", 5, "1 cấp", "#0369a1", "vf8", true, true);
+        car(b, "VinFast VF 9 Plus", "VinFast", "ELECTRIC", "Điện", 2025, 1_699, null, 6, 35, "2 mô-tơ điện AWD", "402 hp", 7, "1 cấp", "#0f172a", "vf9", true, false);
+        car(b, "Mercedes-Benz C 300 AMG", "Mercedes-Benz", "SEDAN", "Xăng", 2025, 2_099, null, 5, 44, "2.0L Turbo + EQ Boost", "258 hp", 5, "9G-Tronic", "#e5e7eb", "c300", false, true);
+        car(b, "Mercedes-AMG G 63", "Mercedes-Benz", "SUV", "Xăng", 2025, 11_750, null, 1, 5, "4.0L V8 Biturbo", "585 hp", 5, "AMG 9 cấp", "#111827", "g63", false, true);
+        car(b, "BMW X5 xDrive40i M Sport", "BMW", "SUV", "Xăng", 2025, 4_299, 4_499L, 3, 18, "3.0L I6 Turbo", "381 hp", 7, "Steptronic 8 cấp", "#1d4ed8", "x5", false, false);
+        car(b, "BMW M4 Competition", "BMW", "SPORT", "Xăng", 2025, 6_199, null, 2, 4, "3.0L I6 Twin-Turbo", "530 hp", 4, "M Steptronic 8 cấp", "#65a30d", "m4", true, false);
+        car(b, "Porsche 911 GT3 RS", "Porsche", "SPORT", "Xăng", 2025, 20_390, null, 1, 2, "4.0L Boxer 6", "525 hp", 2, "PDK 7 cấp", "#f8fafc", "gt3rs", true, true);
+        car(b, "Porsche Taycan GTS Sport Turismo", "Porsche", "ELECTRIC", "Điện", 2025, 6_950, null, 2, 3, "2 mô-tơ điện", "598 hp", 4, "2 cấp", "#94a3b8", "taycan", false, false);
+        car(b, "Lamborghini Huracán Tecnica", "Lamborghini", "SUPERCAR", "Xăng", 2024, 19_000, null, 1, 3, "5.2L V10", "640 hp", 2, "LDF 7 cấp", "#0ea5e9", "huracan", false, true);
+        car(b, "Lamborghini Urus Performante", "Lamborghini", "SUV", "Xăng", 2025, 16_500, null, 2, 4, "4.0L V8 Twin-Turbo", "666 hp", 5, "AT 8 cấp", "#f97316", "urus", true, false);
+        car(b, "Ferrari SF90 Spider", "Ferrari", "SUPERCAR", "Hybrid", 2024, 39_500, null, 1, 1, "4.0L V8 + 3 mô-tơ điện", "1.000 hp", 2, "F1 DCT 8 cấp", "#c1121f", "sf90", true, true);
+        car(b, "Rolls-Royce Cullinan Series II", "Rolls-Royce", "SUV", "Xăng", 2025, 41_000, null, 0, 1, "6.75L V12 Twin-Turbo", "571 hp", 5, "AT 8 cấp", "#1e293b", "cullinan", true, false);
+        acc(b, "Phim cách nhiệt 3M Crystalline (trọn xe)", 18 * TR, 40, 210);
+        acc(b, "Camera 360° + cảm biến va chạm", 15 * TR, 30, 160);
+        acc(b, "Thảm sàn da 6D cao cấp", 4_500_000L, 60, 320);
+        acc(b, "Gói phủ ceramic 9H bảo vệ sơn", 12 * TR, 50, 140);
 
-        promo("CHAOMUNG", "Chào thành viên mới", "Giảm 10% cho đơn hàng đầu tiên, tối đa 300.000đ", 10, 300_000, 0, "#0284c7");
-        promo("SUPERCAR15", "Tuần lễ Siêu xe", "Giảm 15% cho đơn từ 3.000.000đ, tối đa 1.000.000đ", 15, 1_000_000, 3_000_000, "#c1121f");
-        promo("FREESHIP", "Ưu đãi cuối tuần", "Giảm 5% mọi đơn hàng", 5, 0, 0, "#16a34a");
+        promo("CHAOMUNG", "Chào khách hàng mới", "Giảm 1% giá xe cho đơn đầu tiên, tối đa 20 triệu", 1, 20 * TR, 0, "#0284c7");
+        promo("THANG10", "Tháng vàng ARES", "Giảm 2% cho xe từ 1 tỷ, tối đa 50 triệu", 2, 50 * TR, 1_000 * TR, "#c1121f");
+        promo("PHUKIEN10", "Ưu đãi phụ kiện", "Giảm 10% đơn phụ kiện, tối đa 5 triệu", 10, 5 * TR, 0, "#16a34a");
+    }
+
+    private void seedAuctions() {
+        LocalDateTime now = LocalDateTime.now();
+        auction("Ferrari F40 (1990)", "Ferrari", 1990, "18.900 km", "f40", 45_000 * TR, 500 * TR, now.minusHours(2), now.plusDays(2),
+                "Một trong 1.315 chiếc F40 từng được sản xuất. Xe nhập từ Nhật Bản, nguyên bản 100%, đầy đủ sổ bảo dưỡng, chứng nhận Ferrari Classiche.",
+                Map.of("Động cơ", "2.9L V8 Twin-Turbo", "Công suất", "478 hp", "Hộp số", "Sàn 5 cấp", "Màu", "Rosso Corsa", "Tình trạng", "Nguyên bản, Classiche"));
+        auction("Porsche Carrera GT (2005)", "Porsche", 2005, "9.200 km", "carreragt", 38_000 * TR, 300 * TR, now.minusHours(1), now.plusHours(30),
+                "Siêu xe V10 huyền thoại, chỉ 1.270 chiếc. Một chủ từ mới, đã thay ly hợp và lốp tại Porsche Center.",
+                Map.of("Động cơ", "5.7L V10", "Công suất", "603 hp", "Hộp số", "Sàn 6 cấp", "Màu", "GT Silver", "Tình trạng", "Một chủ"));
+        auction("Lamborghini Miura P400 S (1969)", "Lamborghini", 1969, "41.000 km", "miura", 52_000 * TR, 500 * TR, now.plusDays(1), now.plusDays(4),
+                "Biểu tượng của dòng siêu xe động cơ đặt giữa. Đã phục chế toàn bộ bởi Polo Storico Lamborghini.",
+                Map.of("Động cơ", "3.9L V12", "Công suất", "370 hp", "Hộp số", "Sàn 5 cấp", "Màu", "Verde Metallizzato", "Tình trạng", "Phục chế chính hãng"));
+        auction("Toyota 2000GT (1967)", "Toyota", 1967, "63.500 km", "2000gt", 25_000 * TR, 200 * TR, now.minusMinutes(30), now.plusHours(6),
+                "Chiếc xe thể thao Nhật Bản hiếm nhất mọi thời đại, chỉ 351 chiếc. Giấy tờ đầy đủ, xe sẵn sàng trưng bày.",
+                Map.of("Động cơ", "2.0L I6", "Công suất", "150 hp", "Hộp số", "Sàn 5 cấp", "Màu", "Trắng Pegasus", "Tình trạng", "Đã phục hồi"));
+        auction("Mercedes-Benz 300 SL Gullwing (1955)", "Mercedes-Benz", 1955, "72.000 km", "300sl", 30_000 * TR, 250 * TR, now.minusDays(3), now.minusHours(1),
+                "Cửa cánh chim kinh điển, phục chế bởi Mercedes-Benz Classic Center. (Phiên đã kết thúc – ví dụ)",
+                Map.of("Động cơ", "3.0L I6", "Công suất", "215 hp", "Hộp số", "Sàn 4 cấp", "Màu", "Silver", "Tình trạng", "Phục chế"));
     }
 
     private void user(String email, String pw, String name, Enums.Role role) {
@@ -68,55 +96,33 @@ public class DataSeeder implements CommandLineRunner {
         users.save(u);
     }
 
-    private void P(Map<String, Brand> b, String name, String brand, String type, String scale, long price, Long old, int stock, int sold,
-                   String maker, String color, boolean isNew, boolean featured) {
+    private void car(Map<String, Brand> b, String name, String brand, String type, String fuel, int year, long priceTr, Long oldTr, int stock, int sold,
+                     String engine, String power, int seats, String gearbox, String color, String img, boolean isNew, boolean featured) {
         Product p = new Product();
-        p.name = name; p.brand = b.get(brand); p.type = Enums.ProductType.valueOf(type); p.scale = scale; p.price = price;
-        p.oldPrice = old; p.stock = stock; p.sold = sold; p.material = "Hợp kim đúc (Diecast) + nhựa ABS"; p.baseColor = color;
-        p.isNew = isNew; p.featured = featured;
-        p.description = "Mô hình " + name + " tỉ lệ " + scale + " do " + maker + " sản xuất. Thân vỏ hợp kim đúc, sơn tĩnh điện nhiều lớp, "
-                + "cửa và nắp capo mở được, nội thất chi tiết, bánh xe xoay và đánh lái được. Phù hợp sưu tầm, trưng bày hoặc làm quà tặng.";
-        p.specs.put("Tỉ lệ", scale);
-        p.specs.put("Hãng sản xuất mô hình", maker);
-        p.specs.put("Chất liệu", "Hợp kim kẽm + nhựa ABS");
-        p.specs.put("Kích thước (D x R x C)", switch (scale) {
-            case "1:18" -> "~25 x 11 x 7 cm"; case "1:24" -> "~19 x 8 x 5 cm"; case "1:43" -> "~10 x 4.5 x 3 cm"; default -> "~7 x 3 x 2 cm"; });
-        p.specs.put("Chi tiết mở được", scale.equals("1:64") ? "Không" : "Cửa, capo, cốp");
-        p.specs.put("Phụ kiện kèm theo", "Hộp trưng bày, giấy chứng nhận");
-        p.specs.put("Bảo hành", "12 tháng lỗi sơn & khớp nối");
-        for (String img : imagesFor(name)) p.images.add(img);
+        p.name = name; p.brand = b.get(brand); p.type = Enums.ProductType.valueOf(type); p.fuel = fuel; p.year = year;
+        p.price = priceTr * TR; p.oldPrice = oldTr == null ? null : oldTr * TR; p.stock = stock; p.sold = sold;
+        p.material = gearbox; p.baseColor = color; p.isNew = isNew; p.featured = featured;
+        p.description = name + " đời " + year + " phân phối chính hãng tại ARES Auto. Xe mới 100%, bảo hành chính hãng 3–5 năm, "
+                + "hỗ trợ đăng ký – đăng kiểm, giao xe tận nhà. Hỗ trợ trả góp đến 80% giá trị xe, thủ tục nhanh trong 24h.";
+        p.specs.put("Động cơ", engine);
+        p.specs.put("Công suất", power);
+        p.specs.put("Hộp số", gearbox);
+        p.specs.put("Nhiên liệu", fuel);
+        p.specs.put("Số chỗ ngồi", seats + " chỗ");
+        p.specs.put("Năm sản xuất", String.valueOf(year));
+        p.specs.put("Bảo hành", type.equals("ELECTRIC") ? "10 năm pin / 5 năm xe" : "3 năm hoặc 100.000 km");
+        p.images.add("/images/cars/" + img + ".jpg");
+        if (img.equals("sf90")) p.images.add("/images/cars/sf90b.jpg");
+        if (img.equals("huracan")) p.images.add("/images/cars/huracan2.jpg");
         products.save(p);
     }
 
-    private String[] imagesFor(String name) {
-        String n = name.toLowerCase();
-        if (n.contains("sf90")) return new String[]{"/images/cars/sf90.jpg", "/images/cars/sf90b.jpg"};
-        if (n.contains("aventador") || n.contains("svj")) return new String[]{"/images/cars/svj.jpg", "/images/cars/huracan2.jpg"};
-        if (n.contains("huracan") || n.contains("488")) return new String[]{"/images/cars/huracan.jpg", "/images/cars/huracan2.jpg"};
-        if (n.contains("gt3")) return new String[]{"/images/cars/gt3rs.jpg"};
-        if (n.contains("g63") || n.contains("gullwing") || n.contains("mercedes")) return new String[]{"/images/cars/g63.jpg"};
-        if (n.contains("skyline") || n.contains("r34")) return new String[]{"/images/cars/r34.jpg"};
-        if (n.contains("chiron") || n.contains("bugatti")) return new String[]{"/images/cars/chiron.jpg"};
-        if (n.contains("huayra") || n.contains("pagani")) return new String[]{"/images/cars/huayra.jpg"};
-        if (n.contains("supra")) return new String[]{"/images/cars/supra.jpg"};
-        if (n.contains("m4") || n.contains("bmw")) return new String[]{"/images/cars/m4.jpg"};
-        if (n.contains("mustang") || n.contains("f-150") || n.contains("ford")) return new String[]{"/images/cars/mustang.jpg"};
-        if (n.contains("vinfast") || n.contains("vf")) return new String[]{"/images/cars/vf8.jpg"};
-        if (n.contains("urus") || n.contains("lamborghini")) return new String[]{"/images/cars/huracan2.jpg"};
-        if (n.contains("porsche") || n.contains("356")) return new String[]{"/images/cars/gt3rs.jpg"};
-        if (n.contains("hot wheels")) return new String[]{"/images/cars/diecast.jpg"};
-        if (n.contains("toyota")) return new String[]{"/images/cars/supra.jpg"};
-        if (n.contains("nissan")) return new String[]{"/images/cars/r34.jpg"};
-        return new String[]{"/images/cars/diecast.jpg"};
-    }
-
-    private void A(Map<String, Brand> b, String name, long price, int stock, int sold) {
+    private void acc(Map<String, Brand> b, String name, long price, int stock, int sold) {
         Product p = new Product();
-        p.name = name; p.brand = b.get("ARES Parts"); p.type = Enums.ProductType.ACCESSORY; p.scale = "Phụ kiện"; p.price = price;
-        p.stock = stock; p.sold = sold; p.customizable = false; p.material = "Mica / nhựa"; p.baseColor = "#64748b";
-        p.description = name + " — phụ kiện chính hãng ARES giúp bảo quản và trưng bày bộ sưu tập của bạn.";
-        p.specs.put("Loại", "Phụ kiện trưng bày"); p.specs.put("Bảo hành", "6 tháng");
-        p.images.add("/images/cars/diecast.jpg");
+        p.name = name; p.brand = b.get("ARES Accessories"); p.type = Enums.ProductType.ACCESSORY; p.fuel = "Phụ kiện"; p.price = price;
+        p.stock = stock; p.sold = sold; p.customizable = false; p.material = "Lắp đặt tại xưởng"; p.baseColor = "#64748b";
+        p.description = name + " — phụ kiện chính hãng, lắp đặt miễn phí tại xưởng dịch vụ ARES, bảo hành 12 tháng.";
+        p.specs.put("Loại", "Phụ kiện ô tô"); p.specs.put("Lắp đặt", "Miễn phí tại xưởng"); p.specs.put("Bảo hành", "12 tháng");
         products.save(p);
     }
 
@@ -124,5 +130,14 @@ public class DataSeeder implements CommandLineRunner {
         Promotion p = new Promotion(); p.code = code; p.title = title; p.description = desc; p.discountPercent = pct;
         p.maxDiscount = max; p.minOrder = min; p.startDate = LocalDate.now().minusDays(1); p.endDate = LocalDate.now().plusMonths(3);
         p.bannerColor = color; promos.save(p);
+    }
+
+    private void auction(String title, String brand, int year, String km, String img, long start, long step, LocalDateTime from, LocalDateTime to,
+                         String desc, Map<String, String> specs) {
+        Auction a = new Auction();
+        a.title = title; a.brandName = brand; a.year = year; a.mileage = km; a.images.add("/images/cars/" + img + ".jpg");
+        a.startPrice = start; a.currentPrice = start; a.minIncrement = step; a.startTime = from; a.endTime = to;
+        a.description = desc; a.specs.putAll(specs);
+        auctions.save(a);
     }
 }

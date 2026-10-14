@@ -9,7 +9,7 @@
       <div class="field"><label>Số điện thoại</label><input v-model="f.phone" class="input" /></div>
       <div class="field"><label>Mật khẩu (tối thiểu 6 ký tự)</label><input v-model="f.password" class="input" type="password" required minlength="6" /></div>
       <div class="field"><label>Nhập lại mật khẩu</label><input v-model="confirm" class="input" type="password" required /></div>
-      <button class="btn btn-blue btn-block" :disabled="busy">{{ busy ? 'Đang tạo...' : 'Đăng ký' }}</button>
+      <button class="btn btn-block" :disabled="busy">{{ busy ? 'Đang tạo...' : 'Đăng ký' }}</button>
     </form>
     <SocialLogin />
     <p class="small muted" style="margin-top:18px;text-align:center">Đã có tài khoản? <router-link to="/login">Đăng nhập</router-link></p>

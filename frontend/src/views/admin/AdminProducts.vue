@@ -12,7 +12,7 @@
         <tbody><tr v-for="p in items" :key="p.id" :class="{ off: !p.active }">
           <td>{{ p.id }}</td>
           <td><div class="row" style="flex-wrap:nowrap;gap:6px"><span class="dot" :style="{ background: p.baseColor }" /><b>{{ p.name }}</b><span v-if="p.isNew" class="badge badge-new">Mới</span></div></td>
-          <td>{{ p.brand?.name }}</td><td class="small">{{ TYPES[p.type] }}<br />{{ p.scale }}</td>
+          <td>{{ p.brand?.name }}</td><td class="small">{{ TYPES[p.type] }}<br />{{ p.fuel }} · {{ p.year }}</td>
           <td class="price">{{ vnd(p.price) }}</td>
           <td :class="{ low: p.stock <= 3 }">{{ p.stock }}</td><td>{{ p.sold }}</td>
           <td>{{ p.active ? '✔' : 'Ẩn' }}</td>
@@ -30,8 +30,9 @@
         <div class="form-grid">
           <div class="field"><label>Thương hiệu</label><select v-model="form.brandId" class="input"><option v-for="b in brands" :key="b.id" :value="b.id">{{ b.name }}</option></select></div>
           <div class="field"><label>Loại</label><select v-model="form.type" class="input"><option v-for="(v, k) in TYPES" :key="k" :value="k">{{ v }}</option></select></div>
-          <div class="field"><label>Tỉ lệ</label><input v-model="form.scale" class="input" placeholder="1:18" /></div>
-          <div class="field"><label>Chất liệu</label><input v-model="form.material" class="input" /></div>
+          <div class="field"><label>Nhiên liệu</label><select v-model="form.fuel" class="input"><option v-for="x in [...FUELS, 'Phụ kiện']" :key="x">{{ x }}</option></select></div>
+          <div class="field"><label>Năm sản xuất</label><input v-model.number="form.year" type="number" class="input" /></div>
+          <div class="field"><label>Hộp số / ghi chú</label><input v-model="form.material" class="input" /></div>
           <div class="field"><label>Giá bán (đ) *</label><input v-model.number="form.price" type="number" class="input" /></div>
           <div class="field"><label>Giá gốc (đ, để trống nếu không giảm)</label><input v-model.number="form.oldPrice" type="number" class="input" /></div>
           <div class="field"><label>Tồn kho</label><input v-model.number="form.stock" type="number" class="input" /></div>
@@ -68,7 +69,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api, { errMsg } from '../../api'
-import { vnd, TYPES } from '../../format'
+import { vnd, TYPES, FUELS } from '../../format'
 const items = ref([]), brands = ref([]), q = ref(''), type = ref(''), form = ref(null), err = ref('')
 const brandModal = ref(false), berr = ref(''), newBrand = ref({ name: '', country: '' })
 
@@ -78,7 +79,7 @@ async function load() {
 }
 function edit(p) {
   err.value = ''
-  const base = p || { name: '', type: 'SUPERCAR', scale: '1:18', price: 0, stock: 10, material: 'Hợp kim đúc (Diecast)', baseColor: '#c1121f', images: [], specs: {}, isNew: true, featured: false, customizable: true, active: true, brand: brands.value[0] }
+  const base = p || { name: '', type: 'SEDAN', fuel: 'Xăng', year: new Date().getFullYear(), price: 0, stock: 5, material: 'AT 8 cấp', baseColor: '#c1121f', images: [], specs: {}, isNew: true, featured: false, customizable: true, active: true, brand: brands.value[0] }
   form.value = { ...base, brandId: base.brand?.id, imagesText: (base.images || []).join('\n'),
     specsText: Object.entries(base.specs || {}).map(([k, v]) => `${k}: ${v}`).join('\n') }
 }
@@ -101,6 +102,6 @@ onMounted(load)
 </script>
 <style scoped>
 .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-.low { color: #c0392b; font-weight: 700; } .off { opacity: .5; }
+.low { color: #fca5a5; font-weight: 700; } .off { opacity: .5; }
 .modal { max-width: 760px; }
 </style>

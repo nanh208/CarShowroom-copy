@@ -1,7 +1,7 @@
-# ARES Models — Web bán mô hình ô tô
+# ARES Auto — Showroom ô tô đa thương hiệu
 
-Website bán **mô hình ô tô sưu tầm** (tỉ lệ 1:18 – 1:64) cho khách hàng và trang quản trị cho admin.
-Giao diện kế thừa phong cách trang đăng nhập gốc của repo (nền tối, thẻ kính mờ, màu xanh `#0284c7`, font Plus Jakarta Sans, ảnh nền Pagani, logo).
+Website **showroom ô tô đa thương hiệu** (xe thật, giá VND) kèm **đấu giá xe hiếm**, cho khách hàng và trang quản trị admin.
+Giao diện giữ nguyên phong cách gốc của repo (auth.css) (nền tối, thẻ kính mờ, màu xanh `#0284c7`, font Plus Jakarta Sans, ảnh nền Pagani, logo).
 
 | Thư mục | Công nghệ |
 |---|---|
@@ -23,7 +23,7 @@ npm install
 npm run dev                   # build production: npm run build
 ```
 
-Dữ liệu mẫu (12 thương hiệu, 18 mô hình, 4 phụ kiện, 3 mã ưu đãi) được tạo tự động khi DB trống.
+Dữ liệu mẫu (14 thương hiệu, 20 mẫu xe, 4 phụ kiện, 3 mã ưu đãi, 5 phiên đấu giá) được tạo tự động khi DB trống.
 Database H2 lưu ở `backend/data/` (xoá thư mục này để reset). H2 console: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:file:./data/modelshop`, user `sa`).
 
 ### Tài khoản mặc định
@@ -32,8 +32,9 @@ Database H2 lưu ở `backend/data/` (xoá thư mục này để reset). H2 cons
 |---|---|---|
 | Admin | `admin@ares.vn` | `admin123` |
 | Khách hàng | `khach@ares.vn` | `123456` |
+| Khách hàng 2 (thử đấu giá) | `tran.binh@ares.vn` | `123456` |
 
-Mã ưu đãi mẫu: `CHAOMUNG` (-10%, tối đa 300k), `SUPERCAR15` (-15% đơn từ 3 triệu), `FREESHIP` (-5%).
+Mã ưu đãi mẫu: `CHAOMUNG` (-1%, tối đa 20 triệu), `THANG10` (-2% xe từ 1 tỷ, tối đa 50 triệu), `PHUKIEN10` (-10% phụ kiện).
 
 ### Dùng MySQL
 
@@ -68,25 +69,22 @@ Luồng: frontend gọi `GET /api/auth/oauth/{provider}/url` → chuyển tới 
 ## Chức năng
 
 **Khách hàng**
-1. Header (logo, menu, tìm kiếm nhanh, giỏ hàng, hotline) & footer (liên hệ). Trang chủ: banner, thương hiệu, hàng mới, bán chạy, ưu đãi.
-2. Tài khoản: đăng ký/đăng nhập email + Google/Facebook; hồ sơ & đổi mật khẩu; sổ địa chỉ (mặc định, thêm/sửa/xoá); lịch sử giao dịch; lịch sử đặt lịch.
-3. Danh mục: tìm kiếm, lọc theo thương hiệu/loại xe/tỉ lệ/giá/còn hàng, sắp xếp, phân trang; trang chi tiết (ảnh, thông số, sản phẩm liên quan); **thiết kế mô hình**: chọn màu sơn, mâm, nội thất — xem trước trực tiếp và cộng giá.
-4. Giỏ hàng (mô hình & phụ kiện, lưu localStorage), thanh toán: thông tin người mua, chọn địa chỉ từ sổ địa chỉ, mã ưu đãi, phí ship (miễn phí từ 2 triệu), **thanh toán toàn bộ / đặt cọc 30% / trả góp 0% 3–12 tháng / COD**. Trang chi tiết đơn: thanh toán phần còn lại hoặc kỳ trả góp tiếp theo, huỷ đơn.
-5. Dịch vụ: live chat (widget góc phải, polling 4s) + hotline; **đăng ký xem & trải nghiệm mẫu tại showroom** (thay cho "lái thử" vì là mô hình); **đặt lịch sửa chữa & bảo dưỡng mô hình** (vệ sinh, sơn lại, thay linh kiện...).
+1. Logo shop, header (menu, tìm kiếm nhanh, giỏ, hotline) & footer. Trang chủ: banner, ưu đãi, thương hiệu, xe mới/bán chạy, phiên đấu giá đang diễn ra.
+2. Tài khoản: đăng ký/đăng nhập email + Google/Facebook, quên mật khẩu; hồ sơ; **sổ địa chỉ nhà**; lịch sử giao dịch; lịch sử đặt lịch; lịch sử đấu giá.
+3. Danh mục xe: tìm kiếm, lọc theo hãng / dòng xe (Sedan, SUV, bán tải, thể thao, siêu xe, xe điện) / nhiên liệu / giá; hiển thị giá & **số lượng tồn kho**; chi tiết (ảnh, thông số); **cấu hình xe**: màu sơn, mâm, nội thất – cộng giá trực tiếp.
+4. Giỏ hàng (xe & phụ kiện), nhập thông tin người mua & địa chỉ nhận xe, mã ưu đãi. Thanh toán: **toàn bộ**, **đặt cọc 10%**, **trả góp** (trả trước 20%, 12–84 tháng, lãi phẳng 0,5%/tháng, đơn từ 300 triệu), hoặc khi nhận xe.
+5. Dịch vụ: **tư vấn** (live chat + hotline), **đăng ký lái thử**, **sửa chữa & bảo dưỡng** (đặt lịch mang xe tới xưởng).
+6. **Đấu giá xe hiếm**: danh sách phiên (đang / sắp / đã kết thúc), giá khởi điểm, bước giá, đồng hồ đếm ngược, lịch sử đặt giá cập nhật 3 giây/lần, đặt giá khi đăng nhập, chống "bắn tỉa" (đặt giá trong 2 phút cuối gia hạn thêm 2 phút). Hết giờ, hệ thống tự chốt (mỗi 20 giây) và tạo **đơn đặt cọc 10%** cho người thắng.
 
-**Admin** (`/admin`, tài khoản ADMIN)
-- Tổng quan: doanh thu, đơn, khách, tồn kho thấp, lịch hẹn chờ.
-- Sản phẩm: thêm/sửa/ẩn (xoá mềm), ảnh, thông số, tồn kho; quản lý thương hiệu.
-- Đơn hàng: lọc theo trạng thái, xem chi tiết, cập nhật trạng thái (huỷ sẽ hoàn kho).
-- Khách hàng: thống kê số đơn/chi tiêu, khoá/mở khoá, đổi vai trò.
-- Ưu đãi: CRUD mã giảm giá (%, mức tối đa, đơn tối thiểu, thời hạn).
-- Lịch hẹn: xem & đổi trạng thái lịch xem mẫu / sửa chữa.
-- Live chat: trả lời khách theo từng phiên.
+**Admin** (`/admin`)
+- Tổng quan; sản phẩm & thương hiệu; đơn hàng (trạng thái); khách hàng; ưu đãi; lịch hẹn (lái thử / bảo dưỡng); live chat.
+- **Đấu giá**: tạo/sửa phiên (giá khởi điểm, bước giá, thời gian, ảnh, thông số), xem lượt đặt (tên thật), chốt ngay, huỷ phiên.
 
 ## Phần giả lập (mock)
 - **Thanh toán**: không nối cổng thật. Form thẻ chỉ kiểm tra độ dài; backend ghi nhận số tiền đã trả và sinh mã giao dịch `MOCK-xxxx`. Có thể thay bằng VNPay/MoMo trong `OrderService`.
 - **Live chat**: polling HTTP (không WebSocket), có tin chào tự động.
-- **Ảnh sản phẩm**: dữ liệu mẫu không kèm ảnh; giao diện vẽ mô hình bằng SVG theo màu (cũng là bản xem trước khi thiết kế). Admin có thể thêm URL ảnh thật.
+- **Ảnh xe**: ảnh thật từ Wikimedia Commons (giấy phép CC, xem `frontend/public/images/cars/CREDITS.md`). Bản xem trước cấu hình vẽ bằng SVG theo màu đã chọn.
+- **Giá xe** là giá tham khảo để demo.
 - Google/Facebook: cần client id/secret thật (xem trên).
 
 ## API chính
@@ -100,6 +98,9 @@ Luồng: frontend gọi `GET /api/auth/oauth/{provider}/url` → chuyển tới 
 | POST | `/api/promotions/check` | public |
 | POST | `/api/orders`, `/api/orders/{code}/pay`, `/api/orders/{code}/cancel` | user |
 | GET/PUT | `/api/account/profile`, `/api/account/addresses`, `/api/account/orders`, `/api/account/bookings` | user |
-| POST | `/api/bookings` | public (gắn user nếu đăng nhập) |
+| POST | `/api/bookings` (type `TEST_DRIVE` / `MAINTENANCE`) | public (gắn user nếu đăng nhập) |
+| GET | `/api/auctions`, `/api/auctions/{id}` | public |
+| POST | `/api/auctions/{id}/bids` | user |
+| GET | `/api/account/bids` | user |
 | GET/POST | `/api/chat/{session}` | public |
 | * | `/api/admin/**` (stats, products, brands, orders, customers, promotions, bookings, chat) | admin |

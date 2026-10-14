@@ -32,7 +32,7 @@ public class ChatController {
         if (first) {
             ChatMessage auto = new ChatMessage();
             auto.sessionId = session; auto.fromAdmin = true; auto.customerName = c.customerName;
-            auto.content = "Xin chào " + c.customerName + "! Cảm ơn bạn đã liên hệ ARES Models. Nhân viên tư vấn sẽ phản hồi trong giây lát. Hotline: 1900 6868.";
+            auto.content = "Xin chào " + c.customerName + "! Cảm ơn bạn đã liên hệ ARES Auto. Nhân viên tư vấn sẽ phản hồi trong giây lát. Hotline: 1900 6868.";
             chat.save(auto);
         }
         return c;

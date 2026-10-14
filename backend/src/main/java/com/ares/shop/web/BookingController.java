@@ -12,7 +12,7 @@ public class BookingController {
 
     public BookingController(BookingRepo bookings, ProductRepo products) { this.bookings = bookings; this.products = products; }
 
-    /** Đặt lịch xem/trải nghiệm mô hình tại showroom (VIEWING) hoặc sửa chữa & bảo dưỡng mô hình (MAINTENANCE). */
+    /** Đăng ký lái thử (TEST_DRIVE) hoặc đặt lịch sửa chữa & bảo dưỡng (MAINTENANCE). */
     @PostMapping
     public Booking create(@RequestBody Booking b) {
         if (b.type == null) throw ApiException.bad("Thiếu loại lịch hẹn");

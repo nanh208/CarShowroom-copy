@@ -28,7 +28,7 @@ public class AdminController {
         Map<String, Long> byStatus = new LinkedHashMap<>();
         for (var s : Enums.OrderStatus.values()) byStatus.put(s.name(), all.stream().filter(o -> o.status == s).count());
         return Map.of("revenue", revenue, "orders", all.size(), "pendingOrders", pending, "customers", users.count(),
-                "products", products.count(), "lowStock", products.findAll().stream().filter(p -> p.stock <= 3).count(),
+                "products", products.count(), "lowStock", products.findAll().stream().filter(p -> p.stock <= 2).count(),
                 "bookingsPending", bookings.findAll().stream().filter(b -> b.status == Enums.BookingStatus.PENDING).count(),
                 "ordersByStatus", byStatus, "recentOrders", orders.findAllByOrderByCreatedAtDesc().stream().limit(5).toList());
     }

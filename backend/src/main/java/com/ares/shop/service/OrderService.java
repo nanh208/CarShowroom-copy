@@ -12,9 +12,10 @@ import java.util.*;
 
 @Service
 public class OrderService {
-    public static final long FREE_SHIP_FROM = 2_000_000, SHIP_FEE = 40_000;
-    public static final double DEPOSIT_RATE = 0.3;
-    public static final double INSTALLMENT_INTEREST_MONTHLY = 0.0; // trả góp 0%
+    public static final long FREE_SHIP_FROM = 0, SHIP_FEE = 0; // giao xe miễn phí
+    public static final double DEPOSIT_RATE = 0.1; // đặt cọc 10%
+    public static final double INSTALLMENT_INTEREST_MONTHLY = 0.005; // lãi phẳng 0,5%/tháng
+    public static final double INSTALLMENT_DOWN_RATE = 0.2; // trả trước 20%
 
     private final ProductRepo products; private final PromotionRepo promos; private final OrderRepo orders;
 
@@ -64,7 +65,7 @@ public class OrderService {
             }
             p.stock -= it.quantity(); p.sold += it.quantity();
             OrderItem oi = new OrderItem();
-            oi.order = o; oi.productId = p.id; oi.productName = p.name; oi.scale = p.scale;
+            oi.order = o; oi.productId = p.id; oi.productName = p.name; oi.fuel = p.fuel;
             oi.unitPrice = unit; oi.quantity = it.quantity(); oi.options = options;
             o.items.add(oi);
             o.subtotal += unit * it.quantity();
@@ -81,17 +82,19 @@ public class OrderService {
             case FULL -> { o.paidAmount = o.total; o.paymentStatus = Enums.PaymentStatus.PAID; }
             case DEPOSIT -> { o.paidAmount = Math.round(o.total * DEPOSIT_RATE); o.paymentStatus = Enums.PaymentStatus.DEPOSITED; }
             case INSTALLMENT -> {
-                int m = r.installmentMonths() == null ? 6 : r.installmentMonths();
-                if (!List.of(3, 6, 9, 12).contains(m)) throw ApiException.bad("Kỳ hạn trả góp: 3, 6, 9 hoặc 12 tháng");
-                if (o.total < 1_000_000) throw ApiException.bad("Trả góp áp dụng cho đơn từ 1.000.000đ");
+                int m = r.installmentMonths() == null ? 36 : r.installmentMonths();
+                if (!List.of(12, 24, 36, 48, 60, 84).contains(m)) throw ApiException.bad("Kỳ hạn trả góp: 12–84 tháng");
+                if (o.total < 300_000_000) throw ApiException.bad("Trả góp áp dụng cho đơn từ 300 triệu");
+                long down = Math.round(o.total * INSTALLMENT_DOWN_RATE);
+                long loan = o.total - down;
                 o.installmentMonths = m;
-                o.monthlyInstallment = (long) Math.ceil(o.total * (1 + INSTALLMENT_INTEREST_MONTHLY * m) / m);
-                o.paidAmount = o.monthlyInstallment; o.paymentStatus = Enums.PaymentStatus.PARTIAL;
+                o.monthlyInstallment = (long) Math.ceil(loan * (1 + INSTALLMENT_INTEREST_MONTHLY * m) / m);
+                o.paidAmount = down; o.paymentStatus = Enums.PaymentStatus.PARTIAL;
             }
             case COD -> { o.paidAmount = 0; o.paymentStatus = Enums.PaymentStatus.UNPAID; }
         }
         if (o.paidAmount > 0) o.transactionRef = "MOCK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        o.code = "MH" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
+        o.code = "AR" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
         return orders.save(o);
     }
 
@@ -101,10 +104,13 @@ public class OrderService {
         if (o.status == Enums.OrderStatus.CANCELLED) throw ApiException.bad("Đơn hàng đã huỷ");
         if (o.paymentMethod == Enums.PaymentMethod.INSTALLMENT && o.paidAmount + o.monthlyInstallment < o.total) {
             o.paidAmount += o.monthlyInstallment;
+        } else if (o.paymentMethod == Enums.PaymentMethod.DEPOSIT && o.paidAmount == 0) {
+            o.paidAmount = Math.round(o.total * DEPOSIT_RATE); // trả cọc (VD: đơn từ đấu giá)
         } else {
             o.paidAmount = o.total;
         }
-        o.paymentStatus = o.paidAmount >= o.total ? Enums.PaymentStatus.PAID : Enums.PaymentStatus.PARTIAL;
+        o.paymentStatus = o.paidAmount >= o.total ? Enums.PaymentStatus.PAID
+                : (o.paymentMethod == Enums.PaymentMethod.DEPOSIT ? Enums.PaymentStatus.DEPOSITED : Enums.PaymentStatus.PARTIAL);
         o.transactionRef = "MOCK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         return orders.save(o);
     }
@@ -114,8 +120,21 @@ public class OrderService {
         if (o.status == Enums.OrderStatus.CANCELLED) return o;
         if (o.status != Enums.OrderStatus.PENDING && o.status != Enums.OrderStatus.CONFIRMED)
             throw ApiException.bad("Không thể huỷ đơn đang giao hoặc đã hoàn tất");
-        for (OrderItem it : o.items) products.findById(it.productId).ifPresent(p -> { p.stock += it.quantity; p.sold -= it.quantity; });
+        for (OrderItem it : o.items) if (it.productId != null) products.findById(it.productId).ifPresent(p -> { p.stock += it.quantity; p.sold -= it.quantity; });
         o.status = Enums.OrderStatus.CANCELLED;
+        return orders.save(o);
+    }
+
+    /** Tạo đơn cho người thắng đấu giá: đặt cọc 10% (chưa thanh toán). */
+    @Transactional
+    public CustomerOrder auctionOrder(User winner, String carName, long amount, String note) {
+        CustomerOrder o = new CustomerOrder();
+        o.user = winner; o.buyerName = winner.fullName; o.phone = winner.phone; o.email = winner.email;
+        o.shippingAddress = "Nhận xe tại showroom ARES"; o.note = note;
+        OrderItem oi = new OrderItem(); oi.order = o; oi.productName = carName + " (đấu giá)"; oi.unitPrice = amount; oi.quantity = 1; oi.fuel = "";
+        o.items.add(oi);
+        o.subtotal = amount; o.total = amount; o.paymentMethod = Enums.PaymentMethod.DEPOSIT; o.paymentStatus = Enums.PaymentStatus.UNPAID;
+        o.code = "AU" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
         return orders.save(o);
     }
 
