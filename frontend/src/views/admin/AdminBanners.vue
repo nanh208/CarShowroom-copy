@@ -3,7 +3,7 @@
     <div class="row between"><h1>Banner trang chủ</h1><button class="btn" @click="edit()">+ Thêm banner</button></div>
     <div class="grid bgrid">
       <div v-for="b in list" :key="b.id" class="card bcard" :class="{ off: !b.active }">
-        <div class="img"><img :src="b.image" alt="" /><span class="pos">{{ b.position }} · #{{ b.sortOrder }}</span></div>
+        <div class="img"><img loading="lazy" decoding="async" :src="b.image" alt="" /><span class="pos">{{ b.position }} · #{{ b.sortOrder }}</span></div>
         <div class="small muted">{{ b.kicker }}</div><b>{{ b.title }}</b><div class="small">{{ b.subtitle }}</div>
         <div class="small muted">→ {{ b.link }}</div>
         <div class="row" style="gap:6px;margin-top:8px"><button class="btn btn-sm btn-outline" @click="edit(b)">Sửa</button><button class="btn btn-sm btn-danger" @click="remove(b)">Xoá</button></div>
@@ -22,7 +22,7 @@
         <div class="field"><label>Mô tả</label><input v-model="form.subtitle" class="input" /></div>
         <div class="field"><label>Liên kết</label><input v-model="form.link" class="input" placeholder="/products?type=RC" /></div>
         <div class="field"><label>Ảnh</label><div class="row" style="gap:8px"><input v-model="form.image" class="input" style="flex:1" /><label class="btn btn-sm btn-outline">Tải lên<input type="file" accept="image/*" hidden @change="up" /></label></div></div>
-        <img v-if="form.image" :src="form.image" class="prev" />
+        <img loading="lazy" decoding="async" v-if="form.image" :src="form.image" class="prev" />
         <label class="check"><input v-model="form.active" type="checkbox" /> Hiển thị</label>
         <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn btn-outline" @click="form = null">Huỷ</button><button class="btn" @click="save">Lưu</button></div>
       </div>

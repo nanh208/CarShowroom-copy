@@ -10,7 +10,7 @@
       <table class="table">
         <thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Tỷ lệ / Tuổi</th><th>Giá</th><th>Tồn</th><th>Đã bán</th><th>★</th><th>Trạng thái</th><th /></tr></thead>
         <tbody><tr v-for="p in items" :key="p.id" :class="{ off: !p.active }">
-          <td><div class="row" style="flex-wrap:nowrap;gap:12px"><img :src="p.images?.[0]" class="thumbimg" alt="" />
+          <td><div class="row" style="flex-wrap:nowrap;gap:12px"><img loading="lazy" decoding="async" :src="p.images?.[0]" class="thumbimg" alt="" />
             <div><b>{{ p.name }}</b><div class="small muted">{{ p.sku }} · {{ p.brand?.name }}<span v-if="p.hasVariants"> · có biến thể</span></div></div></div></td>
           <td class="small">{{ TYPES[p.type] }}</td><td class="small">{{ p.scale || '—' }} · {{ p.ageMin }}+</td>
           <td class="price" style="white-space:nowrap">{{ vnd(p.price) }}<div v-if="p.oldPrice" class="small muted"><s>{{ vnd(p.oldPrice) }}</s></div></td>
@@ -43,7 +43,7 @@
         <div class="field"><label>Mô tả</label><textarea v-model="form.description" rows="3" class="input" /></div>
         <div class="field"><label>Ảnh</label>
           <div class="imgs">
-            <div v-for="(u, i) in form.images" :key="u + i" class="im"><img :src="u" /><button title="Xoá" @click="form.images.splice(i, 1)">×</button><button v-if="i" class="l" title="Đặt làm ảnh chính" @click="form.images.unshift(form.images.splice(i, 1)[0])">★</button></div>
+            <div v-for="(u, i) in form.images" :key="u + i" class="im"><img loading="lazy" decoding="async" :src="u" /><button title="Xoá" @click="form.images.splice(i, 1)">×</button><button v-if="i" class="l" title="Đặt làm ảnh chính" @click="form.images.unshift(form.images.splice(i, 1)[0])">★</button></div>
             <label class="im add">{{ uploading ? '…' : '+ Tải ảnh' }}<input type="file" accept="image/*" multiple hidden @change="up" /></label>
           </div>
           <div class="row" style="gap:6px;margin-top:6px"><input v-model="imgUrl" class="input" style="flex:1" placeholder="hoặc dán URL ảnh" /><button class="btn btn-sm btn-outline" @click="imgUrl && form.images.push(imgUrl); imgUrl = ''">Thêm</button></div>

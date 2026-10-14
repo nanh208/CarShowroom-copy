@@ -5,7 +5,7 @@
         <b>So sánh xe</b>
         <div class="slots">
           <div v-for="i in 3" :key="i" class="slot">
-            <template v-if="prefs.compare[i - 1]"><img :src="prefs.compare[i - 1].images?.[0]" alt="" /><span>{{ prefs.compare[i - 1].name }}</span>
+            <template v-if="prefs.compare[i - 1]"><img loading="lazy" decoding="async" :src="prefs.compare[i - 1].images?.[0]" alt="" /><span>{{ prefs.compare[i - 1].name }}</span>
               <button @click="prefs.toggleCompare(prefs.compare[i - 1])">×</button></template>
             <span v-else class="muted">Chọn thêm xe</span>
           </div>
@@ -26,6 +26,6 @@
 .slot button { background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; } .slot button:hover { color: var(--text); }
 .btn-text { background: none; border: none; color: var(--muted); cursor: pointer; font-family: inherit; } .btn-text:hover { color: var(--text); }
 .disabled { opacity: .5; pointer-events: none; }
-.up-enter-active, .up-leave-active { transition: .3s; } .up-enter-from, .up-leave-to { transform: translateY(100%); }
+.up-enter-active, .up-leave-active { transition: transform .2s ease-out; } .up-enter-from, .up-leave-to { transform: translateY(100%); }
 @media (max-width: 800px) { .slots { display: none; } }
 </style>

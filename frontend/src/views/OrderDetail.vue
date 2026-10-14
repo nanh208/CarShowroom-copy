@@ -23,7 +23,7 @@
 
       <div v-if="needPay" v-reveal class="card paybox">
         <template v-if="o.paymentMethod === 'BANK_QR'">
-          <img :src="bank.qr" alt="VietQR" class="qr" />
+          <img loading="lazy" decoding="async" :src="bank.qr" alt="VietQR" class="qr" />
           <div><h3>Chuyển khoản qua VietQR</h3>
             <p>Ngân hàng <b>{{ bank.bank }}</b> · STK <b>{{ bank.account }}</b> · {{ bank.holder }}</p>
             <p>Số tiền <b class="price">{{ vnd(o.total - o.paidAmount) }}</b> · Nội dung <b>{{ o.code }}</b></p>
@@ -44,7 +44,7 @@
         <div class="card">
           <h3>Sản phẩm</h3>
           <div v-for="i in o.items" :key="i.id" class="item">
-            <img v-if="i.image" :src="i.image" alt="" />
+            <img loading="lazy" decoding="async" v-if="i.image" :src="i.image" alt="" />
             <div class="grow"><router-link v-if="i.productId" :to="`/products/${i.productId}`">{{ i.productName }}</router-link><span v-else>{{ i.productName }}</span> × {{ i.quantity }}
               <div class="small muted">{{ i.variantName }}<span v-if="i.flashSale"> · ⚡ Flash sale</span><span v-if="i.warrantyMonths"> · BH {{ i.warrantyMonths }} tháng</span></div></div>
             <b>{{ vnd(i.unitPrice * i.quantity) }}</b>
@@ -79,7 +79,7 @@
             <div v-if="retOpen" class="sub">
               <div class="row"><label class="check"><input v-model="ret.kind" type="radio" value="RETURN" /> Đổi/trả hàng</label><label class="check"><input v-model="ret.kind" type="radio" value="REFUND" /> Hoàn tiền</label></div>
               <textarea v-model="ret.reason" class="input" rows="3" placeholder="Mô tả lỗi / lý do (tối thiểu 10 ký tự)" />
-              <div class="row"><label class="up">📷 Ảnh minh chứng<input type="file" accept="image/*" multiple hidden @change="upload" /></label><img v-for="im in ret.images" :key="im" :src="im" class="ti" /></div>
+              <div class="row"><label class="up">📷 Ảnh minh chứng<input type="file" accept="image/*" multiple hidden @change="upload" /></label><img loading="lazy" decoding="async" v-for="im in ret.images" :key="im" :src="im" class="ti" /></div>
               <button class="btn btn-sm" @click="sendReturn">Gửi yêu cầu</button>
             </div>
             <div v-for="r in returns" :key="r.id" class="retbox">

@@ -8,7 +8,7 @@
           <td class="small">{{ d(r.createdAt) }}</td>
           <td><router-link :to="`/orders/${r.orderCode}`" target="_blank">{{ r.orderCode }}</router-link><div class="small muted">{{ PAY_METHOD[r.order?.paymentMethod] }}</div></td>
           <td>{{ r.customerName }}</td><td class="small" style="max-width:260px">{{ r.reason }}<div v-if="r.adminNote" class="muted">↳ {{ r.adminNote }}</div></td>
-          <td><a v-for="i in r.images" :key="i" :href="i" target="_blank"><img :src="i" class="th" /></a></td>
+          <td><a v-for="i in r.images" :key="i" :href="i" target="_blank"><img loading="lazy" decoding="async" :src="i" class="th" /></a></td>
           <td><b>{{ vnd(r.refundAmount) }}</b></td>
           <td><span :class="['badge', 'badge-' + (r.status === 'REFUNDED' ? 'COMPLETED' : r.status === 'REJECTED' ? 'CANCELLED' : r.status === 'APPROVED' ? 'SHIPPING' : 'PENDING')]">{{ RETURN_STATUS[r.status] }}</span></td>
           <td><div class="row" style="flex-wrap:nowrap;gap:6px">

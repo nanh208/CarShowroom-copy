@@ -6,7 +6,7 @@
       <div class="fh"><h2>⚡ Flash sale</h2><span class="muted small">Số lượng có hạn — giá áp dụng tự động khi thêm vào giỏ</span></div>
       <div class="grid fgrid">
         <router-link v-for="f in flash" :key="f.flash.id" v-reveal :to="`/products/${f.product.id}`" class="fcard card">
-          <img :src="f.product.images?.[0]" alt="" />
+          <img loading="lazy" decoding="async" :src="f.product.images?.[0]" alt="" />
           <div class="fb">
             <b>{{ f.product.name }}</b>
             <div><span class="price">{{ vnd(f.flash.salePrice) }}</span> <s class="muted small">{{ vnd(f.product.price) }}</s></div>
@@ -54,7 +54,7 @@ onMounted(async () => {
 <style scoped>
 .sec { margin-bottom: 40px; } .fh { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; } .fh h2 { margin: 0; }
 .fgrid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-.fcard { padding: 0; overflow: hidden; color: var(--text); transition: transform .25s, box-shadow .25s; } .fcard:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(120,80,30,.15); }
+.fcard { padding: 0; overflow: hidden; color: var(--text); transition: border-color .15s ease-out; } .fcard:hover { border-color: var(--bronze); }
 .fcard img { width: 100%; aspect-ratio: 4/3; object-fit: cover; } .fb { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .bar { height: 6px; background: #f1e6d6; border-radius: 3px; overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg, #e2583e, #f0a35b); }
 .red { color: var(--danger); }

@@ -3,7 +3,7 @@
     <div v-if="!o" class="spinner" />
     <div v-else class="inv">
       <div class="noprint bar"><router-link :to="`/orders/${o.code}`">← Quay lại đơn hàng</router-link><button class="btn btn-sm" onclick="window.print()">🖨 In hoá đơn</button></div>
-      <header><div><img src="/images/logo-mark.png" alt="" /><b>ARES Toys</b><small>123 Nguyễn Văn Linh, Q.7, TP.HCM · Hotline 1900 6868<br />MST 0312345678</small></div>
+      <header><div><img loading="lazy" decoding="async" src="/images/logo-mark.png" alt="" /><b>ARES Toys</b><small>123 Nguyễn Văn Linh, Q.7, TP.HCM · Hotline 1900 6868<br />MST 0312345678</small></div>
         <div class="r"><h1>HOÁ ĐƠN BÁN HÀNG</h1><p>Số: <b>{{ o.code }}</b></p><p>Ngày: {{ d(o.createdAt) }}</p></div></header>
       <section class="who"><div><small>Khách hàng</small><b>{{ o.buyerName }}</b><p>{{ o.phone }} · {{ o.email }}</p><p>{{ o.shippingAddress }}</p></div>
         <div><small>Thanh toán</small><b>{{ PAY_METHOD[o.paymentMethod] }}</b><p>{{ PAY_STATUS[o.paymentStatus] }}<span v-if="o.transactionRef"> · {{ o.transactionRef }}</span></p></div></section>

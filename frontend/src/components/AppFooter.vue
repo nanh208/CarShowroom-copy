@@ -6,7 +6,7 @@
         <form @submit.prevent="subscribe"><input v-model="email" type="email" required placeholder="Email của bạn" /><button class="btn btn-sm" :disabled="busy">Đăng ký</button></form>
       </div>
       <div class="main">
-        <router-link to="/" class="logo"><img src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span></router-link>
+        <router-link to="/" class="logo"><img loading="lazy" decoding="async" src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span></router-link>
         <nav>
           <router-link to="/about">Về chúng tôi</router-link>
           <router-link to="/services">Liên hệ</router-link>

@@ -12,7 +12,7 @@
       <div class="card">
         <div class="row between"><h3>Thương hiệu</h3><button class="btn btn-sm" @click="brand = { name: '', country: '', logoUrl: '', description: '' }">+ Thêm</button></div>
         <table class="table"><thead><tr><th /><th>Tên</th><th>Quốc gia</th><th /></tr></thead><tbody>
-          <tr v-for="b in brands" :key="b.id"><td><img :src="b.logoUrl" class="logo" alt="" /></td><td>{{ b.name }}</td><td class="small">{{ b.country }}</td>
+          <tr v-for="b in brands" :key="b.id"><td><img loading="lazy" decoding="async" :src="b.logoUrl" class="logo" alt="" /></td><td>{{ b.name }}</td><td class="small">{{ b.country }}</td>
             <td><div class="row" style="flex-wrap:nowrap;gap:6px"><button class="btn btn-sm btn-outline" @click="brand = { ...b }">Sửa</button><button class="btn btn-sm btn-danger" @click="del('brands', b)">Xoá</button></div></td></tr>
         </tbody></table>
       </div>

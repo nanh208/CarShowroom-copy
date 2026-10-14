@@ -1,41 +1,21 @@
-// Hiệu ứng chuyển động chủ đề xe: reveal khi cuộn, tilt thẻ, bay vào giỏ. Tôn trọng prefers-reduced-motion.
+// Hiệu ứng chuyển động chủ đề xe: reveal khi cuộn (1 lần), bay vào giỏ. Tôn trọng prefers-reduced-motion.
 export const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 let io
 const observer = () => io || (io = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } })
-}, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }))
+}, { rootMargin: '0px 0px 40px 0px', threshold: 0 }))
 
 /** v-reveal="'left' | 'right' | 'up' | 'zoom'"  · v-reveal:120 (độ trễ ms) */
 export const vReveal = {
   mounted(el, b) {
     if (reduced()) return
-    el.classList.add('rv', 'rv-' + (b.value || 'up'))
-    if (b.arg) el.style.setProperty('--rv-delay', b.arg + 'ms')
+    // chỉ hiện 1 lần, trễ tối đa 120ms để không chờ lâu
+    el.classList.add('rv')
+    if (b.arg) el.style.setProperty('--rv-delay', Math.min(+b.arg, 120) + 'ms')
     observer().observe(el)
   },
   unmounted(el) { io?.unobserve(el) }
-}
-
-/** v-tilt: nghiêng nhẹ theo con trỏ (chỉ thiết bị có chuột). */
-export const vTilt = {
-  mounted(el) {
-    if (reduced() || !window.matchMedia('(hover: hover)').matches) return
-    let raf
-    el._move = e => {
-      cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => {
-        const r = el.getBoundingClientRect()
-        const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5
-        el.style.setProperty('--rx', (-y * 6).toFixed(2) + 'deg'); el.style.setProperty('--ry', (x * 8).toFixed(2) + 'deg')
-        el.style.setProperty('--mx', ((x + 0.5) * 100).toFixed(1) + '%'); el.style.setProperty('--my', ((y + 0.5) * 100).toFixed(1) + '%')
-      })
-    }
-    el._leave = () => { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg') }
-    el.classList.add('tilt')
-    el.addEventListener('mousemove', el._move); el.addEventListener('mouseleave', el._leave)
-  },
-  unmounted(el) { el.removeEventListener('mousemove', el._move); el.removeEventListener('mouseleave', el._leave) }
 }
 
 /** Ảnh sản phẩm "lái" theo đường cong vào icon giỏ hàng. */
@@ -51,11 +31,10 @@ export function flyToCart(src, from) {
   document.body.appendChild(img)
   const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2)
   const anim = img.animate([
-    { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1 },
-    { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 90}px) scale(.8) rotate(-8deg)`, opacity: 1, offset: 0.5 },
-    { transform: `translate(${dx}px, ${dy}px) scale(.18) rotate(0deg)`, opacity: .4 }
-  ], { duration: 750, easing: 'cubic-bezier(.5,0,.3,1)' })
+    { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
+    { transform: `translate3d(${dx}px, ${dy}px, 0) scale(.2)`, opacity: .3 }
+  ], { duration: 420, easing: 'cubic-bezier(.2,.7,.3,1)' })
   anim.onfinish = () => img.remove()
 }
 
-export default { install(app) { app.directive('reveal', vReveal); app.directive('tilt', vTilt) } }
+export default { install(app) { app.directive('reveal', vReveal) } }

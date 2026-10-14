@@ -1,5 +1,4 @@
 /* ARES Store — theo wireframe Figma: nền trắng, cột nội dung giữa, thanh menu đồng (bronze), thẻ xám bo góc */
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bronze: #a87a3c; --bronze-2: #8f672f; --bronze-3: #6f4f22; --bronze-soft: #f4ebdd;
@@ -20,6 +19,7 @@ a { color: var(--bronze); text-decoration: none; } a:hover { color: var(--bronze
 img { max-width: 100%; display: block; }
 h1, h2, h3, h4 { font-family: var(--head); line-height: 1.2; font-weight: 600; letter-spacing: 0; }
 .container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+main { min-height: 100vh; }
 .page { padding-top: 112px; padding-bottom: var(--s6); min-height: 60vh; }
 .page > h1, .page h1:first-child, .page h1.title { font-size: 2rem; margin-bottom: 6px; }
 .page > h1 + p, .page h1:first-child + p { color: var(--muted); margin-bottom: var(--s4); max-width: 720px; }
@@ -104,46 +104,26 @@ img.cover { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
 
 /* Thẻ ảnh xám có tên đè lên ảnh (wireframe "Model Name") */
 .tile { position: relative; display: block; border-radius: var(--radius); overflow: hidden; background: var(--tile-2); aspect-ratio: 16/7.5; color: #fff; }
-.tile img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
-.tile:hover img { transform: scale(1.04); }
+.tile img { width: 100%; height: 100%; object-fit: cover; }
 .tile .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 14px 10px; background: linear-gradient(transparent, rgba(0,0,0,.65)); font-family: var(--head); font-weight: 600; font-size: .95rem; color: #fff; display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; }
 .tile .cap small { font-family: 'Be Vietnam Pro'; font-weight: 500; font-size: .78rem; opacity: .9; }
 
-/* ===================== Chuyển động (chủ đề xe) ===================== */
-html { scroll-behavior: smooth; }
-.page-enter-active { transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1); }
-.page-leave-active { transition: opacity .18s ease, transform .2s ease-in; }
-.page-enter-from { opacity: 0; transform: translateX(28px); }
-.page-leave-to { opacity: 0; transform: translateX(-28px); }
+/* ===================== Chuyển động (nhẹ, nhanh, ease-out; không hiệu ứng theo chuột) ===================== */
+.page-enter-active { transition: opacity .18s ease-out; }
+.page-enter-from { opacity: 0; }
 
-/* Reveal khi cuộn: như xe chạy vào khung hình */
-.rv { opacity: 0; transition: opacity .7s ease, transform .8s cubic-bezier(.16,.84,.3,1); transition-delay: var(--rv-delay, 0ms); will-change: transform, opacity; }
-.rv-up { transform: translateY(36px); }
-.rv-left { transform: translateX(-70px) skewX(4deg); }
-.rv-right { transform: translateX(70px) skewX(-4deg); }
-.rv-zoom { transform: scale(.94); }
+/* Reveal khi cuộn: chỉ chạy 1 lần, quãng ngắn */
+.rv { opacity: 0; transform: translateY(12px); transition: opacity .22s ease-out, transform .22s ease-out; transition-delay: var(--rv-delay, 0ms); }
 .rv.in { opacity: 1; transform: none; }
 
-/* Thẻ: nâng + nghiêng theo chuột + vệt sáng đèn pha */
-.tilt { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0)); transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; }
-.tilt:hover { --lift: -6px; box-shadow: 0 22px 40px -22px rgba(60,40,10,.45); }
-.tilt::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
-  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgba(255,240,200,.28), transparent 60%); }
-.tilt:hover::after { opacity: 1; }
-
-/* Nút: đèn pha quét ngang khi hover */
-.btn { position: relative; overflow: hidden; isolation: isolate; }
-.btn::before { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 45%; z-index: -1; transform: skewX(-20deg) translateX(0);
-  background: linear-gradient(90deg, transparent, rgba(255,250,220,.55), transparent); transition: transform .6s ease; pointer-events: none; }
-.btn:hover::before { transform: skewX(-20deg) translateX(420%); }
-.btn:not(.btn-outline):hover { box-shadow: 0 0 0 1px rgba(255,214,120,.35), 0 8px 26px -8px rgba(245,196,0,.65); }
-
-/* Icon bánh xe quay khi hover */
-.wheel-ico { transition: transform .6s cubic-bezier(.3,1.3,.5,1); }
-a:hover .wheel-ico, button:hover .wheel-ico, .cat:hover .wheel-ico { transform: rotate(360deg); }
+/* Hover: chỉ đổi màu nhẹ */
+.btn { transition: background-color .15s ease-out, color .15s ease-out, border-color .15s ease-out; }
+:focus-visible { outline: 2px solid var(--bronze); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -999px; top: 8px; z-index: 400; background: #fff; padding: 8px 14px; border-radius: 8px; }
+.skip-link:focus { left: 8px; }
 
 /* Skeleton */
-.sk { background: linear-gradient(90deg, #eee 25%, #f7f7f7 37%, #eee 63%); background-size: 400% 100%; animation: sk 1.3s ease infinite; }
+.sk { background: linear-gradient(90deg, #eee 25%, #f7f7f7 37%, #eee 63%); background-size: 400% 100%; animation: sk 1.2s linear infinite; }
 @keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
 /* Ảnh bay vào giỏ */
@@ -153,5 +133,4 @@ a:hover .wheel-ico, button:hover .wheel-ico, .cat:hover .wheel-ico { transform: 
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .rv { opacity: 1; transform: none; }
-  .tilt { transform: none; }
 }

@@ -8,7 +8,7 @@
           <div v-if="!cart.items.length" class="muted">Giỏ hàng trống — bạn có sản phẩm đã lưu bên dưới.</div>
           <transition-group name="line" tag="div">
             <div v-for="i in cart.items" :key="i.key" class="line">
-              <img :src="i.image" class="cimg" alt="" />
+              <img loading="lazy" decoding="async" :src="i.image" class="cimg" alt="" />
               <div class="grow">
                 <router-link :to="`/products/${i.productId}`" class="name">{{ i.name }}</router-link>
                 <div v-if="i.variantName" class="muted small">Phân loại: {{ i.variantName }}</div>
@@ -28,7 +28,7 @@
         <div v-if="cart.saved.length" class="card saved">
           <h3>Đã lưu để mua sau ({{ cart.saved.length }})</h3>
           <div v-for="i in cart.saved" :key="i.key" class="line">
-            <img :src="i.image" class="cimg" alt="" />
+            <img loading="lazy" decoding="async" :src="i.image" class="cimg" alt="" />
             <div class="grow"><router-link :to="`/products/${i.productId}`" class="name">{{ i.name }}</router-link><div class="muted small">{{ i.variantName }} {{ vnd(i.unitPrice) }}</div></div>
             <button class="btn btn-sm" @click="cart.moveToCart(i.key)">Thêm vào giỏ</button>
             <button class="btn btn-sm btn-outline" @click="cart.removeSaved(i.key)">Xoá</button>
@@ -76,6 +76,6 @@ const free = computed(() => catalog.options.freeShipFrom || 500000)
 .car { position: absolute; top: -13px; transform: translateX(-50%) scaleX(-1); transition: left .8s cubic-bezier(.2,.8,.2,1); font-size: 1.1rem; }
 .ship small { font-size: .82rem; } .ok { color: var(--success); font-weight: 600; }
 .disabled { pointer-events: none; opacity: .5; }
-.line-leave-active { transition: .35s; } .line-leave-to { opacity: 0; transform: translateX(60px); }
+.line-leave-active { transition: opacity .18s ease-out; } .line-leave-to { opacity: 0; }
 .idle { animation-duration: 3s; margin: 10px auto 16px; }
 </style>

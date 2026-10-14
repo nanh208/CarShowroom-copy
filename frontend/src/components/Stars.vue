@@ -7,5 +7,5 @@
 <script setup>defineProps({ value: Number, size: { type: String, default: '1rem' }, pick: Boolean }); defineEmits(['update:value'])</script>
 <style scoped>
 .stars { display: inline-flex; gap: 2px; line-height: 1; } .s { color: rgba(0,0,0,.18); } .s.on { color: #f5b800; }
-.s.pick { cursor: pointer; transition: transform .1s; } .s.pick:hover { transform: scale(1.2); }
+.s.pick { cursor: pointer; transition: color .15s ease-out; }
 </style>

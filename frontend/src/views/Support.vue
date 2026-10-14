@@ -5,14 +5,14 @@
     <p class="muted">Chúng tôi luôn sẵn sàng giúp bạn chọn đồ chơi, xử lý đơn hàng, bảo hành và kỹ thuật RC.</p>
 
     <div class="channels">
-      <a v-reveal:0 v-tilt :href="`tel:${HOTLINE.replace(/\s/g, '')}`" class="ch"><span>📞</span><b>Hotline {{ HOTLINE }}</b><small>8:00 – 21:00 mỗi ngày, miễn phí</small></a>
-      <button v-reveal:80 v-tilt class="ch" @click="openChat"><span>💬</span><b>Chat trực tuyến</b><small>Nhân viên trả lời trong vài phút</small></button>
-      <a v-reveal:160 v-tilt href="#ticket" class="ch"><span>🎫</span><b>Gửi phiếu hỗ trợ</b><small>Phản hồi trong 24 giờ</small></a>
-      <router-link v-reveal:240 v-tilt to="/faq" class="ch"><span>❓</span><b>Câu hỏi thường gặp</b><small>Vận chuyển, đổi trả, pin LiPo…</small></router-link>
+      <a v-reveal :href="`tel:${HOTLINE.replace(/\s/g, '')}`" class="ch"><span>📞</span><b>Hotline {{ HOTLINE }}</b><small>8:00 – 21:00 mỗi ngày, miễn phí</small></a>
+      <button v-reveal class="ch" @click="openChat"><span>💬</span><b>Chat trực tuyến</b><small>Nhân viên trả lời trong vài phút</small></button>
+      <a v-reveal href="#ticket" class="ch"><span>🎫</span><b>Gửi phiếu hỗ trợ</b><small>Phản hồi trong 24 giờ</small></a>
+      <router-link v-reveal to="/faq" class="ch"><span>❓</span><b>Câu hỏi thường gặp</b><small>Vận chuyển, đổi trả, pin LiPo…</small></router-link>
     </div>
 
     <div class="grid grid-2 two">
-      <section id="warranty" v-reveal="'left'" class="card">
+      <section id="warranty" v-reveal class="card">
         <h3>🛡 Tra cứu bảo hành</h3>
         <p class="muted small">Nhập mã đơn hàng và số điện thoại đặt hàng.</p>
         <div class="form-grid"><input v-model="w.code" class="input" placeholder="Mã đơn (VD: TS2610...)" /><input v-model="w.phone" class="input" placeholder="Số điện thoại" /></div>
@@ -21,7 +21,7 @@
         <div v-if="wr" class="wres">
           <p>Đơn <b>{{ wr.code }}</b> · {{ wr.deliveredAt ? 'giao ngày ' + d(wr.deliveredAt) : 'chưa giao hàng' }}</p>
           <div v-for="i in wr.items" :key="i.name" class="witem">
-            <img v-if="i.image" :src="i.image" alt="" /><div class="grow"><b>{{ i.name }}</b><small v-if="!i.months">Không áp dụng bảo hành — đổi mới 7 ngày nếu lỗi</small><small v-else>Bảo hành {{ i.months }} tháng</small></div>
+            <img loading="lazy" decoding="async" v-if="i.image" :src="i.image" alt="" /><div class="grow"><b>{{ i.name }}</b><small v-if="!i.months">Không áp dụng bảo hành — đổi mới 7 ngày nếu lỗi</small><small v-else>Bảo hành {{ i.months }} tháng</small></div>
             <span v-if="i.valid === true" class="badge badge-COMPLETED">Còn hạn đến {{ d(i.until) }}</span>
             <span v-else-if="i.valid === false" class="badge badge-CANCELLED">Hết hạn {{ d(i.until) }}</span>
             <span v-else class="badge">—</span>
@@ -29,7 +29,7 @@
         </div>
       </section>
 
-      <section id="ticket" v-reveal="'right'" class="card">
+      <section id="ticket" v-reveal class="card">
         <h3>🎫 Gửi phiếu hỗ trợ</h3>
         <template v-if="auth.loggedIn">
           <div class="form-grid">
