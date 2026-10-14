@@ -44,7 +44,8 @@ public class CatalogController {
             case "price_desc" -> Sort.by("price").descending();
             case "bestseller" -> Sort.by("sold").descending();
             case "name" -> Sort.by("name");
-            default -> Sort.by("createdAt").descending().and(Sort.by("id").descending());
+            case "newest" -> Sort.by("createdAt").descending().and(Sort.by("id").descending());
+            default -> Sort.by("featured").descending().and(Sort.by("isNew").descending()).and(Sort.by("sold").descending());
         };
     }
 

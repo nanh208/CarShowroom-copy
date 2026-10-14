@@ -23,7 +23,7 @@
         <div class="row between toolbar">
           <span class="muted small">Trang {{ page + 1 }}/{{ Math.max(pages, 1) }}</span>
           <select v-model="f.sort" class="input sort" @change="apply">
-            <option value="newest">Mới nhất</option><option value="bestseller">Bán chạy</option>
+            <option value="featured">Nổi bật</option><option value="newest">Mới nhất</option><option value="bestseller">Bán chạy</option>
             <option value="price_asc">Giá tăng dần</option><option value="price_desc">Giá giảm dần</option><option value="name">Tên A–Z</option>
           </select>
         </div>
@@ -48,11 +48,11 @@ import ProductCard from '../components/ProductCard.vue'
 const route = useRoute(), router = useRouter()
 const brands = ref([]), items = ref([]), total = ref(0), pages = ref(0), page = ref(0), loading = ref(true), price = ref('')
 const scales = ['1:18', '1:24', '1:43', '1:64']
-const f = reactive({ q: '', brandId: '', type: '', scale: '', inStock: false, sort: 'newest' })
+const f = reactive({ q: '', brandId: '', type: '', scale: '', inStock: false, sort: 'featured' })
 
 function fromQuery() {
   const q = route.query
-  Object.assign(f, { q: q.q || '', brandId: q.brandId || '', type: q.type || '', scale: q.scale || '', inStock: q.inStock === '1', sort: q.sort || 'newest' })
+  Object.assign(f, { q: q.q || '', brandId: q.brandId || '', type: q.type || '', scale: q.scale || '', inStock: q.inStock === '1', sort: q.sort || 'featured' })
   price.value = q.price || ''; page.value = Number(q.page || 0)
 }
 async function load() {
@@ -66,7 +66,7 @@ async function load() {
 function apply(p = 0) {
   const query = { ...f, inStock: f.inStock ? '1' : '', price: price.value, page: typeof p === 'number' && p ? p : '' }
   Object.keys(query).forEach(k => !query[k] && delete query[k])
-  if (query.sort === 'newest') delete query.sort
+  if (query.sort === 'featured') delete query.sort
   router.push({ path: '/products', query })
 }
 const go = p => apply(p)
