@@ -9,7 +9,7 @@
           <td>{{ p.maxDiscount ? vnd(p.maxDiscount) : '—' }}</td><td>{{ vnd(p.minOrder) }}</td>
           <td class="small">{{ d(p.startDate) }} → {{ d(p.endDate) }}</td>
           <td><span :class="['badge', p.validNow ? 'badge-COMPLETED' : 'badge-CANCELLED']">{{ p.validNow ? 'Đang chạy' : (p.active ? 'Ngoài thời hạn' : 'Tắt') }}</span></td>
-          <td class="row" style="flex-wrap:nowrap"><button class="btn btn-sm btn-outline" @click="edit(p)">Sửa</button><button class="btn btn-sm btn-danger" @click="remove(p)">Xoá</button></td>
+          <td><div class="row" style="flex-wrap:nowrap;gap:6px"><button class="btn btn-sm btn-outline" @click="edit(p)">Sửa</button><button class="btn btn-sm btn-danger" @click="remove(p)">Xoá</button></div></td>
         </tr></tbody>
       </table>
     </div>

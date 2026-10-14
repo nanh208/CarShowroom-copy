@@ -1,7 +1,7 @@
 <template>
   <div class="container page">
-    <h1>Dịch vụ & Hậu mãi</h1>
-    <p class="muted" style="margin-bottom:22px">Tư vấn trực tuyến, đặt lịch xem mẫu tại showroom và sửa chữa – bảo dưỡng mô hình.</p>
+    <h1 class="page-title">Dịch vụ & Hậu mãi</h1>
+    <p class="page-sub">Tư vấn trực tuyến, đặt lịch xem mẫu tại showroom và sửa chữa – bảo dưỡng mô hình.</p>
     <div class="grid svc">
       <div class="card"><div class="ico">💬</div><h3>Tư vấn trực tuyến</h3><p class="muted small">Chat với nhân viên ở góc phải màn hình, phản hồi trong vài phút (8:00–21:00).</p></div>
       <div class="card"><div class="ico">📞</div><h3>Hotline {{ HOTLINE }}</h3><p class="muted small">Gọi miễn phí để được tư vấn chọn mẫu, kiểm tra đơn hàng và bảo hành.</p>

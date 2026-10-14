@@ -84,7 +84,30 @@ public class DataSeeder implements CommandLineRunner {
         p.specs.put("Chi tiết mở được", scale.equals("1:64") ? "Không" : "Cửa, capo, cốp");
         p.specs.put("Phụ kiện kèm theo", "Hộp trưng bày, giấy chứng nhận");
         p.specs.put("Bảo hành", "12 tháng lỗi sơn & khớp nối");
+        for (String img : imagesFor(name)) p.images.add(img);
         products.save(p);
+    }
+
+    private String[] imagesFor(String name) {
+        String n = name.toLowerCase();
+        if (n.contains("sf90")) return new String[]{"/images/cars/sf90.jpg", "/images/cars/sf90b.jpg"};
+        if (n.contains("aventador") || n.contains("svj")) return new String[]{"/images/cars/svj.jpg", "/images/cars/huracan2.jpg"};
+        if (n.contains("huracan") || n.contains("488")) return new String[]{"/images/cars/huracan.jpg", "/images/cars/huracan2.jpg"};
+        if (n.contains("gt3")) return new String[]{"/images/cars/gt3rs.jpg"};
+        if (n.contains("g63") || n.contains("gullwing") || n.contains("mercedes")) return new String[]{"/images/cars/g63.jpg"};
+        if (n.contains("skyline") || n.contains("r34")) return new String[]{"/images/cars/r34.jpg"};
+        if (n.contains("chiron") || n.contains("bugatti")) return new String[]{"/images/cars/chiron.jpg"};
+        if (n.contains("huayra") || n.contains("pagani")) return new String[]{"/images/cars/huayra.jpg"};
+        if (n.contains("supra")) return new String[]{"/images/cars/supra.jpg"};
+        if (n.contains("m4") || n.contains("bmw")) return new String[]{"/images/cars/m4.jpg"};
+        if (n.contains("mustang") || n.contains("f-150") || n.contains("ford")) return new String[]{"/images/cars/mustang.jpg"};
+        if (n.contains("vinfast") || n.contains("vf")) return new String[]{"/images/cars/vf8.jpg"};
+        if (n.contains("urus") || n.contains("lamborghini")) return new String[]{"/images/cars/huracan2.jpg"};
+        if (n.contains("porsche") || n.contains("356")) return new String[]{"/images/cars/gt3rs.jpg"};
+        if (n.contains("hot wheels")) return new String[]{"/images/cars/diecast.jpg"};
+        if (n.contains("toyota")) return new String[]{"/images/cars/supra.jpg"};
+        if (n.contains("nissan")) return new String[]{"/images/cars/r34.jpg"};
+        return new String[]{"/images/cars/diecast.jpg"};
     }
 
     private void A(Map<String, Brand> b, String name, long price, int stock, int sold) {
@@ -93,6 +116,7 @@ public class DataSeeder implements CommandLineRunner {
         p.stock = stock; p.sold = sold; p.customizable = false; p.material = "Mica / nhựa"; p.baseColor = "#64748b";
         p.description = name + " — phụ kiện chính hãng ARES giúp bảo quản và trưng bày bộ sưu tập của bạn.";
         p.specs.put("Loại", "Phụ kiện trưng bày"); p.specs.put("Bảo hành", "6 tháng");
+        p.images.add("/images/cars/diecast.jpg");
         products.save(p);
     }
 

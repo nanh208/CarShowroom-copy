@@ -1,7 +1,7 @@
 <template>
   <div class="container page">
-    <h1>Tài khoản của tôi</h1>
-    <p class="muted" style="margin-bottom:20px">{{ auth.user.email }} <span class="badge">{{ auth.user.provider === 'LOCAL' ? 'Email' : auth.user.provider }}</span></p>
+    <h1 class="page-title">Tài khoản của tôi</h1>
+    <p class="page-sub">{{ auth.user.email }} <span class="badge">{{ auth.user.provider === 'LOCAL' ? 'Email' : auth.user.provider }}</span></p>
     <div class="tabs">
       <button v-for="(v, k) in tabs" :key="k" :class="{ active: tab === k }" @click="setTab(k)">{{ v }}</button>
     </div>

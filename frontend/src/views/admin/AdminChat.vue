@@ -45,11 +45,11 @@ onUnmounted(() => clearInterval(timer))
 .chat-layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; height: calc(100vh - 140px); }
 .sessions { overflow-y: auto; padding: 10px; }
 .sess { display: block; width: 100%; text-align: left; background: none; border: 1px solid transparent; color: var(--text); padding: 10px; border-radius: 10px; cursor: pointer; font-family: inherit; margin-bottom: 4px; }
-.sess:hover { background: rgba(255,255,255,.04); } .sess.on { border-color: var(--accent); background: rgba(56,189,248,.08); }
+.sess:hover { background: #f5f5f5; } .sess.on { border-color: var(--bronze); background: rgba(168,122,60,.08); }
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .convo { display: flex; flex-direction: column; gap: 12px; }
 .msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .msg { max-width: 70%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; }
-.me { align-self: flex-end; background: var(--primary); } .them { align-self: flex-start; background: rgba(255,255,255,.08); }
+.me { align-self: flex-end; background: var(--bronze); color: #fff; } .them { align-self: flex-start; background: #f0f0f0; }
 .t { font-size: .68rem; opacity: .6; margin-top: 2px; }
 </style>

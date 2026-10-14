@@ -12,6 +12,7 @@ const routes = [
   { path: '/orders/:code', component: () => import('./views/OrderDetail.vue'), meta: { auth: true } },
   { path: '/login', component: () => import('./views/Login.vue'), meta: { bare: true } },
   { path: '/register', component: () => import('./views/Register.vue'), meta: { bare: true } },
+  { path: '/forgot-password', component: () => import('./views/ForgotPassword.vue'), meta: { bare: true } },
   { path: '/oauth-callback', component: () => import('./views/OAuthCallback.vue'), meta: { bare: true } },
   { path: '/account', component: () => import('./views/Account.vue'), meta: { auth: true } },
   {

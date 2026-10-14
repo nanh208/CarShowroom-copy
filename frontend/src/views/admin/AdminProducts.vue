@@ -11,13 +11,13 @@
         <thead><tr><th>ID</th><th>Sản phẩm</th><th>Hãng</th><th>Loại / Tỉ lệ</th><th>Giá</th><th>Tồn kho</th><th>Đã bán</th><th>Hiển thị</th><th /></tr></thead>
         <tbody><tr v-for="p in items" :key="p.id" :class="{ off: !p.active }">
           <td>{{ p.id }}</td>
-          <td class="row" style="flex-wrap:nowrap"><span class="dot" :style="{ background: p.baseColor }" /><b>{{ p.name }}</b><span v-if="p.isNew" class="badge badge-new">Mới</span></td>
+          <td><div class="row" style="flex-wrap:nowrap;gap:6px"><span class="dot" :style="{ background: p.baseColor }" /><b>{{ p.name }}</b><span v-if="p.isNew" class="badge badge-new">Mới</span></div></td>
           <td>{{ p.brand?.name }}</td><td class="small">{{ TYPES[p.type] }}<br />{{ p.scale }}</td>
           <td class="price">{{ vnd(p.price) }}</td>
           <td :class="{ low: p.stock <= 3 }">{{ p.stock }}</td><td>{{ p.sold }}</td>
           <td>{{ p.active ? '✔' : 'Ẩn' }}</td>
-          <td class="row" style="flex-wrap:nowrap"><button class="btn btn-sm btn-outline" @click="edit(p)">Sửa</button>
-            <button v-if="p.active" class="btn btn-sm btn-danger" @click="remove(p)">Ẩn</button></td>
+          <td><div class="row" style="flex-wrap:nowrap;gap:6px"><button class="btn btn-sm btn-outline" @click="edit(p)">Sửa</button>
+            <button v-if="p.active" class="btn btn-sm btn-danger" @click="remove(p)">Ẩn</button></div></td>
         </tr></tbody>
       </table>
     </div>
@@ -56,7 +56,7 @@
         <div v-if="berr" class="alert alert-error">{{ berr }}</div>
         <table class="table"><tbody><tr v-for="b in brands" :key="b.id">
           <td><input v-model="b.name" class="input" /></td><td><input v-model="b.country" class="input" placeholder="Quốc gia" /></td>
-          <td class="row" style="flex-wrap:nowrap"><button class="btn btn-sm btn-outline" @click="saveBrand(b)">Lưu</button><button class="btn btn-sm btn-danger" @click="delBrand(b)">Xoá</button></td>
+          <td><div class="row" style="flex-wrap:nowrap;gap:6px"><button class="btn btn-sm btn-outline" @click="saveBrand(b)">Lưu</button><button class="btn btn-sm btn-danger" @click="delBrand(b)">Xoá</button></div></td>
         </tr></tbody></table>
         <div class="row" style="margin-top:12px"><input v-model="newBrand.name" class="input grow" placeholder="Tên thương hiệu mới" /><input v-model="newBrand.country" class="input grow" placeholder="Quốc gia" />
           <button class="btn btn-sm" @click="saveBrand(newBrand)">Thêm</button></div>
@@ -101,6 +101,6 @@ onMounted(load)
 </script>
 <style scoped>
 .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-.low { color: #fca5a5; font-weight: 700; } .off { opacity: .5; }
+.low { color: #c0392b; font-weight: 700; } .off { opacity: .5; }
 .modal { max-width: 760px; }
 </style>

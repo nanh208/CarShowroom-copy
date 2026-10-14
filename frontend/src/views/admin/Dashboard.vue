@@ -40,8 +40,8 @@ onMounted(async () => { s.value = (await api.get('/admin/stats')).data })
 </script>
 <style scoped>
 .stats { grid-template-columns: repeat(5, 1fr) } @media (max-width: 1100px) { .stats { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }; }
-.val { font-size: 1.7rem; font-weight: 800; margin: 4px 0; } .warn { color: #fcd34d; }
+.val { font-size: 1.7rem; font-weight: 800; margin: 4px 0; } .warn { color: #b7791f; }
 .bar-row { display: grid; grid-template-columns: 120px 1fr 30px; gap: 10px; align-items: center; margin-bottom: 10px; font-size: .9rem; }
-.bar { background: rgba(255,255,255,.06); border-radius: 6px; height: 10px; overflow: hidden; } .bar div { background: var(--primary); height: 100%; }
+.bar { background: #eee; border-radius: 2px; height: 10px; overflow: hidden; } .bar div { background: var(--bronze); height: 100%; }
 .ro { padding: 8px 0; border-bottom: 1px solid var(--border); }
 </style>

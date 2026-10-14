@@ -1,43 +1,34 @@
 <template>
-  <header class="header">
-    <div class="topbar">
-      <div class="container row between">
-        <span>📞 Hotline: <b>{{ HOTLINE }}</b> · ✉️ cskh@ares.vn</span>
-        <span class="hide-sm">🚚 Miễn phí giao hàng đơn từ 2.000.000đ · Trả góp 0%</span>
+  <header class="hdr">
+    <div class="bar">
+      <div class="container row bar-inner">
+        <router-link to="/" class="logo">
+          <img src="/images/logo.png" alt="ARES" />
+          <span>ARES</span>
+        </router-link>
+        <nav class="nav">
+          <router-link to="/" exact-active-class="on">Trang chủ</router-link>
+          <router-link to="/products" active-class="on">Sản phẩm</router-link>
+          <router-link to="/promotions" active-class="on">Ưu đãi</router-link>
+          <router-link to="/services" active-class="on">Dịch vụ</router-link>
+          <a href="#contact" @click.prevent="$router.push('/')">Liên hệ</a>
+        </nav>
+        <div class="actions row">
+          <button class="icon" title="Tìm kiếm" @click="showSearch = !showSearch">🔍</button>
+          <router-link to="/cart" class="icon cart">🛒<span v-if="cart.count" class="cnt">{{ cart.count }}</span></router-link>
+          <router-link v-if="auth.isAdmin" to="/admin" class="icon" title="Admin">⚙️</router-link>
+          <router-link v-if="auth.loggedIn" to="/account" class="icon" title="Tài khoản">👤</router-link>
+          <router-link v-else to="/login" class="icon" title="Đăng nhập">👤</router-link>
+        </div>
       </div>
     </div>
-    <div class="container main row">
-      <router-link to="/" class="logo">
-        <img src="/images/logo.png" alt="ARES" @error="e => e.target.style.display = 'none'" />
-        <span>ARES <b>MODELS</b></span>
-      </router-link>
-      <form class="search grow" @submit.prevent="search">
-        <input v-model="q" class="input" placeholder="Tìm mô hình, thương hiệu... (VD: Ferrari, 1:18)" />
-        <button class="btn btn-sm">🔍</button>
-      </form>
-      <div class="row actions">
-        <router-link to="/cart" class="cart">🛒<span v-if="cart.count" class="cnt">{{ cart.count }}</span></router-link>
-        <template v-if="auth.loggedIn">
-          <router-link v-if="auth.isAdmin" to="/admin" class="btn btn-sm btn-outline">⚙️ Quản trị</router-link>
-          <router-link to="/account" class="user">👤 {{ auth.user.fullName?.split(' ').pop() }}</router-link>
-          <button class="btn btn-sm btn-outline" @click="logout">Đăng xuất</button>
-        </template>
-        <template v-else>
-          <router-link to="/login" class="btn btn-sm">Đăng nhập</router-link>
-        </template>
-      </div>
-    </div>
-    <nav class="nav">
+    <form v-if="showSearch" class="search-row" @submit.prevent="search">
       <div class="container row">
-        <router-link to="/" exact-active-class="on">Trang chủ</router-link>
-        <router-link to="/products" active-class="on">Sản phẩm</router-link>
-        <router-link :to="{ path: '/products', query: { type: 'SUPERCAR' } }">Siêu xe</router-link>
-        <router-link :to="{ path: '/products', query: { type: 'CLASSIC' } }">Xe cổ điển</router-link>
-        <router-link :to="{ path: '/products', query: { type: 'ACCESSORY' } }">Phụ kiện</router-link>
-        <router-link to="/promotions" active-class="on">Ưu đãi</router-link>
-        <router-link to="/services" active-class="on">Dịch vụ & Hậu mãi</router-link>
+        <input v-model="q" class="input grow" placeholder="Tìm mô hình, thương hiệu... (VD: Ferrari, 1:18)" autofocus />
+        <button class="btn btn-sm">Tìm</button>
+        <button type="button" class="btn btn-sm btn-outline" @click="showSearch = false">Đóng</button>
       </div>
-    </nav>
+    </form>
   </header>
 </template>
 
@@ -46,28 +37,27 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../stores/auth'
 import { useCart } from '../stores/cart'
-import { HOTLINE } from '../format'
 const auth = useAuth(), cart = useCart(), router = useRouter()
-const q = ref('')
-const search = () => router.push({ path: '/products', query: q.value ? { q: q.value } : {} })
-const logout = () => { auth.logout(); router.push('/') }
+const q = ref(''), showSearch = ref(false)
+const search = () => { router.push({ path: '/products', query: q.value ? { q: q.value } : {} }); showSearch.value = false }
 </script>
 
 <style scoped>
-.header { position: sticky; top: 0; z-index: 50; background: rgba(11,12,16,.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
-.topbar { background: var(--primary-active); font-size: .8rem; padding: 5px 0; color: #e0f2fe; }
-.main { padding: 14px 20px; gap: 22px; flex-wrap: nowrap; }
-.logo { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 1.3rem; letter-spacing: .04em; white-space: nowrap; }
-.logo img { height: 40px; }
-.logo b { color: var(--accent); }
-.search { display: flex; gap: 8px; max-width: 560px; }
-.search .input { padding: 9px 14px; }
-.actions { flex-wrap: nowrap; }
-.cart { position: relative; font-size: 1.5rem; color: #fff; }
-.cnt { position: absolute; top: -6px; right: -10px; background: var(--danger); color: #fff; font-size: .7rem; font-weight: 700; border-radius: 999px; padding: 1px 6px; }
-.user { color: var(--text); font-weight: 600; white-space: nowrap; }
-.nav { border-top: 1px solid var(--border); }
-.nav a { color: var(--label); padding: 10px 14px; font-weight: 600; font-size: .92rem; }
-.nav a:hover, .nav a.on { color: var(--accent); }
-@media (max-width: 900px) { .main { flex-wrap: wrap; } .search { order: 3; max-width: none; flex-basis: 100%; } .hide-sm { display: none; } }
+.hdr { position: sticky; top: 0; z-index: 50; }
+.bar { background: var(--header); height: 48px; }
+.bar-inner { height: 48px; gap: 22px; flex-wrap: nowrap; }
+.logo { display: flex; align-items: center; gap: 8px; color: #fff; font: 700 .95rem 'Montserrat', sans-serif; letter-spacing: .12em; white-space: nowrap; }
+.logo img { height: 28px; filter: brightness(1.1); }
+.nav { display: flex; gap: 4px; flex: 1; justify-content: center; }
+.nav a { color: rgba(255,255,255,.92); padding: 6px 12px; font: 500 .82rem 'Montserrat', sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.nav a:hover, .nav a.on { color: #fff; background: rgba(0,0,0,.15); }
+.actions { flex-wrap: nowrap; gap: 4px; }
+.icon { background: none; border: none; color: #fff; font-size: 1.15rem; cursor: pointer; padding: 4px 8px; position: relative; text-decoration: none; }
+.icon:hover { opacity: .85; color: #fff; }
+.cnt { position: absolute; top: -2px; right: 0; background: var(--red); color: #fff; font-size: .65rem; font-weight: 700; border-radius: 999px; padding: 0 5px; }
+.search-row { background: #fff; border-bottom: 1px solid var(--line); padding: 10px 0; }
+@media (max-width: 800px) {
+  .nav { display: none; }
+  .bar-inner { justify-content: space-between; }
+}
 </style>
