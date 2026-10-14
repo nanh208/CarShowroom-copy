@@ -96,3 +96,4 @@
 | display-case-1.jpg | [File:Vista lateral del rancho de Tow Mater, Diecast Convention, Mexico 2017.jpg](https://commons.wikimedia.org/wiki/File:Vista_lateral_del_rancho_de_Tow_Mater,_Diecast_Convention,_Mexico_2017.jpg) | Kenyirotsuru | CC BY-SA 4.0 |
 
 | cut/minigt-supra.webp | Cắt nền (rembg) từ [File:Tamiya Toyota Supra 1.jpg](https://commons.wikimedia.org/wiki/File:Tamiya_Toyota_Supra_1.jpg) | Shingo.a | CC BY-SA 4.0 (tác phẩm phái sinh) |
+| cut/hw-racer.webp | [Hot_Wheels_Modellauto.jpg](https://commons.wikimedia.org/wiki/File:Hot_Wheels_Modellauto.jpg) — Stefan-Xp (tách nền rembg + alpha matting, xoá bóng) | CC BY-SA 3.0 |
