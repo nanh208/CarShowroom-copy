@@ -12,10 +12,12 @@ import java.util.*;
 @RestController @RequestMapping("/api/admin")
 public class AdminController {
     private final ProductRepo products; private final BrandRepo brands; private final OrderRepo orders; private final UserRepo users;
+    private final com.ares.shop.service.NotifyService notify;
     private final PromotionRepo promos; private final BookingRepo bookings; private final OrderService orderService;
 
     public AdminController(ProductRepo products, BrandRepo brands, OrderRepo orders, UserRepo users, PromotionRepo promos,
-                           BookingRepo bookings, OrderService orderService) {
+                           BookingRepo bookings, OrderService orderService, com.ares.shop.service.NotifyService notify) {
+        this.notify = notify;
         this.products = products; this.brands = brands; this.orders = orders; this.users = users;
         this.promos = promos; this.bookings = bookings; this.orderService = orderService;
     }
@@ -88,6 +90,9 @@ public class AdminController {
         if (s == Enums.OrderStatus.CANCELLED) return orderService.cancel(o);
         if (o.status == Enums.OrderStatus.CANCELLED) throw ApiException.bad("Đơn đã huỷ");
         o.status = s;
+        o.timeline.put(s.name(), java.time.LocalDateTime.now());
+        String label = Map.of("PENDING", "Chờ xác nhận", "CONFIRMED", "Đã xác nhận", "SHIPPING", "Đang giao xe", "COMPLETED", "Đã giao xe").getOrDefault(s.name(), s.name());
+        notify.send(o.user, "ORDER", "Cập nhật đơn " + o.code, "Trạng thái mới: " + label + ".", "/orders/" + o.code);
         if (s == Enums.OrderStatus.COMPLETED && o.paymentMethod == Enums.PaymentMethod.COD) {
             o.paidAmount = o.total; o.paymentStatus = Enums.PaymentStatus.PAID;
         }

@@ -80,6 +80,20 @@ Luồng: frontend gọi `GET /api/auth/oauth/{provider}/url` → chuyển tới 
 - Tổng quan; sản phẩm & thương hiệu; đơn hàng (trạng thái); khách hàng; ưu đãi; lịch hẹn (lái thử / bảo dưỡng); live chat.
 - **Đấu giá**: tạo/sửa phiên (giá khởi điểm, bước giá, thời gian, ảnh, thông số), xem lượt đặt (tên thật), chốt ngay, huỷ phiên.
 
+
+### Tính năng thương mại điện tử (bổ sung)
+- **Yêu thích** (trái tim trên ảnh xe, trang `/wishlist`), **so sánh tối đa 3 xe** (thanh so sánh nổi, trang `/compare`, làm nổi bật thông số khác nhau), **đã xem gần đây**.
+- **Đánh giá & chấm sao**: điểm trung bình, phân bố sao, khách đăng nhập viết đánh giá (1 lần/sản phẩm); admin **kiểm duyệt** (ẩn/duyệt/xoá) tại `/admin/reviews`.
+- **Gợi ý tìm kiếm** khi gõ (tô sáng từ khoá, phím ↑/↓), sắp xếp + phân trang (Trước/Sau).
+- **Flash sale** có đồng hồ đếm ngược trên trang chủ; đếm ngược hạn từng mã ưu đãi.
+- **Theo dõi đơn hàng** dạng timeline có mốc thời gian từng trạng thái.
+- **Chuông thông báo**: đặt hàng, đổi trạng thái đơn, bị trả giá cao hơn, thắng đấu giá.
+- **Công cụ tính trả góp** (trả trước, kỳ hạn, lãi suất) và **nút chia sẻ** (Facebook, Zalo, X, sao chép link) trên trang chi tiết; "Có thể bạn quan tâm".
+- Đăng ký **nhận tin** (footer), trang **FAQ** `/faq`, breadcrumb, thông báo dạng toast.
+- Admin: **biểu đồ doanh thu** 7/14/30 ngày trên Tổng quan.
+
+API mới: `GET/POST /api/products/{id}/reviews`, `GET /api/products/ratings`, `GET /api/account/notifications`, `POST /api/account/notifications/read`, `POST /api/newsletter`, `GET /api/admin/reviews`, `PATCH/DELETE /api/admin/reviews/{id}`, `GET /api/admin/revenue?days=14`.
+
 ## Phần giả lập (mock)
 - **Thanh toán**: không nối cổng thật. Form thẻ chỉ kiểm tra độ dài; backend ghi nhận số tiền đã trả và sinh mã giao dịch `MOCK-xxxx`. Có thể thay bằng VNPay/MoMo trong `OrderService`.
 - **Live chat**: polling HTTP (không WebSocket), có tin chào tự động.

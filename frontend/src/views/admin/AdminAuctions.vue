@@ -6,10 +6,10 @@
         <thead><tr><th>ID</th><th>Xe</th><th>Khởi điểm / bước</th><th>Giá hiện tại</th><th>Lượt</th><th>Thời gian</th><th>Trạng thái</th><th>Người thắng</th><th /></tr></thead>
         <tbody><tr v-for="a in list" :key="a.id">
           <td>{{ a.id }}</td>
-          <td><div class="row" style="flex-wrap:nowrap"><img v-if="a.images?.[0]" :src="a.images[0]" class="thumb" /><b>{{ a.title }}</b></div></td>
-          <td class="small">{{ ty(a.startPrice) }}<br />+{{ ty(a.minIncrement) }}</td>
+          <td style="min-width:240px"><div class="row" style="flex-wrap:nowrap"><img v-if="a.images?.[0]" :src="a.images[0]" class="thumb" /><b>{{ a.title }}</b></div></td>
+          <td class="small" style="white-space:nowrap">{{ ty(a.startPrice) }}<br />+{{ ty(a.minIncrement) }}</td>
           <td class="price">{{ ty(a.currentPrice) }}</td><td>{{ a.bidCount }}</td>
-          <td class="small">{{ dt(a.startTime) }}<br />→ {{ dt(a.endTime) }}</td>
+          <td class="small" style="white-space:nowrap">{{ dt(a.startTime) }}<br />→ {{ dt(a.endTime) }}</td>
           <td><span :class="['badge', 'st-' + a.status]">{{ AUCTION_STATUS[a.status] }}</span></td>
           <td class="small">{{ a.winner?.fullName || '—' }}<br /><router-link v-if="a.orderCode" :to="`/orders/${a.orderCode}`">{{ a.orderCode }}</router-link></td>
           <td><div class="row" style="flex-wrap:nowrap;gap:6px">

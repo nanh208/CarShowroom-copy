@@ -19,7 +19,9 @@ public class OrderService {
 
     private final ProductRepo products; private final PromotionRepo promos; private final OrderRepo orders;
 
-    public OrderService(ProductRepo products, PromotionRepo promos, OrderRepo orders) {
+    private final NotifyService notify;
+    public OrderService(ProductRepo products, PromotionRepo promos, OrderRepo orders, NotifyService notify) {
+        this.notify = notify;
         this.products = products; this.promos = promos; this.orders = orders;
     }
 
@@ -95,7 +97,10 @@ public class OrderService {
         }
         if (o.paidAmount > 0) o.transactionRef = "MOCK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         o.code = "AR" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
-        return orders.save(o);
+        o.timeline.put("PENDING", LocalDateTime.now());
+        CustomerOrder saved = orders.save(o);
+        notify.send(user, "ORDER", "Đặt hàng thành công", "Đơn " + saved.code + " đã được ghi nhận, chúng tôi sẽ liên hệ xác nhận sớm.", "/orders/" + saved.code);
+        return saved;
     }
 
     /** Thanh toán phần còn lại (mock). */
@@ -122,6 +127,8 @@ public class OrderService {
             throw ApiException.bad("Không thể huỷ đơn đang giao hoặc đã hoàn tất");
         for (OrderItem it : o.items) if (it.productId != null) products.findById(it.productId).ifPresent(p -> { p.stock += it.quantity; p.sold -= it.quantity; });
         o.status = Enums.OrderStatus.CANCELLED;
+        o.timeline.put("CANCELLED", LocalDateTime.now());
+        notify.send(o.user, "ORDER", "Đơn hàng đã huỷ", "Đơn " + o.code + " đã được huỷ.", "/orders/" + o.code);
         return orders.save(o);
     }
 
@@ -135,6 +142,7 @@ public class OrderService {
         o.items.add(oi);
         o.subtotal = amount; o.total = amount; o.paymentMethod = Enums.PaymentMethod.DEPOSIT; o.paymentStatus = Enums.PaymentStatus.UNPAID;
         o.code = "AU" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
+        o.timeline.put("PENDING", LocalDateTime.now());
         return orders.save(o);
     }
 

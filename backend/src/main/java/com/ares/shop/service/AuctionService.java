@@ -14,7 +14,9 @@ import java.util.*;
 public class AuctionService {
     private final AuctionRepo auctions; private final BidRepo bids; private final OrderService orders;
 
-    public AuctionService(AuctionRepo auctions, BidRepo bids, OrderService orders) {
+    private final NotifyService notify;
+    public AuctionService(AuctionRepo auctions, BidRepo bids, OrderService orders, NotifyService notify) {
+        this.notify = notify;
         this.auctions = auctions; this.bids = bids; this.orders = orders;
     }
 
@@ -37,6 +39,7 @@ public class AuctionService {
         // chống "bắn tỉa": đặt giá trong 2 phút cuối -> gia hạn thêm 2 phút
         if (a.endTime != null && a.endTime.minusMinutes(2).isBefore(LocalDateTime.now())) a.endTime = a.endTime.plusMinutes(2);
         auctions.save(a);
+        top.ifPresent(t -> notify.send(t.user, "AUCTION", "Bạn đã bị trả giá cao hơn", a.title + ": giá mới " + String.format("%,d", amount) + "đ. Đặt giá lại để giữ vị trí dẫn đầu.", "/auctions/" + a.id));
         return bids.save(b);
     }
 
@@ -57,6 +60,7 @@ public class AuctionService {
             a.winner = top.user;
             a.orderCode = orders.auctionOrder(top.user, a.title, top.amount,
                     "Thắng đấu giá phiên #" + a.id + ". Vui lòng đặt cọc 10% trong 48 giờ.").code;
+            notify.send(top.user, "AUCTION", "Chúc mừng! Bạn đã thắng đấu giá", a.title + " — vui lòng đặt cọc 10% trong 48 giờ.", "/orders/" + a.orderCode);
         });
         a.finalized = true;
         return auctions.save(a);

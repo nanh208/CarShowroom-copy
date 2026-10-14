@@ -8,16 +8,16 @@
     </div>
     <div class="card table-wrap">
       <table class="table">
-        <thead><tr><th>ID</th><th>Sản phẩm</th><th>Hãng</th><th>Loại / Tỉ lệ</th><th>Giá</th><th>Tồn kho</th><th>Đã bán</th><th>Hiển thị</th><th /></tr></thead>
+        <thead><tr><th>ID</th><th>Sản phẩm</th><th>Hãng</th><th>Loại / Nhiên liệu</th><th>Giá</th><th>Tồn kho</th><th>Đã bán</th><th>Hiển thị</th><th /></tr></thead>
         <tbody><tr v-for="p in items" :key="p.id" :class="{ off: !p.active }">
           <td>{{ p.id }}</td>
-          <td><div class="row" style="flex-wrap:nowrap;gap:6px"><span class="dot" :style="{ background: p.baseColor }" /><b>{{ p.name }}</b><span v-if="p.isNew" class="badge badge-new">Mới</span></div></td>
-          <td>{{ p.brand?.name }}</td><td class="small">{{ TYPES[p.type] }}<br />{{ p.fuel }} · {{ p.year }}</td>
-          <td class="price">{{ vnd(p.price) }}</td>
+          <td><div class="row" style="flex-wrap:nowrap;gap:12px"><img v-if="p.images?.[0]" :src="p.images[0]" class="thumbimg" /><span v-else class="dot" :style="{ background: p.baseColor }" /><b style="min-width:160px">{{ p.name }}</b><span v-if="p.isNew" class="badge badge-new">Mới</span></div></td>
+          <td>{{ p.brand?.name }}</td><td class="small">{{ TYPES[p.type] }}<template v-if="p.type !== 'ACCESSORY'"><br />{{ p.fuel }} · {{ p.year }}</template></td>
+          <td class="price" style="white-space:nowrap">{{ vnd(p.price) }}</td>
           <td :class="{ low: p.stock <= 3 }">{{ p.stock }}</td><td>{{ p.sold }}</td>
-          <td>{{ p.active ? '✔' : 'Ẩn' }}</td>
+          <td><span :class="['badge', p.active ? 'badge-COMPLETED' : '']">{{ p.active ? 'Hiển thị' : 'Ẩn' }}</span></td>
           <td><div class="row" style="flex-wrap:nowrap;gap:6px"><button class="btn btn-sm btn-outline" @click="edit(p)">Sửa</button>
-            <button v-if="p.active" class="btn btn-sm btn-danger" @click="remove(p)">Ẩn</button></div></td>
+            <button v-if="p.active" class="btn btn-sm btn-outline danger-text" @click="remove(p)">Ẩn</button></div></td>
         </tr></tbody>
       </table>
     </div>
@@ -101,6 +101,8 @@ async function delBrand(b) { berr.value = ''; if (confirm('Xoá thương hiệu?
 onMounted(load)
 </script>
 <style scoped>
+.thumbimg { width: 72px; height: 45px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+.danger-text { color: #fca5a5; }
 .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 .low { color: #fca5a5; font-weight: 700; } .off { opacity: .5; }
 .modal { max-width: 760px; }

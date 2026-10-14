@@ -30,4 +30,6 @@ public class CustomerOrder {
     public String transactionRef;
     @Enumerated(EnumType.STRING) public Enums.OrderStatus status = Enums.OrderStatus.PENDING;
     public LocalDateTime createdAt = LocalDateTime.now();
+    /** Mốc thời gian từng trạng thái để hiển thị timeline theo dõi đơn. */
+    @ElementCollection(fetch = FetchType.EAGER) public Map<String, LocalDateTime> timeline = new LinkedHashMap<>();
 }

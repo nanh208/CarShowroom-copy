@@ -1,7 +1,7 @@
 <template>
   <div class="container page">
     <h1>Tài khoản của tôi</h1>
-    <p class="muted" style="margin-bottom:20px">{{ auth.user.email }} <span class="badge">{{ auth.user.provider === 'LOCAL' ? 'Email' : auth.user.provider }}</span></p>
+    <p class="muted">{{ auth.user.email }} <span class="badge">{{ auth.user.provider === 'LOCAL' ? 'Email' : auth.user.provider }}</span></p>
     <div class="tabs">
       <button v-for="(v, k) in tabs" :key="k" :class="{ active: tab === k }" @click="setTab(k)">{{ v }}</button>
     </div>
@@ -77,7 +77,7 @@
         <tbody><tr v-for="b in bids" :key="b.id">
           <td><router-link :to="`/auctions/${b.auctionId}`">{{ b.auctionTitle }}</router-link></td>
           <td class="price">{{ vnd(b.amount) }}</td><td>{{ vnd(b.currentPrice) }}</td><td class="small">{{ dt(b.createdAt) }}</td>
-          <td><span :class="['badge', b.won ? 'badge-COMPLETED' : 'badge-' + (b.status === 'LIVE' ? 'CONFIRMED' : 'PENDING')]">{{ b.won ? '🏆 Thắng' : AUCTION_STATUS[b.status] }}</span></td>
+          <td><span :class="['badge', b.won ? 'badge-COMPLETED' : 'badge-' + (b.status === 'LIVE' ? 'CONFIRMED' : 'PENDING')]">{{ b.won ? 'Thắng' : AUCTION_STATUS[b.status] }}</span></td>
           <td><router-link v-if="b.won && b.orderCode" :to="`/orders/${b.orderCode}`" class="btn btn-sm">Đặt cọc</router-link></td>
         </tr></tbody>
       </table>
@@ -111,7 +111,7 @@ import { useAuth } from '../stores/auth'
 import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, BOOKING_TYPE, BOOKING_STATUS, AUCTION_STATUS } from '../format'
 
 const auth = useAuth(), route = useRoute(), router = useRouter()
-const tabs = { profile: '👤 Hồ sơ', addresses: '📍 Sổ địa chỉ', orders: '🧾 Lịch sử giao dịch', bookings: '📅 Lịch sử đặt lịch', bids: '🔨 Đấu giá của tôi' }
+const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Lịch sử giao dịch', bookings: 'Lịch sử đặt lịch', bids: 'Đấu giá của tôi' }
 const tab = ref(tabs[route.query.tab] ? route.query.tab : 'profile')
 const profile = reactive({ fullName: auth.user.fullName, phone: auth.user.phone, avatarUrl: auth.user.avatarUrl })
 const pw = reactive({ currentPassword: '', newPassword: '' })

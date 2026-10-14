@@ -1,13 +1,13 @@
 <template>
   <div class="container page">
-    <h1>🔨 Đấu giá xe hiếm</h1>
-    <p class="muted" style="margin-bottom:22px">Những mẫu xe sưu tầm hiếm có, đã được ARES thẩm định. Đăng nhập để đặt giá — người trả giá cao nhất khi hết giờ sẽ nhận đơn đặt cọc 10%.</p>
+    <h1>Đấu giá xe hiếm</h1>
+    <p class="muted">Những mẫu xe sưu tầm hiếm có, đã được ARES thẩm định. Đăng nhập để đặt giá — người trả giá cao nhất khi hết giờ sẽ nhận đơn đặt cọc 10%.</p>
     <div class="tabs">
       <button v-for="(v, k) in filters" :key="k" :class="{ active: filter === k }" @click="filter = k">{{ v }}</button>
     </div>
     <div v-if="loading" class="spinner" />
     <div v-else-if="!shown.length" class="empty card">Chưa có phiên đấu giá.</div>
-    <div v-else class="grid grid-4">
+    <div v-else class="grid agrid">
       <router-link v-for="a in shown" :key="a.id" :to="`/auctions/${a.id}`" class="acard">
         <div class="img"><img :src="a.images?.[0] || '/images/bg-pagani.jpg'" :alt="a.title" />
           <span :class="['badge', 'st-' + a.status]">{{ AUCTION_STATUS[a.status] }}</span></div>
@@ -46,4 +46,12 @@ onUnmounted(() => clearInterval(t))
 .st-LIVE { background: var(--danger); color: #fff; } .st-SCHEDULED { background: var(--primary); color: #fff; } .st-ENDED { background: #475569; }
 .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .name { font-size: 1.02rem; }
+.agrid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.acard { border-radius: var(--radius) !important; transition: .3s; }
+.acard:hover { transform: translateY(-4px); }
+.acard .img { aspect-ratio: 16/10; overflow: hidden; } .acard .img img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
+.acard:hover .img img { transform: scale(1.05); }
+.acard .body { padding: 24px !important; gap: 12px !important; }
+.acard .name { font-size: 1.2rem; }
+.acard .price { font-size: 1.3rem; }
 </style>
