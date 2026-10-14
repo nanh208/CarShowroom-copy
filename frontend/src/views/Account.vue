@@ -104,6 +104,27 @@
       </table>
     </div>
 
+    <div v-if="tab === 'settings'" class="grid grid-2">
+      <div class="card">
+        <h3>Thanh toán ưa thích</h3>
+        <p class="muted small">Tự chọn sẵn ở bước thanh toán.</p>
+        <div class="paypref">
+          <label v-for="(v, k) in PAY_METHOD" :key="k" :class="['pp', { on: payPref === k }]"><input v-model="payPref" type="radio" :value="k" @change="savePay" />{{ v }}</label>
+          <label :class="['pp', { on: !payPref }]"><input v-model="payPref" type="radio" value="" @change="savePay" />Không đặt</label>
+        </div>
+      </div>
+      <div class="card"><h3>Hiển thị & trợ năng</h3><A11yPanel show-theme /></div>
+      <div class="card">
+        <h3>Thông báo giá & hàng</h3>
+        <p v-if="!myAlerts.length" class="muted small">Chưa theo dõi sản phẩm nào. Bật trong <router-link to="/wishlist">Yêu thích</router-link>.</p>
+        <div v-for="a in myAlerts" :key="a.id" class="row between alrow">
+          <router-link :to="`/products/${a.productId}`">{{ a.name || 'Sản phẩm #' + a.productId }}</router-link>
+          <span class="badge">{{ a.kind === 'PRICE' ? 'Giảm giá' : 'Có hàng' }}</span>
+          <button class="btn btn-sm btn-outline" @click="delAlert(a)">Tắt</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="addr" class="modal-bg" @click.self="addr = null">
       <div class="modal">
         <h3>{{ addr.id ? 'Sửa địa chỉ' : 'Thêm địa chỉ' }}</h3>
@@ -112,11 +133,8 @@
           <div class="field"><label>Tên gợi nhớ</label><input v-model="addr.label" class="input" placeholder="Nhà riêng, Công ty..." /></div>
           <div class="field"><label>Người nhận *</label><input v-model="addr.receiverName" class="input" /></div>
           <div class="field"><label>Số điện thoại *</label><input v-model="addr.phone" class="input" /></div>
-          <div class="field"><label>Tỉnh / Thành phố *</label><input v-model="addr.city" class="input" /></div>
-          <div class="field"><label>Quận / Huyện</label><input v-model="addr.district" class="input" /></div>
-          <div class="field"><label>Phường / Xã</label><input v-model="addr.ward" class="input" /></div>
         </div>
-        <div class="field"><label>Số nhà, tên đường *</label><input v-model="addr.line" class="input" /></div>
+        <AddressPicker v-model="addrPick" :cities="catalog.options.cities" />
         <label class="check field"><input v-model="addr.isDefault" type="checkbox" /> Đặt làm địa chỉ mặc định</label>
         <div class="row"><button class="btn" @click="saveAddr">Lưu</button><button class="btn btn-outline" @click="addr = null">Huỷ</button></div>
       </div>
@@ -129,12 +147,15 @@ import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
 import Gauge from '../components/Gauge.vue'
+import AddressPicker from '../components/AddressPicker.vue'
+import A11yPanel from '../components/A11yPanel.vue'
+import { toast } from '../stores/prefs'
 const TIERS = [{ name: 'Đồng', label: 'mặc định', at: 0 }, { name: 'Bạc', label: 'chi 3 tr', at: 300 }, { name: 'Vàng', label: 'chi 10 tr', at: 1000 }, { name: 'Kim cương', label: 'chi 20 tr', at: 2000 }]
 import { useAuth } from '../stores/auth'
-import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, AUCTION_STATUS, RETURN_STATUS, TICKET_STATUS } from '../format'
+import { catalog, loadCatalog, vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, AUCTION_STATUS, RETURN_STATUS, TICKET_STATUS } from '../format'
 
 const auth = useAuth(), route = useRoute(), router = useRouter()
-const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Đơn hàng', points: 'Điểm thưởng', returns: 'Đổi trả', tickets: 'Hỗ trợ', bids: 'Đấu giá của tôi' }
+const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Đơn hàng', points: 'Điểm thưởng', returns: 'Đổi trả', tickets: 'Hỗ trợ', bids: 'Đấu giá của tôi', settings: 'Cài đặt' }
 const nextTier = computed(() => TIERS.find(t => t.at > (pts.value.points || 0)) || { at: 2000 })
 const tab = ref(tabs[route.query.tab] ? route.query.tab : 'profile')
 const profile = reactive({ fullName: auth.user.fullName, phone: auth.user.phone, avatarUrl: auth.user.avatarUrl })
@@ -142,10 +163,16 @@ const pw = reactive({ currentPassword: '', newPassword: '' })
 const bids = ref([])
 const msg = reactive({}), addresses = ref([]), orders = ref([]), pts = ref({}), returnsList = ref([]), ticketsList = ref([]), addr = ref(null)
 
+const payPref = ref(auth.user.preferredPayment || ''), myAlerts = ref([])
+const savePay = async () => { try { await api.put('/account/payment-preference', { method: payPref.value }); auth.user.preferredPayment = payPref.value || null; toast('Đã lưu phương thức ưa thích') } catch (e) { toast(errMsg(e), 'error') } }
+const delAlert = async a => { await api.delete(`/alerts/${a.id}`); myAlerts.value = myAlerts.value.filter(x => x !== a) }
+const loadAlerts = async () => { const list = (await api.get('/alerts')).data; await Promise.all(list.map(async a => { try { a.name = (await api.get(`/products/${a.productId}`)).data.product.name } catch {} })); myAlerts.value = list }
 const setTab = k => router.replace({ query: { tab: k } })
 watch(() => route.query.tab, t => { tab.value = tabs[t] ? t : 'profile'; load() })
 
 async function load() {
+  if (tab.value === 'settings') loadAlerts()
+  if (tab.value === 'addresses') { loadCatalog() }
   if (tab.value === 'addresses') addresses.value = (await api.get('/account/addresses')).data
   if (tab.value === 'orders') orders.value = (await api.get('/account/orders')).data
   if (tab.value === 'bids') bids.value = (await api.get('/account/bids')).data
@@ -158,7 +185,9 @@ async function changePw() {
   try { await api.put('/account/password', pw); msg.pw = 'Đã đổi mật khẩu'; msg.pwOk = true; pw.currentPassword = pw.newPassword = '' }
   catch (e) { msg.pw = errMsg(e); msg.pwOk = false }
 }
-const editAddr = a => { msg.addr = ''; addr.value = a ? { ...a } : { receiverName: auth.user.fullName, phone: auth.user.phone, isDefault: false } }
+const addrPick = ref({})
+const editAddr = a => { msg.addr = ''; addr.value = a ? { ...a } : { receiverName: auth.user.fullName, phone: auth.user.phone, isDefault: false }; addrPick.value = { province: addr.value.city || '', district: addr.value.district || '', ward: addr.value.ward || '', line: addr.value.line || '' } }
+watch(addrPick, v => { if (addr.value) Object.assign(addr.value, { city: v.province, district: v.district, ward: v.ward, line: v.line }) })
 async function saveAddr() {
   const a = addr.value
   if (!a.receiverName || !a.phone || !a.line || !a.city) { msg.addr = 'Vui lòng nhập đủ các trường bắt buộc'; return }
@@ -173,4 +202,8 @@ onMounted(load)
 .pcard { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .tiers { display: flex; gap: 6px; } .tiers span { padding: 6px 10px; border-radius: 8px; background: var(--bg-2); font-size: .82rem; text-align: center; } .tiers span.on { background: var(--bronze); color: #fff; } .tiers small { display: block; font-size: .68rem; opacity: .8; }
 .ok { color: var(--success); font-weight: 700; } .err { color: var(--danger); font-weight: 700; }
+.paypref { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+.pp { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1.5px solid var(--border); margin: 0; cursor: pointer; } .pp.on { border-color: var(--accent); background: var(--bronze-soft); }
+.alrow { padding: 8px 0; border-bottom: 1px solid var(--border); gap: 8px; } .alrow a { flex: 1; min-width: 0; }
+.tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; } .tabs button { flex-shrink: 0; }
 </style>

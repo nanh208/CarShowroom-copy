@@ -16,8 +16,8 @@ public class SupportController {
 
     public SupportController(TicketRepo tickets, NotifyService notify) { this.tickets = tickets; this.notify = notify; }
 
-    public record NewTicket(String subject, String category, String orderCode, String content) {}
-    public record Reply(String content, String status) {}
+    public record NewTicket(String subject, String category, String orderCode, String content, List<String> attachments) {}
+    public record Reply(String content, String status, List<String> attachments) {}
 
     @GetMapping("/api/tickets")
     public List<Ticket> mine() { return tickets.findByUserIdOrderByUpdatedAtDesc(Current.user().id); }
@@ -29,7 +29,7 @@ public class SupportController {
             throw ApiException.bad("Vui lòng nhập tiêu đề và nội dung (tối thiểu 10 ký tự)");
         Ticket t = new Ticket(); t.user = u; t.subject = r.subject().trim(); t.category = r.category() == null ? "Khác" : r.category(); t.orderCode = r.orderCode();
         t.code = "HT" + String.valueOf(System.currentTimeMillis()).substring(5);
-        add(t, false, u.fullName, r.content().trim());
+        add(t, false, u.fullName, r.content().trim(), r.attachments());
         Ticket saved = tickets.save(t);
         notify.send(u, "SYSTEM", "Đã tạo phiếu hỗ trợ " + saved.code, "Chúng tôi sẽ phản hồi trong vòng 24 giờ.", "/support/tickets/" + saved.code);
         return saved;
@@ -42,8 +42,8 @@ public class SupportController {
     public Ticket reply(@PathVariable String code, @RequestBody Reply r) {
         Ticket t = own(code);
         if ("CLOSED".equals(r.status())) { t.status = Enums.TicketStatus.CLOSED; t.updatedAt = LocalDateTime.now(); return tickets.save(t); }
-        if (r.content() == null || r.content().isBlank()) throw ApiException.bad("Nội dung trống");
-        add(t, false, Current.user().fullName, r.content().trim()); t.status = Enums.TicketStatus.OPEN;
+        if ((r.content() == null || r.content().isBlank()) && (r.attachments() == null || r.attachments().isEmpty())) throw ApiException.bad("Nội dung trống");
+        add(t, false, Current.user().fullName, r.content() == null ? "" : r.content().trim(), r.attachments()); t.status = Enums.TicketStatus.OPEN;
         return tickets.save(t);
     }
 
@@ -57,15 +57,16 @@ public class SupportController {
     public Ticket staffReply(@PathVariable Long id, @RequestBody Reply r) {
         Ticket t = tickets.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy phiếu"));
         if (r.content() != null && !r.content().isBlank()) {
-            add(t, true, "CSKH " + Current.user().fullName, r.content().trim()); t.status = Enums.TicketStatus.ANSWERED;
+            add(t, true, "CSKH " + Current.user().fullName, r.content().trim(), r.attachments()); t.status = Enums.TicketStatus.ANSWERED;
             notify.send(t.user, "SYSTEM", "Phiếu " + t.code + " có phản hồi mới", r.content().trim(), "/support/tickets/" + t.code);
         }
         if (r.status() != null && !r.status().isBlank()) t.status = Enums.TicketStatus.valueOf(r.status());
         return tickets.save(t);
     }
 
-    private void add(Ticket t, boolean staff, String author, String content) {
+    private void add(Ticket t, boolean staff, String author, String content, List<String> files) {
         TicketMessage m = new TicketMessage(); m.ticket = t; m.fromStaff = staff; m.author = author; m.content = content;
+        if (files != null) files.stream().filter(f -> f != null && f.startsWith("/uploads/")).limit(5).forEach(m.attachments::add);
         t.messages.add(m); t.updatedAt = LocalDateTime.now();
     }
 

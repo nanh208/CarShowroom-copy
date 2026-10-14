@@ -3,7 +3,8 @@
     <div v-if="!o" class="spinner" />
     <template v-else>
       <Breadcrumb :items="[{ label: 'Tài khoản', to: '/account?tab=orders' }, { label: 'Đơn ' + o.code }]" />
-      <div v-if="$route.query.new" class="alert alert-success">🎉 Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
+      <div v-if="$route.query.new" class="alert alert-success">Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
+      <div v-if="o.giftWrap" class="alert gift-note"><b>Gói quà</b> (+{{ vnd(o.giftFee) }})<span v-if="o.giftMessage"> · Thiệp: “{{ o.giftMessage }}”</span></div>
       <div class="row between"><h1>Đơn hàng {{ o.code }}</h1>
         <div class="row"><router-link :to="`/orders/${o.code}/invoice`" class="btn btn-sm btn-outline">🧾 Hoá đơn</router-link><span :class="['badge', 'badge-' + o.status]">{{ ORDER_STATUS[o.status] }}</span></div></div>
       <p class="muted">Đặt lúc {{ dt(o.createdAt) }}</p>
@@ -76,12 +77,7 @@
               <select v-model="cancelReason" class="input"><option v-for="r in reasons" :key="r">{{ r }}</option></select>
               <button class="btn btn-sm btn-danger" @click="cancel">Xác nhận huỷ</button>
             </div>
-            <div v-if="retOpen" class="sub">
-              <div class="row"><label class="check"><input v-model="ret.kind" type="radio" value="RETURN" /> Đổi/trả hàng</label><label class="check"><input v-model="ret.kind" type="radio" value="REFUND" /> Hoàn tiền</label></div>
-              <textarea v-model="ret.reason" class="input" rows="3" placeholder="Mô tả lỗi / lý do (tối thiểu 10 ký tự)" />
-              <div class="row"><label class="up">📷 Ảnh minh chứng<input type="file" accept="image/*" multiple hidden @change="upload" /></label><img loading="lazy" decoding="async" v-for="im in ret.images" :key="im" :src="im" class="ti" /></div>
-              <button class="btn btn-sm" @click="sendReturn">Gửi yêu cầu</button>
-            </div>
+            <ReturnWizard v-if="retOpen" :order="o" @cancel="retOpen = false" @done="retDone" />
             <div v-for="r in returns" :key="r.id" class="retbox">
               <b>{{ r.kind === 'REFUND' ? 'Yêu cầu hoàn tiền' : 'Yêu cầu đổi trả' }}</b> <span :class="['badge', 'badge-' + r.status]">{{ RETURN_STATUS[r.status] }}</span>
               <p class="small">{{ r.reason }}</p><p v-if="r.adminNote" class="small muted">Shop: {{ r.adminNote }}</p>
@@ -95,6 +91,7 @@
   </div>
 </template>
 <script setup>
+import ReturnWizard from '../components/ReturnWizard.vue'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
@@ -122,6 +119,7 @@ const load = async () => { const { data } = await api.get(`/orders/${route.param
 async function act(a) { err.value = ''; try { await api.post(`/orders/${o.value.code}/${a}`); toast('Thanh toán thành công'); await load() } catch (e) { err.value = errMsg(e) } }
 async function cancel() { err.value = ''; try { await api.post(`/orders/${o.value.code}/cancel`, { reason: cancelReason.value }); cancelOpen.value = false; toast('Đã huỷ đơn hàng'); await load() } catch (e) { err.value = errMsg(e) } }
 async function upload(e) { try { for (const f of [...e.target.files].slice(0, 4)) ret.images.push(await uploadImage(f)) } catch (x) { err.value = errMsg(x) } }
+const retDone = async () => { retOpen.value = false; toast('Đã gửi yêu cầu đổi trả'); await load() }
 async function sendReturn() { err.value = ''; try { await api.post(`/orders/${o.value.code}/returns`, ret); retOpen.value = false; toast('Đã gửi yêu cầu'); await load() } catch (e) { err.value = errMsg(e) } }
 onMounted(load)
 </script>

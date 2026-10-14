@@ -1,4 +1,5 @@
 package com.ares.shop.model;
+import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -18,4 +19,9 @@ public class User {
     public int points;
     public String tier = "Đồng";
     public LocalDateTime createdAt = LocalDateTime.now();
+    /** Ghi chú nội bộ + nhãn CRM (chỉ nhân viên thấy). */
+    @JsonIgnore @Column(length = 2000) public String staffNote;
+    @JsonIgnore @ElementCollection(fetch = FetchType.EAGER) public Set<String> tags = new LinkedHashSet<>();
+    /** Phương thức thanh toán ưa thích. */
+    public String preferredPayment;
 }

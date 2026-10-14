@@ -4,7 +4,7 @@
       <ProductImage :product="p" />
       <span v-if="flashPrice" class="flash">⚡ Flash sale</span>
       <div class="tools" @click.prevent>
-        <button :class="['tool', { on: prefs.isWished(p.id) }]" title="Yêu thích" @click.prevent="prefs.toggleWish(p)">
+        <button :class="['tool wish', { on: prefs.isWished(p.id) }]" :aria-pressed="prefs.isWished(p.id)" title="Yêu thích" @click.prevent="prefs.toggleWish(p)">
           <svg viewBox="0 0 24 24" width="18" height="18" :fill="prefs.isWished(p.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
         <button :class="['tool', { on: prefs.inCompare(p.id) }]" title="So sánh" @click.prevent="prefs.toggleCompare(p)">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M8 21H3v-5M21 3l-7 7M3 21l7-7"/></svg></button>
@@ -86,7 +86,10 @@ const add = async (e) => {
 .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; }
 .foot .price { font-size: 1.05rem; font-weight: 700; color: var(--text); } .price small { font-weight: 500; color: var(--muted); font-size: .75rem; }
 .foot .old-price { display: block; margin: 0; font-size: .78rem; }
-.buy { padding: 7px 18px; }
+.buy { padding: 7px 18px; flex-shrink: 0; }
+.foot > div { min-width: 0; }
+.body, .info { container-type: inline-size; }
+@container (max-width: 190px) { .foot { flex-wrap: wrap; } .foot .buy { width: 100%; padding: 8px 10px; } .foot .price { font-size: .95rem; } }
 .tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
 .tool { width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,.92); transition: color .15s ease-out; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .tool.on { color: #e53935; } .tool:nth-child(2).on { color: var(--bronze); }

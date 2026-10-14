@@ -30,3 +30,7 @@ export const AUCTION_STATUS = { SCHEDULED: 'Sắp diễn ra', LIVE: 'Đang đấ
 export const VOUCHER_KIND = { PERCENT: 'Giảm %', FIXED: 'Giảm tiền', FREESHIP: 'Miễn phí ship' }
 export const HOTLINE = '1900 6868'
 export const AGES = { 3: 'Từ 3 tuổi', 6: 'Từ 6 tuổi', 8: 'Từ 8 tuổi', 14: 'Từ 14 tuổi' }
+
+// Tên tỉnh/thành (đầy đủ, VD "Thành phố Hồ Chí Minh") → khu vực tính phí ship của hệ thống
+export const stripPlace = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/^(tinh|thanh pho)\s+/, '').replace(/^tp\.?\s*/, '').trim()
+export const toShipCity = (name, cities = catalog.options.cities) => { if (!name) return ''; const k = stripPlace(name); return cities.find(c => stripPlace(c) === k) || (cities.includes('Tỉnh khác') ? 'Tỉnh khác' : name) }

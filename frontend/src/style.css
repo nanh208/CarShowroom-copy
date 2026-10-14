@@ -34,7 +34,8 @@ main { min-height: 100vh; }
 .grid { display: grid; gap: var(--s2); }
 .grid-4 { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid > * { min-width: 0; }
 @media (max-width: 860px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: var(--s3); }
@@ -135,3 +136,48 @@ img.cover { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
   .reveal { opacity: 1; transform: none; }
 }
 @media print { .reveal { opacity: 1 !important; transform: none !important; } }
+
+/* ===================== Responsive nền tảng + trợ năng ===================== */
+html { font-size: calc(100% * var(--fs, 1)); -webkit-text-size-adjust: 100%; }
+body { font-size: calc(15px * var(--fs, 1)); overflow-x: hidden; }
+html, body { max-width: 100%; }
+img, video, svg, canvas { max-width: 100%; }
+.page > h1, .page h1:first-child, .page h1.title { font-size: clamp(1.6rem, 1.1rem + 2.2vw, 2.6rem); }
+.table-wrap, .tscroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 899px) {
+  .container { padding-left: 16px !important; padding-right: 16px !important; }
+  .page { padding-top: 80px; padding-bottom: 96px; }
+  main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; max-width: 100%; }
+  .btn { min-height: 44px; }
+  .input, select.input, textarea.input { font-size: 16px; min-height: 44px; } /* tránh iOS zoom khi focus */
+  .row { flex-wrap: wrap; }
+}
+/* Tương phản cao */
+html[data-contrast="high"] { --muted: #2a2a2a; --text-2: #000; --border: #444; --tile: #d0d0d0; }
+html[data-contrast="high"] a:not(.btn) { text-decoration: underline; text-underline-offset: 2px; }
+html[data-contrast="high"] :focus-visible { outline: 3px solid #000 !important; outline-offset: 2px; box-shadow: 0 0 0 5px #ffd400 !important; }
+html[data-contrast="high"] .btn { outline: 2px solid #000; outline-offset: -2px; }
+html[data-contrast="high"] img { filter: contrast(1.08); }
+/* Chế độ tối: đảo sáng toàn trang (giữ nguyên ảnh/video) — phủ được mọi trang, kể cả style riêng từng component */
+html[data-mode="dark"] { filter: invert(.9) hue-rotate(180deg); background: #fff; }
+html[data-mode="dark"] img, html[data-mode="dark"] video, html[data-mode="dark"] picture, html[data-mode="dark"] canvas, html[data-mode="dark"] .keep-color,
+html[data-mode="dark"] [style*="background-image"] { filter: invert(1) hue-rotate(180deg); }
+html[data-mode="dark"][data-contrast="high"] { filter: invert(1) hue-rotate(180deg); }
+/* Toast & các phần tử nổi tránh thanh tab dưới */
+@media (max-width: 899px) { .toasts { top: auto !important; bottom: calc(76px + env(safe-area-inset-bottom)) !important; left: 12px !important; right: 12px !important; } .toast { min-width: 0 !important; } }
+@media (max-width: 899px) { :root { --tabbar-h: calc(58px + env(safe-area-inset-bottom)); } }
+@media (max-width: 599px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; } }
+/* ===== Hiệu ứng mua hàng ===== */
+.fly-trail { position: fixed; z-index: 299; width: 10px; height: 8px; pointer-events: none;
+  background: linear-gradient(#333 0 2px, transparent 2px 6px, #333 6px 8px); opacity: 0; }
+.confetti { position: fixed; z-index: 400; width: 10px; height: 14px; pointer-events: none; background: #111; }
+.confetti.or { background: var(--accent); } .confetti.ck { background: conic-gradient(#111 25%, #fff 0 50%, #111 0 75%, #fff 0) 0 0/7px 7px; width: 14px; height: 14px; }
+/* Tim yêu thích: nảy + vòng toả khi bật */
+.wish { position: relative; }
+.wish.on svg { animation: heart-pop .32s cubic-bezier(.3,1.6,.5,1); color: #e5383b; }
+.wish.on::after { content: ''; position: absolute; inset: 0; margin: auto; width: 100%; height: 100%; border-radius: 50%; border: 2px solid #e5383b; animation: heart-ring .4s ease-out forwards; pointer-events: none; }
+@keyframes heart-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@keyframes heart-ring { from { transform: scale(.4); opacity: .8; } to { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wish.on svg, .wish.on::after, .fly-trail, .confetti { animation: none !important; } .wish.on::after { display: none; } }
+.gift-note { border-left: 4px solid var(--accent); background: var(--bronze-soft); }

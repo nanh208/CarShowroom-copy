@@ -1,15 +1,24 @@
 <template>
   <div>
-    <div class="row between"><h1>Quản lý sản phẩm</h1><div class="row"><router-link to="/admin/catalog" class="btn btn-outline btn-sm">Danh mục & hãng</router-link><button class="btn" @click="edit()">+ Thêm sản phẩm</button></div></div>
+    <div class="row between"><h1>Quản lý sản phẩm</h1><div class="row"><router-link to="/admin/catalog" class="btn btn-outline btn-sm">Danh mục & hãng</router-link><button class="btn btn-outline btn-sm" @click="imp = { text: '', result: null }">Nhập CSV</button><button class="btn" @click="edit()">+ Thêm sản phẩm</button></div></div>
     <div class="row" style="margin-bottom:14px">
       <input v-model="q" class="input" style="max-width:280px" placeholder="Tìm theo tên, SKU..." @keyup.enter="load" />
       <select v-model="type" class="input" style="max-width:200px" @change="load"><option value="">Tất cả danh mục</option><option v-for="c in catalog.categories" :key="c.code" :value="c.code">{{ c.name }}</option></select>
       <button class="btn btn-sm btn-outline" @click="load">Tìm</button>
     </div>
+    <div v-if="sel.length" class="bulk" role="region" aria-label="Sửa hàng loạt">
+      <b>Đã chọn {{ sel.length }}</b>
+      <select v-model="bk.mode" class="input" aria-label="Kiểu sửa"><option value="PERCENT">Giá ± %</option><option value="SET">Đặt giá (đ)</option><option value="STOCK_ADD">Tồn kho + / −</option><option value="STOCK_SET">Đặt tồn kho</option></select>
+      <input v-model.number="bk.value" type="number" class="input num" :placeholder="bk.mode === 'PERCENT' ? 'VD: -10' : 'Giá trị'" aria-label="Giá trị" />
+      <button class="btn btn-sm" :disabled="bk.value === '' || bk.value === null || busy" @click="bulk()">Áp dụng</button>
+      <button class="btn btn-sm btn-outline" @click="bulk(false)">Ẩn</button><button class="btn btn-sm btn-outline" @click="bulk(true)">Hiện</button>
+      <button class="btn btn-sm btn-outline" @click="sel = []">Bỏ chọn</button>
+    </div>
     <div class="card table-wrap">
       <table class="table">
-        <thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Tỷ lệ / Tuổi</th><th>Giá</th><th>Tồn</th><th>Đã bán</th><th>★</th><th>Trạng thái</th><th /></tr></thead>
-        <tbody><tr v-for="p in items" :key="p.id" :class="{ off: !p.active }">
+        <thead><tr><th class="ck"><input type="checkbox" :checked="sel.length && sel.length === items.length" aria-label="Chọn tất cả" @change="sel = $event.target.checked ? items.map(p => p.id) : []" /></th><th>Sản phẩm</th><th>Danh mục</th><th>Tỷ lệ / Tuổi</th><th>Giá</th><th>Tồn</th><th>Đã bán</th><th>★</th><th>Trạng thái</th><th /></tr></thead>
+        <tbody><tr v-for="p in items" :key="p.id" :class="{ off: !p.active, picked: sel.includes(p.id) }">
+          <td class="ck"><input v-model="sel" type="checkbox" :value="p.id" :aria-label="`Chọn ${p.name}`" /></td>
           <td><div class="row" style="flex-wrap:nowrap;gap:12px"><img loading="lazy" decoding="async" :src="p.images?.[0]" class="thumbimg" alt="" />
             <div><b>{{ p.name }}</b><div class="small muted">{{ p.sku }} · {{ p.brand?.name }}<span v-if="p.hasVariants"> · có biến thể</span></div></div></div></td>
           <td class="small">{{ TYPES[p.type] }}</td><td class="small">{{ p.scale || '—' }} · {{ p.ageMin }}+</td>
@@ -21,6 +30,19 @@
             <button v-else class="btn btn-sm btn-outline" @click="restore(p)">Hiện</button></div></td>
         </tr></tbody>
       </table>
+    </div>
+
+    <div v-if="imp" class="modal-bg" @click.self="imp = null">
+      <div class="modal">
+        <h3>Nhập sản phẩm từ CSV</h3>
+        <p class="small muted">Cột: <code>sku,name,brand,type,grp,scale,price,oldPrice,stock,image,description</code> — dòng đầu là tiêu đề, bắt buộc <b>sku, name, price</b>. Trùng SKU sẽ cập nhật.</p>
+        <div class="row" style="margin:10px 0"><label class="btn btn-sm btn-outline">Chọn file .csv<input type="file" accept=".csv,text/csv" hidden @change="readCsv" /></label><button class="btn btn-sm btn-outline" @click="imp.text = SAMPLE">Dán mẫu</button></div>
+        <textarea v-model="imp.text" class="input mono" rows="8" placeholder="sku,name,brand,type,grp,scale,price,stock" />
+        <p v-if="imp.text" class="small muted">{{ imp.text.trim().split('\n').length - 1 }} dòng dữ liệu</p>
+        <div v-if="imp.result" :class="['alert', imp.result.errors.length ? 'alert-error' : 'alert-success']" style="margin-top:10px">
+          Tạo mới {{ imp.result.created }} · cập nhật {{ imp.result.updated }}<div v-for="e in imp.result.errors" :key="e" class="small">{{ e }}</div></div>
+        <div class="row" style="margin-top:12px"><button class="btn" :disabled="!imp.text.trim() || busy" @click="doImport">{{ busy ? 'Đang nhập…' : 'Nhập' }}</button><button class="btn btn-outline" @click="imp = null">Đóng</button></div>
+      </div>
     </div>
 
     <div v-if="form" class="modal-bg" @click.self="form = null">
@@ -68,10 +90,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { toast } from '../../stores/prefs'
 import api, { errMsg, uploadImage } from '../../api'
 import { vnd, TYPES, catalog, loadCatalog } from '../../format'
-const items = ref([]), q = ref(''), type = ref(''), form = ref(null), err = ref(''), vars = ref([]), imgUrl = ref(''), uploading = ref(false)
+const route = useRoute()
+const sel = ref([]), bk = reactive({ mode: 'PERCENT', value: null }), busy = ref(false), imp = ref(route.query.import ? { text: '', result: null } : null)
+const SAMPLE = 'sku,name,brand,type,grp,scale,price,oldPrice,stock,image\nAR-HW-DEMO-01,"Hot Wheels Demo, Nissan Z",Hot Wheels,MODEL,TOY,1:64,129000,159000,24,/images/toys/hw-r34-0.jpg'
+async function bulk(active) {
+  busy.value = true
+  try { const body = typeof active === 'boolean' ? { ids: sel.value, active } : { ids: sel.value, mode: bk.mode, value: bk.value }
+    const { data } = await api.post('/admin/products/bulk', body); toast(`Đã cập nhật ${data.updated} sản phẩm`); sel.value = []; bk.value = null; load() }
+  catch (e) { toast(errMsg(e), 'error') } finally { busy.value = false }
+}
+const readCsv = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => (imp.value.text = rd.result); rd.readAsText(f, 'utf-8') }
+async function doImport() {
+  busy.value = true
+  try { imp.value.result = (await api.post('/admin/products/import', imp.value.text, { headers: { 'Content-Type': 'text/plain' } })).data; load() }
+  catch (e) { imp.value.result = { created: 0, updated: 0, errors: [errMsg(e)] } } finally { busy.value = false }
+}
+const items = ref([]), q = ref(route.query.q || ''), type = ref(''), form = ref(null), err = ref(''), vars = ref([]), imgUrl = ref(''), uploading = ref(false)
 
 async function load() {
   items.value = (await api.get('/admin/products', { params: { q: q.value || undefined, type: type.value || undefined, size: 300 } })).data.content
@@ -98,9 +137,12 @@ async function save() {
 }
 async function remove(p) { if (confirm(`Ẩn sản phẩm "${p.name}"? (giữ lại lịch sử đơn hàng)`)) { await api.delete(`/admin/products/${p.id}`); load() } }
 async function restore(p) { await api.post(`/admin/products/${p.id}/restore`); load() }
-onMounted(() => { loadCatalog(); load() })
+onMounted(() => { loadCatalog(); load(); if (route.query.new) edit() })
 </script>
 <style scoped>
+.bulk { position: sticky; top: 64px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 12px; background: #111; color: #fff; }
+.bulk .input { width: auto; padding: 6px 10px; } .bulk .num { width: 120px; } .bulk .btn-outline { color: #fff; border-color: #fff; background: transparent; }
+.ck { width: 36px; } .ck input { width: 17px; height: 17px; accent-color: var(--accent); } tr.picked { background: var(--bronze-soft); } .mono { font-family: ui-monospace, monospace; font-size: .8rem; }
 .thumbimg { width: 56px; height: 42px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #f6f1ea; }
 .danger-text { color: var(--danger); }
 .low { color: var(--danger); font-weight: 700; } .off { opacity: .5; }

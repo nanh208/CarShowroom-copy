@@ -38,6 +38,7 @@
           </div>
           <input v-model="t.subject" class="input" placeholder="Tiêu đề" style="margin-top:8px" />
           <textarea v-model="t.content" class="input" rows="4" placeholder="Mô tả chi tiết vấn đề của bạn…" style="margin-top:8px" />
+          <Attachments v-model="t.attachments" style="margin-top:8px" />
           <div v-if="tErr" class="alert alert-error">{{ tErr }}</div>
           <button class="btn btn-sm" style="margin-top:10px" @click="createTicket">Gửi phiếu</button>
           <div v-if="mine.length" class="mine"><h4>Phiếu của bạn</h4>
@@ -56,6 +57,7 @@
   </div>
 </template>
 <script setup>
+import Attachments from '../components/Attachments.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Breadcrumb from '../components/Breadcrumb.vue'
@@ -66,7 +68,7 @@ import { toast } from '../stores/prefs'
 const auth = useAuth(), route = useRoute(), router = useRouter()
 const cats = ['Đơn hàng', 'Thanh toán', 'Vận chuyển', 'Đổi trả', 'Bảo hành', 'Kỹ thuật', 'Khác']
 const w = reactive({ code: route.query.order || '', phone: auth.user?.phone || '' }), wr = ref(null), wErr = ref('')
-const t = reactive({ category: route.query.order ? 'Đơn hàng' : 'Khác', orderCode: route.query.order || '', subject: '', content: '' }), tErr = ref(''), mine = ref([])
+const t = reactive({ category: route.query.order ? 'Đơn hàng' : 'Khác', orderCode: route.query.order || '', subject: '', content: '', attachments: [] }), tErr = ref(''), mine = ref([])
 const openChat = () => dispatchEvent(new Event('open-chat'))
 async function lookup() { wErr.value = ''; wr.value = null; try { wr.value = (await api.get('/warranty', { params: w })).data } catch (e) { wErr.value = errMsg(e) } }
 async function createTicket() {

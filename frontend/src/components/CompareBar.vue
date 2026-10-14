@@ -18,7 +18,7 @@
 </template>
 <script setup>import { usePrefs } from '../stores/prefs'; const prefs = usePrefs()</script>
 <style scoped>
-.cbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: #fff;  border-top: 1px solid var(--border); padding: 16px 0; }
+.cbar { position: fixed; left: 0; right: 0; bottom: var(--tabbar-h, 0px); z-index: 60; background: #fff;  border-top: 1px solid var(--border); padding: 16px 0; }
 .inner { display: flex; align-items: center; gap: 24px; }
 .slots { display: flex; gap: 12px; flex: 1; }
 .slot { flex: 1; display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 12px; border: 1px dashed rgba(0,0,0,.15); border-radius: 12px; font-size: .85rem; min-width: 0; }

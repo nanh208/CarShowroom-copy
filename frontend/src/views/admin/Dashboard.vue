@@ -14,13 +14,27 @@
           <router-link to="/admin/questions" class="todo">❓ {{ s.questionsOpen }} câu hỏi chưa trả lời</router-link></div>
       </div>
       <div class="card chart">
-        <div class="row between"><div><h3>Doanh thu đã thu</h3><span class="muted small">{{ days }} ngày gần nhất · tổng {{ ty(revTotal) }}</span></div>
-          <div class="seg"><button v-for="n in [7, 14, 30]" :key="n" :class="{ on: days === n }" @click="days = n; loadRev()">{{ n }} ngày</button></div></div>
+        <div class="rangebar">
+          <div><h3>Hiệu quả kinh doanh</h3><span class="muted small">{{ fmtD(from) }} – {{ fmtD(to) }} · so với {{ spanDays }} ngày trước đó</span></div>
+          <div class="range">
+            <div class="seg" role="group" aria-label="Khoảng thời gian"><button v-for="p in PRESETS" :key="p.k" :class="{ on: preset === p.k }" @click="setPreset(p.k)">{{ p.l }}</button></div>
+            <label class="dt">Từ <input v-model="from" type="date" class="input" :max="to" @change="preset = ''; loadKpi()" /></label>
+            <label class="dt">Đến <input v-model="to" type="date" class="input" :min="from" :max="today" @change="preset = ''; loadKpi()" /></label>
+          </div>
+        </div>
+        <div v-if="k" class="kpis">
+          <div v-for="m in KPIS" :key="m.k" class="kpi">
+            <small>{{ m.l }}</small>
+            <b><CountUp :value="k.current[m.k]" :format="m.f" /></b>
+            <span v-if="delta(m.k) !== null" :class="['dl', (m.inv ? -delta(m.k) : delta(m.k)) >= 0 ? 'up' : 'down']">{{ delta(m.k) >= 0 ? '▲' : '▼' }} {{ Math.abs(delta(m.k)) }}%</span>
+            <span v-else class="dl muted">—</span>
+          </div>
+        </div>
         <div class="bars">
-          <div v-for="r in rev" :key="r.date" class="col" :title="`${r.date}: ${vnd(r.revenue)} · ${r.orders} đơn`">
-            <span class="tip">{{ r.revenue ? ty(r.revenue) : '' }}</span>
+          <div v-for="r in rev" :key="r.date" class="col" :title="`${r.date}: ${vnd(r.revenue)}`">
+            <span class="tip">{{ r.revenue && rev.length <= 31 ? ty(r.revenue) : '' }}</span>
             <div class="b" :style="{ height: Math.max(r.revenue ? 4 : 1, r.revenue * 100 / revMax) + '%' }" />
-            <small>{{ r.date.slice(8) }}/{{ r.date.slice(5, 7) }}</small>
+            <small v-if="rev.length <= 16 || i0(r) % Math.ceil(rev.length / 12) === 0">{{ r.date.slice(8) }}/{{ r.date.slice(5, 7) }}</small>
           </div>
         </div>
       </div>
@@ -63,11 +77,22 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../../api'
 import CountUp from '../../components/CountUp.vue'
 import { vnd, dt, ty, ORDER_STATUS } from '../../format'
-const s = ref(null), rev = ref([]), days = ref(14)
+const s = ref(null), k = ref(null)
+const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+const today = iso(new Date()), daysAgo = n => iso(new Date(Date.now() - n * 864e5))
+const PRESETS = [{ k: '7', l: '7 ngày' }, { k: '14', l: '14 ngày' }, { k: '30', l: '30 ngày' }, { k: 'month', l: 'Tháng này' }]
+const preset = ref('14'), from = ref(daysAgo(13)), to = ref(today)
+const setPreset = p => { preset.value = p; to.value = today; from.value = p === 'month' ? today.slice(0, 8) + '01' : daysAgo(+p - 1); loadKpi() }
+const KPIS = [{ k: 'revenue', l: 'Doanh thu', f: v => vnd(v) }, { k: 'orders', l: 'Đơn hàng' }, { k: 'aov', l: 'Giá trị TB/đơn', f: v => vnd(v) },
+  { k: 'items', l: 'Sản phẩm bán ra' }, { k: 'newCustomers', l: 'Khách mới' }, { k: 'cancelRate', l: 'Tỉ lệ huỷ', f: v => v.toFixed?.(1) + '%', inv: true }]
+const delta = key => { const c = k.value?.current[key], p = k.value?.previous[key]; if (!p) return c ? 100 : null; return Math.round((c - p) * 100 / p) }
+const rev = computed(() => k.value ? Object.entries(k.value.daily).map(([date, revenue]) => ({ date, revenue })) : [])
+const i0 = r => rev.value.indexOf(r)
 const revMax = computed(() => Math.max(1, ...rev.value.map(r => r.revenue)))
-const revTotal = computed(() => rev.value.reduce((a, r) => a + r.revenue, 0))
-const loadRev = async () => { rev.value = (await api.get('/admin/revenue', { params: { days: days.value } })).data }
-onMounted(async () => { s.value = (await api.get('/admin/stats')).data; loadRev() })
+const spanDays = computed(() => Math.round((new Date(to.value) - new Date(from.value)) / 864e5) + 1)
+const fmtD = s => s.split('-').reverse().join('/')
+const loadKpi = async () => { if (from.value > to.value) return; k.value = (await api.get('/admin/kpi', { params: { from: from.value, to: to.value } })).data }
+onMounted(async () => { s.value = (await api.get('/admin/stats')).data; loadKpi() })
 </script>
 <style scoped>
 .stats { grid-template-columns: repeat(5, 1fr) } @media (max-width: 1100px) { .stats { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }; }
@@ -89,4 +114,12 @@ onMounted(async () => { s.value = (await api.get('/admin/stats')).data; loadRev(
 .col small { position: absolute; bottom: -24px; color: var(--muted); font-size: .7rem; }
 .tip { font-size: .7rem; color: var(--text-2); margin-bottom: 4px; white-space: nowrap; }
 .bars { margin-bottom: 28px; }
+.rangebar { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.range { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; } .dt { display: flex; gap: 6px; align-items: center; margin: 0; font-size: .82rem; } .dt .input { width: auto; padding: 6px 8px; min-height: 0; }
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; margin-top: 18px; border: 1px solid var(--border); }
+.kpi { padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; } .kpi + .kpi { border-left: 1px solid var(--border); }
+.kpi small { color: var(--muted); font-size: .76rem; } .kpi b { font-size: clamp(1rem, .8rem + .8vw, 1.35rem); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl { font-size: .74rem; font-weight: 700; } .dl.up { color: var(--success); } .dl.down { color: var(--danger); }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } .kpi:nth-child(4) { border-left: none; } .kpi:nth-child(n+4) { border-top: 1px solid var(--border); } }
+@media (max-width: 599px) { .kpis { grid-template-columns: repeat(2, 1fr); } .kpi { border-left: none !important; border-top: 1px solid var(--border); } .kpi:nth-child(even) { border-left: 1px solid var(--border) !important; } .bar-row { grid-template-columns: 90px 1fr 26px; } .bars { gap: 2px; height: 180px; } }
 </style>

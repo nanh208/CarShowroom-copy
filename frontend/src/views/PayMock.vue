@@ -9,7 +9,8 @@
           <p>Nhà cung cấp<br /><b>ARES Toys</b></p><p>Mã đơn hàng<br /><b>{{ o.code }}</b></p>
           <p>Số tiền<br /><b class="amt">{{ vnd(o.total - o.paidAmount) }}</b></p>
           <p class="muted small">Đây là môi trường demo, không có giao dịch thật.</p>
-          <button class="btn btn-block" :disabled="busy" @click="pay">{{ busy ? 'Đang xác nhận…' : 'Xác nhận thanh toán' }}</button>
+          <Speedometer v-if="busy" class="spd-pay" label="Đang xử lý thanh toán…" />
+          <button v-else class="btn btn-block" @click="pay">Xác nhận thanh toán</button>
           <router-link :to="`/orders/${o.code}`" class="cancel">Huỷ, quay lại đơn hàng</router-link>
         </div>
       </div>
@@ -22,6 +23,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
 import { vnd } from '../format'
 import { toast } from '../stores/prefs'
+import Speedometer from '../components/Speedometer.vue'
 const route = useRoute(), router = useRouter(), o = ref(null), busy = ref(false)
 // Mã QR giả (họa tiết ngẫu nhiên theo mã đơn) — chỉ minh hoạ
 const qrPath = computed(() => {
@@ -35,7 +37,7 @@ const qrPath = computed(() => {
 onMounted(async () => { o.value = (await api.get(`/orders/${route.params.code}`)).data.order })
 async function pay() {
   busy.value = true
-  try { await new Promise(r => setTimeout(r, 900)); await api.post(`/orders/${o.value.code}/pay`); toast('Thanh toán thành công'); router.push(`/orders/${o.value.code}?new=1`) }
+  try { await new Promise(r => setTimeout(r, 1200)); await api.post(`/orders/${o.value.code}/pay`); toast('Thanh toán thành công'); router.push(`/orders/${o.value.code}?new=1`) }
   catch (e) { toast(errMsg(e), 'error') } finally { busy.value = false }
 }
 </script>
@@ -51,4 +53,5 @@ async function pay() {
 .VNPAY .amt { color: #005baa !important; }
 .cancel { display: block; text-align: center; margin-top: 10px; font-size: .85rem; color: #777; }
 @media (max-width: 600px) { .gb { grid-template-columns: 1fr; } }
+.spd-pay { display: flex; margin: 6px auto; }
 </style>

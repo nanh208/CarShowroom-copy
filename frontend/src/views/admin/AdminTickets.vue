@@ -14,9 +14,10 @@
         <div class="row between"><div><h3 style="margin:0">{{ cur.subject }}</h3><div class="small muted">{{ cur.user?.fullName }} · {{ cur.user?.email }}<span v-if="cur.orderCode"> · Đơn <router-link :to="`/orders/${cur.orderCode}`" target="_blank">{{ cur.orderCode }}</router-link></span></div></div>
           <button v-if="cur.status !== 'CLOSED'" class="btn btn-sm btn-outline" @click="reply({ status: 'CLOSED' })">Đóng phiếu</button></div>
         <div class="msgs">
-          <div v-for="m in cur.messages" :key="m.id" :class="['msg', { staff: m.fromStaff }]"><div class="small muted">{{ m.author }} · {{ dt(m.createdAt) }}</div>{{ m.content }}</div>
+          <div v-for="m in cur.messages" :key="m.id" :class="['msg', { staff: m.fromStaff }]"><div class="small muted">{{ m.author }} · {{ dt(m.createdAt) }}</div>{{ m.content }}<MsgFiles :files="m.attachments" /></div>
         </div>
-        <div class="row" style="gap:8px"><textarea v-model="text" rows="2" class="input" style="flex:1" placeholder="Phản hồi khách hàng…" /><button class="btn" :disabled="!text.trim()" @click="reply({ content: text })">Gửi</button></div>
+        <div class="composer"><textarea v-model="text" rows="3" class="input" placeholder="Phản hồi khách hàng…" aria-label="Phản hồi" />
+          <div class="row between"><CannedReplies :name="cur.user?.fullName" :order="cur.orderCode" :current="text" @insert="t => (text = text ? text + '\n' + t : t)" /><button class="btn" :disabled="!text.trim()" @click="reply({ content: text })">Gửi</button></div></div>
       </div>
       <div v-else class="card muted">Chọn một phiếu để xem.</div>
     </div>
@@ -25,6 +26,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../../api'
+import CannedReplies from '../../components/CannedReplies.vue'
+import MsgFiles from '../../components/MsgFiles.vue'
 import { d, TICKET_STATUS } from '../../format'
 const list = ref([]), cur = ref(null), st = ref('OPEN'), text = ref('')
 const dt = s => s ? new Date(s).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : ''
@@ -33,10 +36,12 @@ const reply = async body => { cur.value = (await api.post(`/admin/tickets/${cur.
 onMounted(load)
 </script>
 <style scoped>
-.split { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+.split { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; align-items: start; }
+.composer { display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 899px) { .split { grid-template-columns: 1fr; } .list { max-height: 40vh; } }
 .list { padding: 8px !important; max-height: 70vh; overflow: auto; }
 .it { display: block; width: 100%; text-align: left; background: none; border: none; border-radius: 10px; padding: 12px; cursor: pointer; font: inherit; color: inherit; }
 .it:hover { background: rgba(0,0,0,.04); } .it.on { background: rgba(168,122,60,.14); }
 .msgs { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; max-height: 50vh; overflow: auto; }
-.msg { background: #f6f1ea; padding: 10px 14px; border-radius: 12px; max-width: 80%; white-space: pre-wrap; } .msg.staff { align-self: flex-end; background: rgba(168,122,60,.18); }
+.msg { background: var(--bg-2); padding: 10px 14px; border-radius: 12px; max-width: 80%; white-space: pre-wrap; } .msg.staff { align-self: flex-end; background: rgba(168,122,60,.18); }
 </style>
