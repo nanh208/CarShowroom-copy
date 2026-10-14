@@ -34,12 +34,12 @@ const shown = computed(() => faqs.filter(f => cat.value === 'Tất cả' || f[0]
 <style scoped>
 .narrow { max-width: 880px; }
 .cats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
-.cats button { padding: 8px 18px; border-radius: 999px; border: 1px solid var(--border); background: none; color: #cbd5e1; cursor: pointer; font: 500 .9rem inherit; font-family: inherit; }
-.cats button.on { background: #fff; color: #0b0c10; border-color: #fff; }
+.cats button { padding: 8px 18px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-2); cursor: pointer; font: 500 .9rem inherit; font-family: inherit; }
+.cats button.on { background: #fff; color: var(--bg-2); border-color: var(--text); }
 .qa { border-bottom: 1px solid var(--border); }
 .qa summary { list-style: none; cursor: pointer; padding: 24px 0; font-size: 1.1rem; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
 .qa summary::-webkit-details-marker { display: none; }
 .plus { width: 20px; height: 20px; position: relative; flex-shrink: 0; } .plus::before, .plus::after { content: ''; position: absolute; background: var(--accent); left: 9px; top: 2px; width: 2px; height: 16px; transition: .2s; }
 .plus::after { transform: rotate(90deg); } .qa[open] .plus::before { transform: rotate(90deg); }
-.qa p { color: #cbd5e1; padding: 0 0 24px; line-height: 1.7; max-width: 720px; }
+.qa p { color: var(--text-2); padding: 0 0 24px; line-height: 1.7; max-width: 720px; }
 </style>

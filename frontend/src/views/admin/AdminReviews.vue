@@ -38,5 +38,5 @@ onMounted(load)
 <style scoped>
 .head { margin-bottom: 24px; } .head h1 { margin: 0 !important; }
 .flat { border: none; margin: 0; } .flat small { color: var(--muted); }
-.cmt { color: #cbd5e1; min-width: 260px; } .danger { color: #fca5a5; }
+.cmt { color: var(--text-2); min-width: 260px; } .danger { color: var(--danger); }
 </style>

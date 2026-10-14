@@ -63,9 +63,9 @@ const add = p => { cart.add({ productId: p.id, name: p.name, fuel: p.fuel, type:
 .head { position: relative; display: flex; flex-direction: column; gap: 8px; font-weight: 400; }
 .head img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 12px; }
 .head small { color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
-.nm { color: #fff; font-weight: 700; font-size: 1.1rem; } .head .price { font-size: 1.2rem; }
-.rm { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(0,0,0,.6); color: #fff; font-size: 1.1rem; cursor: pointer; z-index: 1; }
-.addslot { display: flex; align-items: center; justify-content: center; aspect-ratio: 16/10; border: 1px dashed rgba(255,255,255,.2); border-radius: 12px; color: var(--muted); }
+.nm { color: var(--text); font-weight: 700; font-size: 1.1rem; } .head .price { font-size: 1.2rem; }
+.rm { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(0,0,0,.6); color: var(--text); font-size: 1.1rem; cursor: pointer; z-index: 1; }
+.addslot { display: flex; align-items: center; justify-content: center; aspect-ratio: 16/10; border: 1px dashed rgba(0,0,0,.2); border-radius: 12px; color: var(--muted); }
 .addslot:hover { border-color: var(--accent); color: var(--accent); }
-tr.diff td:not(:first-child) { color: #fff; font-weight: 600; } tr.diff td:first-child { color: var(--accent); }
+tr.diff td:not(:first-child) { color: var(--text); font-weight: 600; } tr.diff td:first-child { color: var(--accent); }
 </style>

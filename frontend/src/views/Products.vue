@@ -1,32 +1,27 @@
 <template>
   <div class="container page">
-    <Breadcrumb :items="[{ label: 'Mẫu xe' }]" />
-    <h1>Danh mục xe</h1>
-    <p class="muted">{{ total }} sản phẩm<span v-if="f.q"> cho "{{ f.q }}"</span></p>
-    <div class="layout">
-      <aside class="card filters">
-        <div class="field"><label>Từ khoá</label><input v-model="f.q" class="input" placeholder="Tên xe, hãng..." @keyup.enter="apply" /></div>
-        <div class="field"><label>Thương hiệu</label>
-          <select v-model="f.brandId" class="input"><option value="">Tất cả</option><option v-for="b in brands" :key="b.id" :value="String(b.id)">{{ b.name }}</option></select></div>
-        <div class="field"><label>Dòng xe</label>
-          <select v-model="f.type" class="input"><option value="">Tất cả</option><option v-for="(v, k) in TYPES" :key="k" :value="k">{{ v }}</option></select></div>
-        <div class="field"><label>Nhiên liệu</label>
-          <div class="chips"><button v-for="s in ['', ...FUELS]" :key="s" :class="['chip', { on: f.fuel === s }]" @click="f.fuel = s">{{ s || 'Tất cả' }}</button></div></div>
-        <div class="field"><label>Khoảng giá</label>
-          <select v-model="price" class="input">
-            <option value="">Tất cả</option><option value="0-1000000000">Dưới 1 tỷ</option><option value="1000000000-2000000000">1 – 2 tỷ</option><option value="2000000000-5000000000">2 – 5 tỷ</option><option value="5000000000-15000000000">5 – 15 tỷ</option><option value="15000000000-">Trên 15 tỷ</option>
-          </select></div>
-        <label class="check field"><input v-model="f.inStock" type="checkbox" /> Chỉ hiện còn hàng</label>
-        <div class="row"><button class="btn btn-sm grow" @click="apply">Lọc</button><button class="btn btn-sm btn-outline" @click="reset">Xoá lọc</button></div>
-      </aside>
-      <section>
-        <div class="row between toolbar">
-          <span class="muted small">Trang {{ page + 1 }}/{{ Math.max(pages, 1) }}</span>
-          <select v-model="f.sort" class="input sort" @change="apply">
-            <option value="featured">Nổi bật</option><option value="newest">Mới nhất</option><option value="bestseller">Bán chạy</option>
-            <option value="price_asc">Giá tăng dần</option><option value="price_desc">Giá giảm dần</option><option value="name">Tên A–Z</option>
-          </select>
-        </div>
+    <Breadcrumb :items="[{ label: 'Danh mục xe' }]" />
+    <div class="fbar">
+      <div class="chips">
+        <button v-for="(v, k) in { '': 'Tất cả', ...TYPES }" :key="k" :class="['chip', { on: f.type === k }]" @click="f.type = k; apply()">{{ v }}</button>
+      </div>
+      <select v-model="f.sort" class="input sort" @change="apply">
+        <option value="featured">Sắp xếp: Nổi bật</option><option value="newest">Mới nhất</option><option value="bestseller">Bán chạy</option>
+        <option value="price_asc">Giá tăng dần</option><option value="price_desc">Giá giảm dần</option><option value="name">Tên A–Z</option>
+      </select>
+    </div>
+    <div class="fbar2">
+      <input v-model="f.q" class="input" placeholder="Tìm tên xe, hãng..." @keyup.enter="apply" />
+      <select v-model="f.brandId" class="input" @change="apply"><option value="">Mọi thương hiệu</option><option v-for="b in brands" :key="b.id" :value="String(b.id)">{{ b.name }}</option></select>
+      <select v-model="f.fuel" class="input" @change="apply"><option value="">Mọi nhiên liệu</option><option v-for="s in FUELS" :key="s" :value="s">{{ s }}</option></select>
+      <select v-model="price" class="input" @change="apply">
+        <option value="">Mọi mức giá</option><option value="0-1000000000">Dưới 1 tỷ</option><option value="1000000000-2000000000">1 – 2 tỷ</option><option value="2000000000-5000000000">2 – 5 tỷ</option><option value="5000000000-15000000000">5 – 15 tỷ</option><option value="15000000000-">Trên 15 tỷ</option>
+      </select>
+      <label class="check"><input v-model="f.inStock" type="checkbox" @change="apply" /> Còn hàng</label>
+      <span class="muted small cnt">{{ total }} sản phẩm</span>
+      <button class="btn btn-sm btn-outline" @click="reset">Xoá lọc</button>
+    </div>
+    <section>
         <div v-if="loading" class="spinner" />
         <div v-else-if="!items.length" class="empty card">Không tìm thấy sản phẩm phù hợp </div>
         <div v-else class="grid grid-4"><ProductCard v-for="p in items" :key="p.id" :p="p" /></div>
@@ -35,8 +30,7 @@
           <button v-for="i in pages" :key="i" :class="['btn btn-sm', i - 1 === page ? '' : 'btn-outline']" @click="go(i - 1)">{{ i }}</button>
           <button class="btn btn-sm btn-outline" :disabled="page >= pages - 1" @click="go(page + 1)">Sau →</button>
         </div>
-      </section>
-    </div>
+    </section>
   </div>
 </template>
 
@@ -78,12 +72,14 @@ onMounted(async () => { fromQuery(); load(); brands.value = (await api.get('/bra
 </script>
 
 <style scoped>
-.layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; align-items: start; }
-@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
-.filters { position: sticky; top: 150px; }
+.fbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 12px; background: var(--bg-2); border-radius: 10px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--label); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-family: inherit; }
-.chip.on { background: var(--primary); color: #fff; border-color: var(--primary); }
-.toolbar { margin-bottom: 14px; } .sort { width: 190px; padding: 8px 12px; }
+.chip { background: #fff; border: 1px solid var(--border); color: var(--text-2); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-family: inherit; font-size: .85rem; }
+.chip.on { background: var(--bronze); color: #fff; border-color: var(--bronze); }
+.sort { width: 200px; padding: 8px 12px; }
+.fbar2 { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr auto auto auto; gap: 10px; align-items: center; margin: 12px 0 20px; }
+.fbar2 .input { padding: 8px 12px; } .check { display: flex; gap: 6px; align-items: center; font-size: .85rem; white-space: nowrap; } .cnt { white-space: nowrap; }
+.grid-4 { gap: 22px 18px; }
 .pager { justify-content: center; margin-top: 26px; }
+@media (max-width: 860px) { .fbar { flex-direction: column; align-items: stretch; } .fbar2 { grid-template-columns: 1fr 1fr; } }
 </style>

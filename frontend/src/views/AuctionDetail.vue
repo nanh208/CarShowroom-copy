@@ -94,8 +94,8 @@ onUnmounted(() => clearInterval(t))
 .photo { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 12px; }
 .th { width: 90px; aspect-ratio: 16/10; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; } .th.on { border-color: var(--accent); }
 .title { font-size: 2rem; margin: 10px 0 16px; }
-.big { font-size: 1.8rem; } .big-cd { font-size: 1.6rem; color: #fca5a5; }
-.st-LIVE { background: var(--danger); color: #fff; } .st-SCHEDULED { background: var(--primary); color: #fff; }
+.big { font-size: 1.8rem; } .big-cd { font-size: 1.6rem; color: var(--danger); }
+.st-LIVE { background: var(--danger); color: var(--text); } .st-SCHEDULED { background: var(--primary); color: var(--text); }
 .bidrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .bidrow .small { grid-column: 1 / -1; } .bidrow.top b { color: var(--accent); }
 .table th { width: 40%; text-transform: none; font-size: .88rem; }

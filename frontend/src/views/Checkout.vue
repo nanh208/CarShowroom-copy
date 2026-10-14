@@ -142,14 +142,14 @@ onMounted(async () => {
 .pay-grid { grid-template-columns: 1fr 1fr; }
 @media (max-width: 640px) { .pay-grid { grid-template-columns: 1fr; } }
 .addr, .pay { display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px; border: 1px solid var(--border); border-radius: 14px; transition: .15s; cursor: pointer; margin: 0; color: var(--text); }
-.addr.on, .pay.on { border-color: var(--accent); background: rgba(56,189,248,.08); }
+.addr.on, .pay.on { border-color: var(--accent); background: rgba(168,122,60,.08); }
 .pay.disabled { opacity: .45; cursor: not-allowed; }
 .mockpay { margin-top: 14px; padding: 14px; box-shadow: none; }
 .summary { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 96px; }
 .item { padding-bottom: 16px; border-bottom: 1px solid var(--border); align-items: flex-start; }
 .promo { flex-wrap: nowrap; } .promo .input { padding: 8px 12px; }
-.ok { color: #86efac; } .err { color: #fca5a5; }
+.ok { color: var(--success); } .err { color: var(--danger); }
 .total { font-size: 1.3rem; font-weight: 800; border-top: 1px solid var(--border); padding-top: 16px; }
-.payNow { background: rgba(2,132,199,.15); padding: 12px 16px; border-radius: 12px; }
-.addr:hover, .pay:hover { border-color: rgba(255,255,255,.25); }
+.payNow { background: rgba(168,122,60,.15); padding: 12px 16px; border-radius: 12px; }
+.addr:hover, .pay:hover { border-color: rgba(0,0,0,.25); }
 </style>

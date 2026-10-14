@@ -54,19 +54,19 @@ onMounted(async () => { s.value = (await api.get('/admin/stats')).data; loadRev(
 </script>
 <style scoped>
 .stats { grid-template-columns: repeat(5, 1fr) } @media (max-width: 1100px) { .stats { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }; }
-.val { font-size: 1.7rem; font-weight: 800; margin: 4px 0; } .warn { color: #fcd34d; }
+.val { font-size: 1.7rem; font-weight: 800; margin: 4px 0; } .warn { color: #f5b800; }
 .bar-row { display: grid; grid-template-columns: 120px 1fr 30px; gap: 10px; align-items: center; margin-bottom: 10px; font-size: .9rem; }
-.bar { background: rgba(255,255,255,.06); border-radius: 6px; height: 10px; overflow: hidden; } .bar div { background: var(--primary); height: 100%; }
+.bar { background: rgba(0,0,0,.06); border-radius: 6px; height: 10px; overflow: hidden; } .bar div { background: var(--primary); height: 100%; }
 .ro { padding: 8px 0; border-bottom: 1px solid var(--border); }
 .chart { margin-top: 24px; }
-.seg { display: flex; background: rgba(255,255,255,.05); border-radius: 999px; padding: 4px; }
+.seg { display: flex; background: rgba(0,0,0,.05); border-radius: 999px; padding: 4px; }
 .seg button { border: none; background: none; color: var(--muted); padding: 6px 14px; border-radius: 999px; cursor: pointer; font: 600 .8rem inherit; font-family: inherit; }
-.seg button.on { background: var(--primary); color: #fff; }
+.seg button.on { background: var(--primary); color: var(--text); }
 .bars { display: flex; align-items: flex-end; gap: 6px; height: 240px; margin-top: 24px; padding-top: 24px; border-bottom: 1px solid var(--border); }
 .col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
 .b { width: 100%; max-width: 40px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--accent), var(--primary)); transition: height .4s; }
 .col:hover .b { filter: brightness(1.3); }
 .col small { position: absolute; bottom: -24px; color: var(--muted); font-size: .7rem; }
-.tip { font-size: .7rem; color: #cbd5e1; margin-bottom: 4px; white-space: nowrap; }
+.tip { font-size: .7rem; color: var(--text-2); margin-bottom: 4px; white-space: nowrap; }
 .bars { margin-bottom: 28px; }
 </style>

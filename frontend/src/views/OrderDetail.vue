@@ -76,22 +76,22 @@ const steps = computed(() => {
 </script>
 <style scoped>
 .steps { display: flex; gap: 6px; margin: 18px 0 24px; }
-.step { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: rgba(255,255,255,.05); color: var(--muted); font-size: .85rem; font-weight: 600; }
-.step.done { background: var(--primary); color: #fff; }
+.step { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: rgba(0,0,0,.05); color: var(--muted); font-size: .85rem; font-weight: 600; }
+.step.done { background: var(--primary); color: var(--text); }
 .item { padding: 10px 0; border-bottom: 1px solid var(--border); }
 .card .row.between { margin-bottom: 6px; } .card p { margin-bottom: 6px; }
-.total { font-size: 1.1rem; font-weight: 700; } .ok { color: #86efac; }
+.total { font-size: 1.1rem; font-weight: 700; } .ok { color: var(--success); }
 .track { margin: 24px 0; }
 .tl { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
 .tl li { position: relative; padding-top: 32px; color: var(--muted); }
-.tl li::before { content: ''; position: absolute; top: 9px; left: 20px; right: -16px; height: 2px; background: rgba(255,255,255,.1); }
+.tl li::before { content: ''; position: absolute; top: 9px; left: 20px; right: -16px; height: 2px; background: rgba(0,0,0,.1); }
 .tl li:last-child::before { display: none; }
-.tl .dot { position: absolute; top: 0; left: 0; width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); background: #0b0c10; z-index: 1; }
+.tl .dot { position: absolute; top: 0; left: 0; width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(0,0,0,.2); background: var(--bg-2); z-index: 1; }
 .tl li.done .dot, .tl li.now .dot { background: var(--primary); border-color: var(--primary); }
 .tl li.done::before { background: var(--primary); }
-.tl li.now .dot { box-shadow: 0 0 0 6px rgba(2,132,199,.25); }
+.tl li.now .dot { box-shadow: 0 0 0 6px rgba(168,122,60,.25); }
 .tl li.cancel .dot { background: var(--danger); border-color: var(--danger); }
-.tl b { display: block; color: #fff; margin-bottom: 4px; } .tl li:not(.done):not(.now):not(.cancel) b { color: var(--muted); }
+.tl b { display: block; color: var(--text); margin-bottom: 4px; } .tl li:not(.done):not(.now):not(.cancel) b { color: var(--muted); }
 .tl p { font-size: .85rem; } .tl small { font-size: .78rem; color: var(--accent); }
 @media (max-width: 800px) { .tl { grid-template-columns: 1fr 1fr; } }
 </style>
