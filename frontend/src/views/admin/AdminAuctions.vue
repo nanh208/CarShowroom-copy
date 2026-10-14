@@ -86,6 +86,6 @@ onMounted(load)
 </script>
 <style scoped>
 .thumb { width: 64px; height: 40px; object-fit: cover; border-radius: 6px; }
-.st-LIVE { background: var(--danger); color: #fff; } .st-SCHEDULED { background: var(--primary); color: #fff; } .st-ENDED, .st-CANCELLED { background: #475569; }
+.st-LIVE { background: var(--danger); color: var(--text); } .st-SCHEDULED { background: var(--primary); color: var(--text); } .st-ENDED, .st-CANCELLED { background: #475569; }
 .modal { max-width: 760px; }
 </style>

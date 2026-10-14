@@ -29,17 +29,17 @@ const auth = useAuth(), router = useRouter()
 const logout = () => { auth.logout(); router.push('/login') }
 </script>
 <style scoped>
-.admin { display: flex; min-height: 100vh; background: rgba(8,9,12,.6); }
-.side { width: 256px; flex-shrink: 0; background: rgba(10,11,14,.92); backdrop-filter: blur(20px); border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
-.logo { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 1.05rem; letter-spacing: .14em; margin: 0 8px 40px; } .logo img { height: 32px; } .logo b { color: var(--accent); }
-nav a { display: flex; align-items: center; gap: 12px; color: #94a3b8; padding: 12px 16px; border-radius: 12px; margin-bottom: 4px; font-weight: 500; position: relative; transition: .15s; }
+.admin { display: flex; min-height: 100vh; background: #fff; }
+.side { width: 256px; flex-shrink: 0; background: #fff;  border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.logo { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 1.05rem; letter-spacing: .14em; margin: 0 8px 40px; } .logo img { height: 32px; } .logo b { color: var(--accent); }
+nav a { display: flex; align-items: center; gap: 12px; color: var(--text-2); padding: 12px 16px; border-radius: 12px; margin-bottom: 4px; font-weight: 500; position: relative; transition: .15s; }
 nav svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-nav a:hover { background: rgba(255,255,255,.05); color: #fff; }
-nav a.on { background: rgba(2,132,199,.16); color: #fff; }
+nav a:hover { background: rgba(0,0,0,.05); color: var(--text); }
+nav a.on { background: rgba(168,122,60,.16); color: var(--text); }
 nav a.on::before { content: ''; position: absolute; left: -16px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
 nav a.on svg { color: var(--accent); }
 .foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 16px; border-top: 1px solid var(--border); }
-.foot a { color: var(--muted); } .foot a:hover { color: #fff; }
+.foot a { color: var(--muted); } .foot a:hover { color: var(--text); }
 .content { flex: 1; padding: 40px 48px; min-width: 0; }
 :deep(.card) { padding: 24px; }
 :deep(h1) { font-size: 2rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: 32px; }

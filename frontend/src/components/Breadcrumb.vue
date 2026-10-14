@@ -8,5 +8,5 @@
 <script setup>defineProps({ items: { type: Array, default: () => [] } })</script>
 <style scoped>
 .crumb { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: .9rem; margin-bottom: 24px; }
-.crumb a { color: var(--muted); } .crumb a:hover { color: #fff; } .sep { opacity: .5; } .cur { color: #cbd5e1; }
+.crumb a { color: var(--muted); } .crumb a:hover { color: var(--text); } .sep { opacity: .5; } .cur { color: var(--text-2); }
 </style>

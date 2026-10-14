@@ -1,95 +1,80 @@
 <template>
-  <div>
-    <section class="hero">
-      <div class="container hero-inner">
-        <span class="eyebrow">ARES Auto · Showroom 2026</span>
-        <h1>Lái chiếc xe<br />bạn hằng mơ ước.</h1>
-        <p>14 thương hiệu từ Toyota, VinFast đến Porsche, Lamborghini, Ferrari. Cấu hình màu sơn, mâm, nội thất — đặt cọc chỉ 10%.</p>
-        <div class="cta-row">
-          <router-link to="/products" class="btn btn-lg">Khám phá mẫu xe</router-link>
-          <router-link to="/services" class="btn btn-lg btn-outline">Đăng ký lái thử</router-link>
-        </div>
-        <dl class="stats">
-          <div><dt>20+</dt><dd>Mẫu xe sẵn giao</dd></div>
-          <div><dt>10%</dt><dd>Đặt cọc giữ xe</dd></div>
-          <div><dt>84</dt><dd>Tháng trả góp</dd></div>
-        </dl>
+  <div class="home">
+    <!-- Hero carousel: menu đè lên phần trên của banner -->
+    <section class="hero" @mouseenter="pause = true" @mouseleave="pause = false">
+      <div class="slides">
+        <router-link v-for="(s, i) in slides" :key="s.title" :to="s.to" :class="['slide', { on: i === cur }]" :style="{ backgroundImage: `url(${s.img})` }">
+          <div class="shade" />
+          <div class="txt"><small>{{ s.kicker }}</small><h1>{{ s.title }}</h1><span>{{ s.sub }}</span></div>
+        </router-link>
       </div>
-      <div class="hero-fade" />
     </section>
+    <div class="dots"><button v-for="(s, i) in slides" :key="i" :class="{ on: i === cur }" :aria-label="`Ảnh ${i + 1}`" @click="cur = i" /></div>
 
     <div class="container">
+      <router-link to="/promotions" class="promo-banner">
+        <img src="/images/cars/vf9.jpg" alt="" />
+        <div /><div class="pb-txt" style="z-index:1"><b>Tháng vàng ARES</b><i>Ưu đãi mùa thu</i></div>
+        <div class="pb-off"><small>Giảm đến</small><b>50 triệu</b><small>Mã THANG10</small></div>
+        <div class="pb-moon" />
+      </router-link>
+
+      <section class="block">
+        <h2>Danh mục</h2>
+        <div class="cats">
+          <router-link v-for="c in cats" :key="c.label" :to="c.to" class="cat"><span>{{ c.label }}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" v-html="c.icon" /></router-link>
+        </div>
+      </section>
+
       <div v-if="loading" class="spinner" />
       <template v-else>
-        <section class="brands-strip">
-          <router-link v-for="b in carBrands" :key="b.id" :to="{ path: '/products', query: { brandId: b.id } }" class="brand" :title="b.name">
-            <img v-if="b.logoUrl" :src="b.logoUrl" :alt="b.name" />
-            <span>{{ b.name }}</span>
-          </router-link>
+        <section class="block">
+          <div class="bh"><h2>Bán chạy</h2><router-link :to="{ path: '/products', query: { sort: 'bestseller' } }">Xem tất cả →</router-link></div>
+          <div class="grid grid-3"><Tile v-for="p in best" :key="p.id" :p="p" /></div>
         </section>
 
-        <section v-if="flash.length" class="section flash">
-          <div class="flash-head">
-            <div><span class="eyebrow">Flash sale · Chỉ trong hôm nay</span><h2>Giá tốt nhất tháng</h2></div>
-            <div class="clock"><small>Kết thúc sau</small><Countdown :to="endOfDay" /></div>
-          </div>
-          <div class="grid grid-3"><ProductCard v-for="p in flash" :key="p.id" :p="p" /></div>
+        <section v-if="flash.length" class="block">
+          <div class="bh"><h2>Flash sale <span class="cd">kết thúc sau <Countdown :to="endOfDay" /></span></h2><router-link :to="{ path: '/products', query: { sort: 'price_asc' } }">Xem tất cả →</router-link></div>
+          <div class="grid grid-3"><Tile v-for="p in flash" :key="p.id" :p="p" sale /></div>
         </section>
 
-        <section class="section">
-          <div class="section-head"><div><span class="eyebrow">Mới về showroom</span><h2>Xe mới nhất</h2></div><router-link :to="{ path: '/products', query: { sort: 'newest' } }">Xem tất cả →</router-link></div>
-          <div class="grid grid-3"><ProductCard v-for="p in data.newArrivals?.slice(0, 6)" :key="p.id" :p="p" /></div>
+        <section class="block">
+          <div class="bh"><h2>Siêu xe nổi bật</h2><router-link :to="{ path: '/products', query: { type: 'SUPERCAR' } }">Xem tất cả →</router-link></div>
+          <div class="grid grid-3"><Tile v-for="p in supercars" :key="p.id" :p="p" /></div>
         </section>
 
-        <section v-if="auctions.length" class="section">
-          <div class="section-head"><div><span class="eyebrow">Đấu giá trực tuyến</span><h2>Xe sưu tầm hiếm</h2></div><router-link to="/auctions">Tất cả phiên →</router-link></div>
+        <section class="block">
+          <div class="bh"><h2>SUV & xe điện nổi bật</h2><router-link :to="{ path: '/products', query: { type: 'SUV' } }">Xem tất cả →</router-link></div>
+          <div class="grid grid-3"><Tile v-for="p in suvs" :key="p.id" :p="p" /></div>
+        </section>
+
+        <section v-if="auctions.length" class="block">
+          <div class="bh"><h2>Đấu giá xe hiếm</h2><router-link to="/auctions">Tất cả phiên →</router-link></div>
           <div class="grid grid-3">
-            <router-link v-for="a in auctions" :key="a.id" :to="`/auctions/${a.id}`" class="au">
-              <div class="au-img"><img :src="a.images?.[0]" :alt="a.title" /><span class="live" :class="a.status">{{ a.status === 'LIVE' ? '● Đang diễn ra' : 'Sắp mở' }}</span></div>
-              <div class="au-body">
-                <h3>{{ a.title }}</h3>
-                <div class="au-meta"><div><small>Giá hiện tại</small><b>{{ ty(a.currentPrice) }}</b></div>
-                  <div class="r"><small>{{ a.status === 'LIVE' ? 'Kết thúc sau' : 'Mở sau' }}</small><b><Countdown :to="a.status === 'LIVE' ? a.endTime : a.startTime" /></b></div></div>
-              </div>
+            <router-link v-for="a in auctions" :key="a.id" :to="`/auctions/${a.id}`" class="tile">
+              <img :src="a.images?.[0]" :alt="a.title" />
+              <span :class="['live', a.status]">{{ a.status === 'LIVE' ? '● Đang đấu giá' : 'Sắp mở' }}</span>
+              <div class="cap"><span>{{ a.title }}</span><small>{{ ty(a.currentPrice) }} · <Countdown :to="a.status === 'LIVE' ? a.endTime : a.startTime" /></small></div>
             </router-link>
           </div>
         </section>
 
-        <section class="feature">
-          <div class="feature-text">
-            <span class="eyebrow">Cấu hình theo ý bạn</span>
-            <h2>Mỗi chiếc xe là<br />một tác phẩm riêng.</h2>
-            <p>Chọn màu sơn, mâm và chất liệu nội thất ngay trên trang chi tiết. Giá cập nhật tức thì, trả góp đến 84 tháng.</p>
-            <router-link :to="{ path: '/products', query: { type: 'SUPERCAR' } }" class="btn">Cấu hình siêu xe</router-link>
-          </div>
+        <section v-if="prefs.recent.length" class="block">
+          <div class="bh"><h2>Bạn đã xem gần đây</h2></div>
+          <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b></router-link></div>
         </section>
 
-        <section class="section">
-          <div class="section-head"><div><span class="eyebrow">Được yêu thích</span><h2>Bán chạy nhất</h2></div><router-link :to="{ path: '/products', query: { sort: 'bestseller' } }">Xem tất cả →</router-link></div>
-          <div class="grid grid-3"><ProductCard v-for="p in data.bestsellers?.filter(p => p.type !== 'ACCESSORY').slice(0, 3)" :key="p.id" :p="p" /></div>
-        </section>
-
-        <section v-if="data.promotions?.length" class="section">
-          <div class="section-head"><div><span class="eyebrow">Ưu đãi</span><h2>Chương trình tháng này</h2></div><router-link to="/promotions">Tất cả ưu đãi →</router-link></div>
+        <section v-if="reviews.length" class="block">
+          <div class="bh"><h2>Đánh giá của khách hàng</h2></div>
           <div class="grid grid-3">
-            <div v-for="p in data.promotions" :key="p.id" class="promo">
-              <div class="pct">−{{ p.discountPercent }}%</div>
-              <h3>{{ p.title }}</h3>
-              <p>{{ p.description }}</p>
-              <span class="code">{{ p.code }}</span>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="prefs.recent.length" class="section">
-          <div class="section-head"><div><span class="eyebrow">Lịch sử</span><h2>Bạn đã xem gần đây</h2></div></div>
-          <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b><span class="price">{{ vnd(r.price) }}</span></router-link></div>
-        </section>
-
-        <section class="section services">
-          <div v-for="s in services" :key="s[0]" class="svc">
-            <span class="num">{{ s[0] }}</span><h3>{{ s[1] }}</h3><p>{{ s[2] }}</p>
-            <router-link :to="s[3]">{{ s[4] }} →</router-link>
+            <router-link v-for="r in reviews" :key="r.id" :to="`/products/${r.productId}`" class="rev">
+              <div class="rimg"><img :src="imgOf(r.productId)" alt="" /></div>
+              <div class="rbody">
+                <div class="rh"><b>{{ r.author }}</b><span class="rate"><Stars :value="r.rating" size=".95rem" /></span></div>
+                <p>“{{ r.comment }}”</p>
+                <small>Đã mua {{ r.productName }} · {{ d(r.createdAt) }}</small>
+              </div>
+            </router-link>
           </div>
         </section>
       </template>
@@ -98,70 +83,95 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, h } from 'vue'
+import { RouterLink } from 'vue-router'
 import api from '../api'
-import ProductCard from '../components/ProductCard.vue'
 import Countdown from '../components/Countdown.vue'
-import { ty, vnd } from '../format'
+import Stars from '../components/Stars.vue'
+import { ty, vnd, d } from '../format'
 import { usePrefs } from '../stores/prefs'
-const data = ref({}), loading = ref(true), auctions = ref([]), flash = ref([]), prefs = usePrefs()
-const endOfDay = (() => { const d = new Date(); d.setHours(23, 59, 59, 0); return d.toISOString() })()
-const carBrands = computed(() => (data.value.brands || []).filter(b => !b.name.startsWith('ARES')))
-const services = [
-  ['01', 'Lái thử tận nơi', 'Đặt lịch lái thử tại showroom hoặc tại nhà, có chuyên viên đi cùng.', '/services', 'Đặt lịch lái thử'],
-  ['02', 'Bảo dưỡng & sửa chữa', 'Xưởng dịch vụ chuẩn hãng, nhận xe tận nhà và có xe thay thế.', '/services?tab=maintenance', 'Đặt lịch xưởng'],
-  ['03', 'Tư vấn 1:1', 'Chuyên viên trực tuyến 8:00–21:00 qua live chat và hotline 1900 6868.', '/services', 'Liên hệ tư vấn']]
+
+// Thẻ ảnh có tên đè lên (wireframe "Model Name")
+const Tile = (props) => h(RouterLink, { to: `/products/${props.p.id}`, class: 'tile' }, () => [
+  h('img', { src: props.p.images?.[0], alt: props.p.name }),
+  props.sale && props.p.oldPrice ? h('span', { class: 'off' }, `−${Math.round(100 - props.p.price * 100 / props.p.oldPrice)}%`) : null,
+  h('div', { class: 'cap' }, [h('span', props.p.name), h('small', vnd(props.p.price))])])
+Tile.props = ['p', 'sale']
+
+const prefs = usePrefs()
+const all = ref([]), loading = ref(true), auctions = ref([]), reviews = ref([]), home = ref({})
+const slides = [
+  { title: 'HURACÁN', kicker: 'Lamborghini · 2024', sub: 'V10 640 mã lực — cấu hình riêng tại ARES', img: '/images/hero-huracan.jpg', to: '/products/17' },
+  { title: 'TAYCAN', kicker: 'Porsche · Xe điện', sub: 'Sport Turismo GTS — lái thử ngay hôm nay', img: '/images/hero-taycan.jpg', to: '/products/16' },
+  { title: 'SF90 SPIDER', kicker: 'Ferrari · Hybrid 1.000 hp', sub: 'Đặt cọc chỉ 10%, giao xe toàn quốc', img: '/images/cars/sf90b.jpg', to: '/products/19' },
+  { title: 'F40', kicker: 'Đấu giá xe hiếm', sub: 'Phiên đấu giá Ferrari F40 1990 đang diễn ra', img: '/images/cars/f40.jpg', to: '/auctions/1' },
+  { title: 'VF 9', kicker: 'VinFast · Xe điện 7 chỗ', sub: 'Trả góp đến 84 tháng', img: '/images/cars/vf9.jpg', to: '/products/10' }]
+const cur = ref(0), pause = ref(false); let t
+const I = { car: '<path d="M5 17h14l-1.5-6.5A2 2 0 0 0 15.6 9H8.4a2 2 0 0 0-1.9 1.5zM7 17v2m10-2v2"/>', suv: '<path d="M3 16h18v-4l-2-5H6L3 12zM7 16v2m10-2v2M3 12h18"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>', flag: '<path d="M4 22V4m0 0h13l-2 4 2 4H4"/>', tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/>' }
+const cats = [
+  { label: 'Sedan', icon: I.car, to: { path: '/products', query: { type: 'SEDAN' } } },
+  { label: 'SUV / Crossover', icon: I.suv, to: { path: '/products', query: { type: 'SUV' } } },
+  { label: 'Siêu xe', icon: I.flag, to: { path: '/products', query: { type: 'SUPERCAR' } } },
+  { label: 'Xe điện', icon: I.bolt, to: { path: '/products', query: { type: 'ELECTRIC' } } },
+  { label: 'Phụ kiện', icon: I.tool, to: { path: '/products', query: { type: 'ACCESSORY' } } }]
+const cars = computed(() => all.value.filter(p => p.type !== 'ACCESSORY'))
+const best = computed(() => (home.value.bestsellers || []).filter(p => p.type !== 'ACCESSORY').slice(0, 3))
+const flash = computed(() => cars.value.filter(p => p.oldPrice && p.stock > 0 && !best.value.some(b => b.id === p.id)).slice(0, 3))
+const supercars = computed(() => cars.value.filter(p => ['SUPERCAR', 'SPORT'].includes(p.type)).slice(0, 3))
+const suvs = computed(() => cars.value.filter(p => ['SUV', 'ELECTRIC'].includes(p.type) && !flash.value.includes(p)).slice(0, 3))
+const imgOf = id => all.value.find(p => p.id === id)?.images?.[0] || '/images/hero-taycan.jpg'
+const endOfDay = (() => { const x = new Date(); x.setHours(23, 59, 59, 0); return x.toISOString() })()
 onMounted(async () => {
-  data.value = (await api.get('/products/home')).data; loading.value = false
-  api.get('/products', { params: { size: 60 } }).then(r => { flash.value = r.data.content.filter(p => p.oldPrice && p.stock > 0).slice(0, 3) })
-  auctions.value = (await api.get('/auctions')).data.filter(a => a.status === 'LIVE' || a.status === 'SCHEDULED').slice(0, 3)
+  t = setInterval(() => { if (!pause.value) cur.value = (cur.value + 1) % slides.length }, 5000)
+  const [hm, list] = await Promise.all([api.get('/products/home'), api.get('/products', { params: { size: 60, sort: 'bestseller' } })])
+  home.value = hm.data; all.value = list.data.content; loading.value = false
+  api.get('/auctions').then(r => { auctions.value = r.data.filter(a => a.status === 'LIVE' || a.status === 'SCHEDULED').slice(0, 3) })
+  api.get('/products/reviews/latest', { params: { limit: 3 } }).then(r => { reviews.value = r.data })
 })
+onUnmounted(() => clearInterval(t))
 </script>
 
 <style scoped>
-.hero { position: relative; min-height: calc(100vh - 72px); max-height: 860px; display: flex; align-items: center; margin-top: -72px; padding-top: 72px;
-  background: linear-gradient(90deg, rgba(8,9,12,.94) 0%, rgba(8,9,12,.7) 38%, rgba(8,9,12,.05) 70%), url('/images/hero-huracan.jpg') 70% center/cover; }
-.hero-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 160px; background: linear-gradient(transparent, #08090c); }
-.hero-inner { position: relative; z-index: 1; }
-.hero h1 { font-size: clamp(2.75rem, 5.5vw, 4.75rem); font-weight: 800; line-height: 1.04; letter-spacing: -.035em; margin: 8px 0 24px; }
-.hero p { font-size: 1.2rem; color: #cbd5e1; max-width: 520px; margin-bottom: 40px; }
-.cta-row { display: flex; gap: 16px; flex-wrap: wrap; }
-.stats { display: flex; gap: 48px; margin-top: 64px; }
-.stats dt { font-size: 2rem; font-weight: 800; letter-spacing: -.02em; }
-.stats dd { color: var(--muted); font-size: .9rem; }
-.brands-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 0; padding: 32px 0; margin-top: 16px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-.brand { width: 140px; border-radius: 12px; height: 104px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); font-size: .8rem; font-weight: 600; transition: .25s; }
-.brand img { height: 36px; width: 72px; object-fit: contain; opacity: .7; transition: .25s; }
-.brand:hover { background: rgba(255,255,255,.05); color: #fff; } .brand:hover img { opacity: 1; transform: scale(1.08); }
-.grid-3 { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
-.au { display: block; border-radius: var(--radius); overflow: hidden; background: var(--card); border: 1px solid var(--border); color: var(--text); transition: .3s; }
-.au:hover { transform: translateY(-4px); border-color: rgba(56,189,248,.4); color: var(--text); }
-.au-img { position: relative; aspect-ratio: 16/10; overflow: hidden; }
-.au-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
-.au:hover .au-img img { transform: scale(1.05); }
-.live { position: absolute; top: 16px; left: 16px; padding: 6px 12px; border-radius: 999px; font-size: .75rem; font-weight: 700; background: rgba(0,0,0,.6); backdrop-filter: blur(8px); }
-.live.LIVE { color: #fca5a5; }
-.au-body { padding: 24px; } .au-body h3 { font-size: 1.15rem; margin-bottom: 16px; }
-.au-meta { display: flex; justify-content: space-between; } .au-meta small { display: block; color: var(--muted); font-size: .8rem; margin-bottom: 4px; }
-.au-meta b { font-size: 1.15rem; font-variant-numeric: tabular-nums; } .r { text-align: right; } .r b { color: var(--accent); }
-.feature { margin: 96px 0; border-radius: 24px; overflow: hidden; min-height: 480px; display: flex; align-items: center;
-  background: linear-gradient(90deg, rgba(8,9,12,.92) 30%, rgba(8,9,12,.1) 75%), url('/images/hero-taycan.jpg') right center/cover; border: 1px solid var(--border); }
-.feature-text { padding: 64px; max-width: 560px; }
-.feature h2 { font-size: 2.5rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; margin-bottom: 16px; }
-.feature p { color: #cbd5e1; font-size: 1.05rem; margin-bottom: 32px; }
-.promo { padding: 32px; border-radius: var(--radius); background: linear-gradient(160deg, rgba(2,132,199,.22), rgba(24,26,31,.8) 60%); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-.pct { font-size: 3rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin-bottom: 8px; }
-.promo h3 { font-size: 1.1rem; } .promo p { color: var(--muted); flex: 1; }
-.code { align-self: flex-start; margin-top: 16px; padding: 8px 16px; border: 1px dashed rgba(255,255,255,.35); border-radius: 8px; font-weight: 700; letter-spacing: .1em; }
-.services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--border); }
-.svc { padding: 48px 32px 0 0; } .svc + .svc { padding-left: 32px; border-left: 1px solid var(--border); }
-.num { color: var(--accent); font-weight: 700; font-size: .85rem; } .svc h3 { font-size: 1.35rem; margin: 16px 0 8px; } .svc p { color: var(--muted); margin-bottom: 16px; }
-@media (max-width: 800px) { .services { grid-template-columns: 1fr; } .svc + .svc { border-left: none; padding-left: 0; } .stats { gap: 24px; } }
-.flash { padding: 48px; border-radius: 24px; background: linear-gradient(135deg, rgba(239,68,68,.16), rgba(24,26,31,.7) 50%); border: 1px solid rgba(239,68,68,.25); }
-.flash-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; gap: 24px; flex-wrap: wrap; }
-.flash h2 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; } .flash .eyebrow { color: #fca5a5; }
-.clock { text-align: right; } .clock small { display: block; color: var(--muted); margin-bottom: 4px; } .clock :deep(.cd) { font-size: 2rem; color: #fca5a5; letter-spacing: .02em; }
-.recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
-.rc { display: flex; flex-direction: column; gap: 8px; color: var(--text); } .rc img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 12px; transition: .3s; }
-.rc:hover img { opacity: .8; } .rc b { font-size: .9rem; font-weight: 600; } .rc .price { font-size: .9rem; }
+.hero { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+.slides { position: relative; height: 400px; border-radius: 0 0 12px 12px; overflow: hidden; background: #111; }
+.slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity .8s; color: #fff; }
+.slide.on { opacity: 1; z-index: 1; }
+.shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 35%, rgba(0,0,0,.15) 60%, rgba(0,0,0,.65) 100%); }
+.txt { position: absolute; left: 0; right: 0; top: 84px; text-align: center; }
+.txt small { letter-spacing: .3em; text-transform: uppercase; font-size: .75rem; opacity: .85; }
+.txt h1 { font-family: var(--head); font-size: 5.2rem; letter-spacing: .28em; font-weight: 500; line-height: 1; margin: 6px 0 0 .28em; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+.txt span { position: absolute; left: 0; right: 0; top: 250px; font-size: .95rem; }
+.dots { display: flex; justify-content: center; gap: 6px; margin: 12px 0 18px; }
+.dots button { width: 8px; height: 8px; border-radius: 50%; border: none; background: #cfcfcf; cursor: pointer; padding: 0; transition: .2s; }
+.dots button.on { background: #555; width: 20px; border-radius: 4px; }
+.promo-banner { position: relative; display: grid; grid-template-columns: 1fr 1.2fr .8fr; padding-left: 0; align-items: center; height: 96px; border-radius: 10px; overflow: hidden; background: #13235a; color: #fff; }
+.promo-banner img { position: absolute; left: 0; top: 0; height: 100%; width: 40%; object-fit: cover; opacity: .55; mask-image: linear-gradient(90deg, #000 40%, transparent); }
+.pb-txt { text-align: center; } .pb-txt b { display: block; font-family: var(--head); font-size: 2rem; color: #f6c445; line-height: 1; } .pb-txt i { font-family: Georgia, serif; font-size: 1.05rem; }
+.pb-off { z-index: 1; } .pb-off small { display: block; font-size: .75rem; color: #f6c445; } .pb-off b { font-family: var(--head); font-size: 1.6rem; color: #f6c445; line-height: 1.1; }
+.pb-moon { position: absolute; right: 36px; top: 10px; width: 120px; height: 120px; border-radius: 50%; background: #f2b632; box-shadow: 0 0 40px rgba(242,182,50,.5); }
+.block { margin-top: 22px; }
+.block h2, .bh h2 { font-size: 1.15rem; color: #5a5a5f; margin-bottom: 10px; }
+.bh { display: flex; justify-content: space-between; align-items: baseline; } .bh a { color: var(--muted); font-size: .85rem; } .bh a:hover { color: var(--bronze); }
+.bh .cd { font-family: 'Be Vietnam Pro'; font-size: .8rem; color: var(--danger); margin-left: 8px; font-weight: 600; }
+.cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.cat { display: flex; justify-content: space-between; align-items: center; height: 40px; padding: 0 14px; border-radius: 8px; background: var(--tile-2); color: #3a3a3f; font-size: .88rem; font-weight: 500; transition: .15s; }
+.cat:hover { background: var(--bronze); color: #fff; }
+.grid-3 { gap: 12px; }
+:deep(.tile) { aspect-ratio: 16/7.6; }
+:deep(.off) { position: absolute; top: 10px; left: 10px; background: var(--danger); color: #fff; font-size: .75rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+.live { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: .72rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
+.live.LIVE { background: var(--danger); }
+.recent { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.rc { color: var(--text); font-size: .82rem; } .rc img { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 8px; margin-bottom: 6px; } .rc b { font-weight: 500; }
+.rev { display: block; border-radius: 10px; overflow: hidden; background: var(--tile); color: var(--text); transition: .2s; }
+.rev:hover { box-shadow: var(--shadow); color: var(--text); transform: translateY(-2px); }
+.rimg { height: 120px; background: #222; } .rimg img { width: 100%; height: 100%; object-fit: cover; }
+.rbody { padding: 12px 16px 14px; }
+.rh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; } .rh b { font-family: var(--head); font-size: 1rem; color: #3a3a3f; }
+.rate { background: var(--tile-2); border-radius: 4px; padding: 2px 8px; }
+.rate :deep(.s) { color: #bdbdbd; } .rate :deep(.s.on) { color: #f5c400; }
+.rbody p { font-size: .85rem; color: #4a4a4f; line-height: 1.5; min-height: 3em; }
+.rbody small { display: block; margin-top: 8px; color: #8a8a8f; font-size: .74rem; }
+@media (max-width: 860px) { .cats { grid-template-columns: repeat(2, 1fr); } .recent { grid-template-columns: repeat(3, 1fr); } .txt h1 { font-size: 3rem; } }
 </style>

@@ -55,16 +55,16 @@ onUnmounted(() => clearInterval(timer))
 
 <style scoped>
 .chat { position: fixed; right: 22px; bottom: 22px; z-index: 90; }
-.fab { width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--primary); color: #fff; font-size: 1.5rem; cursor: pointer; box-shadow: 0 8px 24px rgba(2,132,199,.5); position: relative; }
+.fab { width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--primary); color: var(--text); font-size: 1.5rem; cursor: pointer; box-shadow: 0 8px 24px rgba(168,122,60,.5); position: relative; }
 .dot { position: absolute; top: 6px; right: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--danger); }
 .box { position: absolute; right: 0; bottom: 72px; width: 330px; background: var(--card-solid); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column; }
 .head { background: var(--primary); padding: 12px 14px; }
-.x { background: none; border: none; color: #fff; font-size: 1.1rem; cursor: pointer; }
+.x { background: none; border: none; color: var(--text); font-size: 1.1rem; cursor: pointer; }
 .msgs { height: 280px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .hint { text-align: center; margin-top: 30px; }
 .msg { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: .9rem; white-space: pre-wrap; }
 .me { align-self: flex-end; background: var(--primary); }
-.them { align-self: flex-start; background: rgba(255,255,255,.08); }
+.them { align-self: flex-start; background: rgba(0,0,0,.08); }
 .namebox { padding: 0 12px 8px; }
 .send { padding: 0 12px 10px; flex-wrap: nowrap; }
 .send .input, .namebox .input { padding: 8px 12px; }

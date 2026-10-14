@@ -102,8 +102,8 @@ onMounted(load)
 </script>
 <style scoped>
 .thumbimg { width: 72px; height: 45px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
-.danger-text { color: #fca5a5; }
+.danger-text { color: var(--danger); }
 .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-.low { color: #fca5a5; font-weight: 700; } .off { opacity: .5; }
+.low { color: var(--danger); font-weight: 700; } .off { opacity: .5; }
 .modal { max-width: 760px; }
 </style>

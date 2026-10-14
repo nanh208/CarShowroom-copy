@@ -2,7 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from './stores/auth'
 
 const routes = [
-  { path: '/', component: () => import('./views/Home.vue') },
+  { path: '/', component: () => import('./views/Home.vue'), meta: { darkHero: true } },
+  { path: '/about', component: () => import('./views/About.vue') },
   { path: '/products', component: () => import('./views/Products.vue') },
   { path: '/products/:id', component: () => import('./views/ProductDetail.vue') },
   { path: '/auctions', component: () => import('./views/Auctions.vue') },
@@ -39,7 +40,7 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(), routes,
-  scrollBehavior: () => ({ top: 0 })
+  scrollBehavior: (to) => to.hash ? { el: to.hash, top: 90, behavior: 'smooth' } : { top: 0 }
 })
 
 router.beforeEach(async to => {

@@ -4,7 +4,7 @@
     <p class="muted">Nhập mã ở bước thanh toán để được giảm giá.</p>
     <div v-if="!list.length" class="empty card">Hiện chưa có chương trình ưu đãi nào.</div>
     <div class="grid promos">
-      <div v-for="p in list" :key="p.id" class="promo" :style="{ background: `linear-gradient(160deg, ${p.bannerColor}40, rgba(24,26,31,.88) 55%)` }">
+      <div v-for="p in list" :key="p.id" class="promo" :style="{ background: `linear-gradient(160deg, ${p.bannerColor}40, #fff 60%)` }">
         <div class="pct">−{{ p.discountPercent }}%</div>
         <h3>{{ p.title }}</h3>
         <p>{{ p.description }}</p>
@@ -31,6 +31,6 @@ onMounted(async () => { list.value = (await api.get('/promotions')).data })
 .promos { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
 .promo { border-radius: var(--radius); padding: 32px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
 .pct { font-size: 2.6rem; font-weight: 800; }
-.code { margin-top: 10px; align-self: flex-start; background: rgba(0,0,0,.35); color: #fff; border: 1px dashed rgba(255,255,255,.5); border-radius: 8px; padding: 8px 14px; font: 700 1rem inherit; font-family: inherit; cursor: pointer; }
-.cdl { margin-top: 8px; font-size: .9rem; color: #fca5a5; }
+.code { margin-top: 10px; align-self: flex-start; background: rgba(0,0,0,.35); color: var(--text); border: 1px dashed rgba(0,0,0,.5); border-radius: 8px; padding: 8px 14px; font: 700 1rem inherit; font-family: inherit; cursor: pointer; }
+.cdl { margin-top: 8px; font-size: .9rem; color: var(--danger); }
 </style>

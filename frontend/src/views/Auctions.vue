@@ -40,10 +40,10 @@ onUnmounted(() => clearInterval(t))
 </script>
 <style scoped>
 .acard { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; color: var(--text); transition: .25s; display: flex; flex-direction: column; }
-.acard:hover { transform: translateY(-4px); border-color: rgba(56,189,248,.35); color: var(--text); }
+.acard:hover { transform: translateY(-4px); border-color: rgba(168,122,60,.35); color: var(--text); }
 .img { position: relative; } .img img { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
 .img .badge { position: absolute; top: 10px; left: 10px; }
-.st-LIVE { background: var(--danger); color: #fff; } .st-SCHEDULED { background: var(--primary); color: #fff; } .st-ENDED { background: #475569; }
+.st-LIVE { background: var(--danger); color: var(--text); } .st-SCHEDULED { background: var(--primary); color: var(--text); } .st-ENDED { background: #475569; }
 .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .name { font-size: 1.02rem; }
 .agrid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }

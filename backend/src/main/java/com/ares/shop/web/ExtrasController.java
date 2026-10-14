@@ -31,6 +31,15 @@ public class ExtrasController {
                 "mine", u != null && reviews.existsByProductIdAndUserId(id, u.id));
     }
 
+    /** Đánh giá mới nhất (tên khách được che bớt) cho trang chủ. */
+    @GetMapping("/products/reviews/latest")
+    public List<Map<String, Object>> latest(@RequestParam(defaultValue = "3") int limit) {
+        return reviews.findAllByOrderByCreatedAtDesc().stream().filter(r -> r.approved && r.rating >= 4)
+                .collect(Collectors.toMap(r -> r.productId, r -> r, (a, b) -> a, LinkedHashMap::new)).values().stream()
+                .limit(Math.min(limit, 12)).map(r -> Map.<String, Object>of("id", r.id, "productId", r.productId, "productName", r.productName,
+                        "author", com.ares.shop.service.AuctionService.mask(r.authorName), "rating", r.rating, "comment", r.comment, "createdAt", r.createdAt)).toList();
+    }
+
     @GetMapping("/products/ratings")
     public Map<Long, double[]> ratings() {
         return reviews.findByApprovedTrue().stream().collect(Collectors.groupingBy(r -> r.productId)).entrySet().stream()
