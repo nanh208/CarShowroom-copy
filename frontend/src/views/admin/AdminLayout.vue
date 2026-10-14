@@ -7,6 +7,7 @@
       </nav>
       <div class="foot">
         <div class="small muted">{{ auth.user?.fullName }} · <b>{{ auth.user?.role }}</b></div>
+        <div class="small muted" style="display:flex;gap:8px;align-items:center">Giao diện <ThemeSwitch /></div>
         <router-link to="/" class="small">← Về cửa hàng</router-link>
         <a href="#" class="small" @click.prevent="logout">Đăng xuất</a>
       </div>
@@ -16,6 +17,7 @@
 </template>
 <script setup>
 import { computed } from 'vue'
+import ThemeSwitch from '../../components/ThemeSwitch.vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../../stores/auth'
 const auth = useAuth(), router = useRouter()

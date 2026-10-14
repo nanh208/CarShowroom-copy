@@ -17,13 +17,14 @@
       </div>
       <div class="bottom">
         <span>ARES Toys — xe mô hình, xe RC & phụ kiện chính hãng · 123 Nguyễn Văn Linh, Q.7, TP.HCM · Hotline {{ HOTLINE }}</span>
-        <span>© {{ new Date().getFullYear() }} ARES Toys</span>
+        <span class="tsw-f">Giao diện <ThemeSwitch /> · © {{ new Date().getFullYear() }} ARES Toys</span>
       </div>
     </div>
   </footer>
 </template>
 <script setup>
 import { ref } from 'vue'
+import ThemeSwitch from './ThemeSwitch.vue'
 import api from '../api'
 import { HOTLINE } from '../format'
 import { toast } from '../stores/prefs'
@@ -48,4 +49,5 @@ async function subscribe() {
 nav { display: flex; gap: 36px; flex-wrap: wrap; }
 nav a { color: #6a6a70; font-family: var(--head); font-size: 1rem; } nav a:hover { color: var(--bronze); }
 .bottom { display: flex; justify-content: space-between; gap: 16px; padding: 0 0 24px; font-size: .8rem; color: #85858a; flex-wrap: wrap; }
+.tsw-f { display: inline-flex; align-items: center; gap: 8px; }
 </style>
