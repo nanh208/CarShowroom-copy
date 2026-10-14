@@ -60,9 +60,12 @@ const free = computed(() => catalog.options.freeShipFrom || 500000)
 </script>
 
 <style scoped>
-.layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+.layout > * { min-width: 0; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
 .line { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.line .grow { min-width: 0; }
+@media (max-width: 599px) { .line { flex-wrap: wrap; gap: 10px; } .line .grow { flex: 1 1 calc(100% - 90px); } }
 .cimg { width: 96px; height: 68px; object-fit: cover; border-radius: 8px; background: var(--tile); }
 .name { font-weight: 600; color: var(--text); } .fl { color: var(--danger); font-weight: 600; }
 .link { background: none; border: none; padding: 0; color: var(--bronze); font: inherit; font-size: .8rem; cursor: pointer; }

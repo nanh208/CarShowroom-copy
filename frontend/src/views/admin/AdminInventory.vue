@@ -58,4 +58,4 @@ const save = async () => {
 }
 onMounted(load)
 </script>
-<style scoped>.two { grid-template-columns: 1.2fr 1fr; gap: 24px; } h3 { margin-bottom: 12px; }</style>
+<style scoped>.two { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; } @media (max-width: 899px) { .two { grid-template-columns: 1fr; } } h3 { margin-bottom: 12px; }</style>

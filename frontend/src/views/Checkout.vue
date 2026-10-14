@@ -19,13 +19,14 @@
             <div class="field"><label>Họ và tên *</label><input v-model="f.buyerName" class="input" /></div>
             <div class="field"><label>Số điện thoại *</label><input v-model="f.phone" class="input" /></div>
           </div>
-          <div class="form-grid">
-            <div class="field"><label>Email</label><input v-model="f.email" class="input" type="email" /></div>
-            <div class="field"><label>Tỉnh / Thành phố *</label><select v-model="f.city" class="input"><option value="">-- Chọn --</option><option v-for="c in catalog.options.cities" :key="c">{{ c }}</option></select></div>
-          </div>
-          <div class="field"><label>Địa chỉ *</label><input v-model="f.shippingAddress" class="input" placeholder="Số nhà, đường, phường/xã, quận/huyện" /></div>
+          <div class="field"><label>Email</label><input v-model="f.email" class="input" type="email" autocomplete="email" /></div>
+          <AddressPicker v-model="addr" :cities="catalog.options.cities" />
           </template>
-          <div class="field"><label>Ghi chú</label><input v-model="f.note" class="input" placeholder="VD: Gói quà sinh nhật, giao giờ hành chính…" /></div>
+          <div class="field"><label for="co-note">Ghi chú cho đơn hàng</label><textarea id="co-note" v-model="f.note" class="input" rows="2" maxlength="500" placeholder="VD: Giao giờ hành chính, gọi trước khi giao…" /></div>
+          <div :class="['gift', { on: f.giftWrap }]">
+            <label class="check"><input v-model="f.giftWrap" type="checkbox" /> <span><b>Gói quà</b> — hộp carton đen, nơ cam, thiệp viết tay <span class="muted">(+{{ vnd(GIFT_FEE) }})</span></span></label>
+            <textarea v-if="f.giftWrap" v-model="f.giftMessage" class="input" rows="2" maxlength="300" placeholder="Lời nhắn trên thiệp (tối đa 300 ký tự)" aria-label="Lời nhắn trên thiệp" />
+          </div>
         </div>
 
         <div class="card block">
@@ -37,6 +38,7 @@
               <div><b>{{ v }}</b><div class="small muted">{{ k === 'INSTALLMENT' && total < instMin ? `Áp dụng cho đơn từ ${vnd(instMin)}` : payDesc[k] }}</div></div>
             </label>
           </div>
+          <label class="check remember"><input v-model="rememberPay" type="checkbox" /> Ghi nhớ <b>{{ PAY_METHOD[f.paymentMethod] }}</b> làm phương thức mặc định</label>
           <div v-if="f.paymentMethod === 'INSTALLMENT'" class="field" style="margin-top:12px">
             <label>Kỳ hạn trả góp 0% (thẻ tín dụng)</label>
             <div class="row"><button v-for="m in [3, 6, 12]" :key="m" :class="['btn btn-sm', f.installmentMonths === m ? '' : 'btn-outline']" @click="f.installmentMonths = m">{{ m }} tháng · {{ vnd(Math.ceil(total / m)) }}/th</button></div>
@@ -63,12 +65,15 @@
         <div v-if="discount" class="row between ok"><span>Voucher ({{ promo.code }})</span><span>−{{ vnd(discount) }}</span></div>
         <div v-if="ptsDiscount" class="row between ok"><span>Điểm thưởng</span><span>−{{ vnd(ptsDiscount) }}</span></div>
         <div class="row between"><span>Phí vận chuyển <small class="muted">{{ f.city ? ship.eta : '' }}</small></span><span>{{ !f.city ? 'Chọn tỉnh/thành' : shipFee ? vnd(shipFee) : 'Miễn phí' }}</span></div>
+        <div v-if="f.giftWrap" class="row between"><span>Gói quà</span><span>{{ vnd(GIFT_FEE) }}</span></div>
         <div class="row between total"><span>Tổng cộng</span><span class="price">{{ vnd(total) }}</span></div>
         <div class="small muted">+{{ Math.floor(total / catalog.options.earnPer) }} điểm khi đơn hoàn tất</div>
         <div v-if="error" class="alert alert-error">{{ error }}</div>
-        <button class="btn btn-block" :disabled="busy" @click="submit">{{ busy ? 'Đang xử lý...' : 'Đặt hàng' }}</button>
+        <button class="btn btn-block place" :disabled="busy" @click="submit">{{ busy ? 'Đang xử lý...' : 'Đặt hàng' }}</button>
       </div>
+      <div class="mbar"><div><small>Tổng cộng</small><b class="price">{{ vnd(total) }}</b></div><button class="btn" :disabled="busy" @click="submit">Đặt hàng</button></div>
     </div>
+    <OrderLaunch :state="launch" :order="placed" :error="error" :pay-next="payNext" @close="launch = 'idle'" @view="goOrder" @shop="router.push('/products')" @pay="goPay" />
   </div>
 </template>
 
@@ -78,12 +83,22 @@ import { useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
 import { useCart } from '../stores/cart'
 import { useAuth } from '../stores/auth'
-import { vnd, PAY_METHOD, catalog, loadCatalog } from '../format'
+import { vnd, PAY_METHOD, catalog, loadCatalog, toShipCity } from '../format'
 import { toast } from '../stores/prefs'
+import AddressPicker from '../components/AddressPicker.vue'
+import OrderLaunch from '../components/OrderLaunch.vue'
 
 const cart = useCart(), auth = useAuth(), router = useRouter()
-const f = reactive({ buyerName: auth.user?.fullName || '', phone: auth.user?.phone || '', email: auth.user?.email || '', shippingAddress: '', city: '', note: '', paymentMethod: localStorage.getItem('lastPay') || 'COD', installmentMonths: 6 })
+const GIFT_FEE = 20000
+const f = reactive({ buyerName: auth.user?.fullName || '', phone: auth.user?.phone || '', email: auth.user?.email || '', shippingAddress: '', city: '', note: '', giftWrap: false, giftMessage: '',
+  paymentMethod: auth.user?.preferredPayment || localStorage.getItem('lastPay') || 'COD', installmentMonths: 6 })
 watch(() => f.paymentMethod, v => localStorage.setItem('lastPay', v))
+const rememberPay = ref(!!auth.user?.preferredPayment && auth.user.preferredPayment === f.paymentMethod)
+const addr = ref({})
+watch(addr, a => { if (addrId.value === 0 || !addresses.value.length) { f.city = a.city || ''; f.shippingAddress = a.full || '' } })
+const launch = ref('idle'), placed = ref(null), payNext = computed(() => ['MOMO', 'VNPAY'].includes(placed.value?.paymentMethod))
+const goOrder = () => router.push(`/orders/${placed.value.code}?new=1`)
+const goPay = () => router.push(`/pay/${placed.value.code}`)
 const addresses = ref([]), addrId = ref(0), vouchers = ref([]), pts = ref({ points: 0 }), usePts = ref(false)
 const promoCode = ref(''), promo = ref(null), discount = ref(0), freeShip = ref(false), promoMsg = ref(''), error = ref(''), busy = ref(false), ship = ref({ fee: 0, eta: '' })
 const icons = { COD: '💵', BANK_QR: '▦', MOMO: 'M', VNPAY: 'V', INSTALLMENT: '💳' }
@@ -93,9 +108,9 @@ const after = computed(() => cart.subtotal - discount.value)
 const maxPts = computed(() => Math.min(pts.value.points, Math.floor(after.value / 2 / catalog.options.pointValue)))
 const ptsDiscount = computed(() => usePts.value ? maxPts.value * catalog.options.pointValue : 0)
 const shipFee = computed(() => freeShip.value ? 0 : ship.value.fee)
-const total = computed(() => after.value - ptsDiscount.value + (f.city ? shipFee.value : 0))
+const total = computed(() => after.value - ptsDiscount.value + (f.city ? shipFee.value : 0) + (f.giftWrap ? GIFT_FEE : 0))
 const fmtAddr = a => [a.line, a.ward, a.district, a.city].filter(Boolean).join(', ')
-const useAddr = a => { f.buyerName = a.receiverName; f.phone = a.phone; f.shippingAddress = [a.line, a.ward, a.district].filter(Boolean).join(', '); f.city = catalog.options.cities.includes(a.city) ? a.city : 'Tỉnh khác' }
+const useAddr = a => { f.buyerName = a.receiverName; f.phone = a.phone; f.shippingAddress = [a.line, a.ward, a.district].filter(Boolean).join(', '); f.city = toShipCity(a.city) }
 const quote = async () => { ship.value = (await api.get('/shipping/quote', { params: { city: f.city || undefined, amount: after.value - ptsDiscount.value } })).data }
 watch([() => f.city, after, ptsDiscount], quote)
 watch(total, v => { if (f.paymentMethod === 'INSTALLMENT' && v < instMin.value) f.paymentMethod = 'COD' })
@@ -112,15 +127,18 @@ async function checkPromo() {
 async function submit() {
   error.value = ''
   if (!f.city) return (error.value = 'Vui lòng chọn tỉnh/thành để tính phí vận chuyển')
-  busy.value = true
+  if ((addrId.value === 0 || !addresses.value.length) && !addr.value.valid) return (error.value = 'Vui lòng chọn đủ tỉnh/thành, quận/huyện, phường/xã từ gợi ý và nhập số nhà')
+  busy.value = true; launch.value = 'run'
+  const t0 = performance.now()
   try {
-    const { data } = await api.post('/orders', { ...f, promoCode: promo.value?.code, usePoints: usePts.value ? maxPts.value : 0,
+    const { data } = await api.post('/orders', { ...f, giftMessage: f.giftWrap ? f.giftMessage : null, promoCode: promo.value?.code, usePoints: usePts.value ? maxPts.value : 0,
       items: cart.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })) })
-    cart.clear()
-    toast('Đặt hàng thành công!')
-    if (['MOMO', 'VNPAY'].includes(data.paymentMethod)) router.push(`/pay/${data.code}`)
-    else router.push(`/orders/${data.code}?new=1`)
-  } catch (e) { error.value = errMsg(e) } finally { busy.value = false }
+    if (rememberPay.value && auth.user?.preferredPayment !== f.paymentMethod) api.put('/account/payment-preference', { method: f.paymentMethod }).then(() => { auth.user.preferredPayment = f.paymentMethod; localStorage.setItem('user', JSON.stringify(auth.user)) }).catch(() => {})
+    // cho xe kịp chạy tới chặng "Thanh toán" trước khi về đích
+    await new Promise(r => setTimeout(r, Math.max(0, 560 - (performance.now() - t0))))
+    placed.value = data; cart.clear(); launch.value = 'ok'
+    if (['MOMO', 'VNPAY'].includes(data.paymentMethod)) setTimeout(() => { if (launch.value === 'ok') goPay() }, 2400)
+  } catch (e) { error.value = errMsg(e); launch.value = 'err' } finally { busy.value = false }
 }
 onMounted(async () => {
   await loadCatalog(); quote()
@@ -134,7 +152,17 @@ onMounted(async () => {
 
 <style scoped>
 .layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
-@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+@media (max-width: 1023px) { .layout { grid-template-columns: 1fr; } .summary { position: static; } }
+.gift { margin-top: 4px; padding: 10px 12px; border: 1.5px dashed var(--border); } .gift.on { border-color: var(--accent); background: var(--bronze-soft); }
+.gift textarea { margin-top: 8px; } .remember { margin-top: 12px; font-size: .88rem; }
+.mbar { display: none; }
+@media (max-width: 899px) {
+  .addr-list, .pay-grid { grid-template-columns: 1fr; }
+  .place { display: none; }
+  .mbar { display: flex; position: fixed; left: 0; right: 0; bottom: var(--tabbar-h, 0px); z-index: 70; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; background: var(--surface); border-top: 2px solid var(--accent); box-shadow: 0 -8px 24px rgba(0,0,0,.08); }
+  .mbar small { display: block; color: var(--muted); font-size: .72rem; } .mbar b { font-size: 1.15rem; } .mbar .btn { flex: 0 0 auto; min-width: 140px; }
+  .layout { padding-bottom: 70px; }
+}
 .block { margin-bottom: 16px; } .block h3 { margin-bottom: 12px; }
 .addr-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 .addr { display: flex; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; } .addr.on { border-color: var(--bronze); background: var(--bronze-soft); }
@@ -149,4 +177,5 @@ onMounted(async () => {
 .vchip { border: 1px dashed var(--bronze); background: var(--bronze-soft); color: var(--bronze-3); border-radius: 6px; padding: 2px 8px; font: 600 .75rem inherit; font-family: inherit; cursor: pointer; }
 .pts { background: var(--bg-2); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; } .check { display: flex; gap: 6px; align-items: center; font-size: .88rem; }
 .total { font-weight: 700; padding-top: 10px; border-top: 1px solid var(--border); } .ok { color: var(--success); } .err { color: var(--danger); }
+@media (max-width: 599px) { .addr-list, .pay-grid { grid-template-columns: 1fr; } .remember { display: block; } }
 </style>

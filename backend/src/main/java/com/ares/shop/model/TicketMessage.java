@@ -8,4 +8,5 @@ import java.util.*;
 public class TicketMessage {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
     @com.fasterxml.jackson.annotation.JsonIgnore @ManyToOne public Ticket ticket; public boolean fromStaff; public String author; @Column(length = 3000) public String content; public LocalDateTime createdAt = LocalDateTime.now();
+    @ElementCollection(fetch = FetchType.EAGER) public List<String> attachments = new ArrayList<>();
 }

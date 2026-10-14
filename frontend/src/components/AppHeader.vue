@@ -1,6 +1,7 @@
 <template>
   <header :class="['hdr', { dark: onDark, scrolled }]" @mouseleave="mega = ''">
     <div class="wrap">
+      <button class="burger" type="button" aria-label="Mở menu" :aria-expanded="navOpen" @click="navOpen = true"><i /><i /><i /></button>
       <router-link to="/" class="logo" @mouseenter="mega = ''">
         <img loading="lazy" decoding="async" src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span>
       </router-link>
@@ -23,6 +24,10 @@
         </div>
         <div class="tools" @mouseenter="mega = ''">
           <ThemeSwitch class="tsw" />
+          <div class="a11ywrap">
+            <button class="ib aa" type="button" title="Hiển thị & trợ năng" aria-label="Hiển thị và trợ năng" :aria-expanded="a11y" @click.stop="a11y = !a11y">Aa</button>
+            <div v-if="a11y" class="a11ypop" @click.stop><A11yPanel /></div>
+          </div>
           <div class="search" :class="{ open: sOpen }">
             <button class="ib" title="Tìm kiếm" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
             <input ref="sInput" v-model="q" placeholder="Tìm xe đồ chơi, hãng… (phím /)" aria-label="Tìm kiếm" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
@@ -33,7 +38,7 @@
               <button v-else class="all" @mousedown.prevent="search">Xem tất cả kết quả →</button>
             </div>
           </div>
-          <router-link to="/wishlist" class="ib" title="Yêu thích">
+          <router-link to="/wishlist" class="ib wl" title="Yêu thích">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
             <span v-if="prefs.wish.length" class="cnt">{{ prefs.wish.length }}</span></router-link>
           <div v-if="auth.loggedIn" class="bellwrap">
@@ -49,7 +54,7 @@
           </div>
           <router-link id="cart-target" to="/cart" :class="['cartpill', { bump }]">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
-            <span>{{ cart.count }} món</span>
+            <span><b class="cc">{{ cart.count }}</b><em> món</em></span>
           </router-link>
           <div class="userwrap">
             <router-link :to="auth.loggedIn ? '/account' : '/login'" class="avatar" :title="auth.loggedIn ? auth.user.fullName : 'Đăng nhập'">
@@ -85,6 +90,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import ThemeSwitch from './ThemeSwitch.vue'
+import A11yPanel from './A11yPanel.vue'
+import { navOpen } from '../stores/ui'
 import { theme } from '../stores/theme'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../api'
@@ -133,9 +140,10 @@ const readAll = async () => { await api.post('/account/notifications/read'); not
 // Phím tắt: "/" mở ô tìm kiếm, Esc đóng menu/panel
 const hotkey = e => {
   if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName)) { e.preventDefault(); sOpen.value = true; nextTick(() => sInput.value?.focus()) }
-  if (e.key === 'Escape') { mega.value = ''; bell.value = false; if (sOpen.value) { sOpen.value = false; q.value = ''; sugg.value = [] } }
+  if (e.key === 'Escape') { mega.value = ''; bell.value = false; a11y.value = false; if (sOpen.value) { sOpen.value = false; q.value = ''; sugg.value = [] } }
 }
-const outside = e => { if (bell.value && !e.target.closest('.bellwrap')) bell.value = false }
+const a11y = ref(false)
+const outside = e => { if (bell.value && !e.target.closest('.bellwrap')) bell.value = false; if (a11y.value && !e.target.closest('.a11ywrap')) a11y.value = false }
 watch(() => auth.loggedIn, v => { v ? loadNotes() : (notes.value = [], unread.value = 0) })
 watch(() => route.fullPath, () => { mega.value = ''; bell.value = false })
 onMounted(() => { window.addEventListener('scroll', onScroll, { passive: true }); document.addEventListener('keydown', hotkey); document.addEventListener('click', outside); onScroll(); loadNotes(); poll = setInterval(loadNotes, 30000) })
@@ -203,8 +211,20 @@ const logout = () => { auth.logout(); router.push('/') }
 .ni:hover { background: #fafafa; color: var(--text); } .ni.unread { background: var(--bronze-soft); }
 .ni b { display: block; font-size: .9rem; margin: 4px 0 2px; } .ni p { color: var(--text-2); font-size: .84rem; } .ni small { color: var(--muted); font-size: .74rem; }
 .kind { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--bronze); } .kind.AUCTION { color: #c62828; }
+.burger { display: none; width: 44px; height: 44px; margin-left: -10px; border: none; background: none; cursor: pointer; flex-direction: column; justify-content: center; align-items: center; gap: 5px; color: inherit; }
+.burger i { display: block; width: 22px; height: 2px; background: currentColor; }
+.cartpill em { font-style: normal; }
+.a11ywrap { position: relative; } .aa { font: 700 .78rem/1 inherit; font-family: inherit; }
+.a11ypop { position: absolute; right: 0; top: 42px; z-index: 80; padding: 16px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 24px 48px -12px rgba(0,0,0,.3); }
 @media (max-width: 1100px) { .menu a { padding: 0 9px; font-size: .82rem; } }
-@media (max-width: 900px) { .menu { overflow-x: auto; } .logo span { display: none; } }
+@media (max-width: 899px) {
+  .burger { display: flex; } .hdr .menu, .tsw, .a11ywrap, .wl, .userwrap { display: none !important; }
+  .wrap { padding: 0 14px; gap: 8px; } .pill { justify-content: flex-end; }
+  .cartpill { padding: 0 10px; } .cartpill em { display: none; }
+  .search.open input { position: fixed; left: 8px; right: 8px; top: 60px; width: auto !important; height: 46px; z-index: 90; border: 1.5px solid currentColor; }
+  .sugg { position: fixed; left: 8px; right: 8px; top: 110px; width: auto; max-height: 60vh; overflow-y: auto; }
+  .panel { position: fixed; left: 8px; right: 8px; top: 60px; width: auto; }
+}
 .cartpill.bump { animation: bump .22s ease-out; }
 @keyframes bump { 50% { transform: scale(1.08); } }
 </style>

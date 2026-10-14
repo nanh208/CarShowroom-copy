@@ -10,7 +10,7 @@
         <button v-if="imgs.length > 1" class="arr r" aria-label="Ảnh sau" @click="step(1)">›</button>
         <span v-if="fs" class="flashtag">⚡ Flash sale · còn <Countdown :to="fs.endTime" /></span>
         <div class="iconbtns">
-          <button :class="{ on: prefs.isWished(p.id) }" title="Yêu thích" @click="prefs.toggleWish(p)"><svg viewBox="0 0 24 24" width="18" height="18" :fill="prefs.isWished(p.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
+          <button :class="['wish', { on: prefs.isWished(p.id) }]" :aria-pressed="prefs.isWished(p.id)" title="Yêu thích" @click="prefs.toggleWish(p)"><svg viewBox="0 0 24 24" width="18" height="18" :fill="prefs.isWished(p.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
           <button :class="{ on: prefs.inCompare(p.id) }" title="So sánh" @click="prefs.toggleCompare(p)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M8 21H3v-5M21 3l-7 7M3 21l7-7"/></svg></button>
           <button title="Chia sẻ" @click="share"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
         </div>
@@ -122,7 +122,7 @@
           <div class="qty"><button @click="qty = Math.max(1, qty - 1)">−</button><span>{{ qty }}</span><button @click="qty = Math.min(stock, qty + 1)">+</button></div>
           <div class="bb-price"><small v-if="fs">Giá flash sale</small><b>{{ vnd(unitPrice * qty) }}</b></div>
           <button class="btn btn-outline" :disabled="!stock" @click="add(false)">Thêm vào giỏ</button>
-          <button class="btn" :disabled="!stock" @click="add(true)">Mua ngay</button>
+          <BuyNowButton :disabled="!stock" :before="canBuy" :after="buyNow" />
         </div>
       </div>
     </template>
@@ -142,6 +142,7 @@ import { useAuth } from '../stores/auth'
 import { useCart } from '../stores/cart'
 import ProductCard from '../components/ProductCard.vue'
 import { flyToCart } from '../motion'
+import BuyNowButton from '../components/BuyNowButton.vue'
 
 const route = useRoute(), router = useRouter(), cart = useCart(), prefs = usePrefs(), auth = useAuth()
 const p = ref(null), related = ref([]), variants = ref([]), flashes = ref([]), suggested = ref([]), qa = ref([]), gal = ref(null)
@@ -188,14 +189,16 @@ async function load() {
   const relIds = new Set([p.value.id, ...related.value.map(r => r.id)])
   api.get('/products', { params: { type: p.value.type, size: 8, sort: 'bestseller' } }).then(r => { suggested.value = r.data.content.filter(x => !relIds.has(x.id)).slice(0, 4) })
 }
-function add(buyNow) {
+function add(buyNow, silent) {
   const v = p.value
   if (variants.value.length && !variant.value) return toast('Vui lòng chọn phiên bản', 'error')
   cart.add({ productId: v.id, variantId: variant.value?.id || null, variantName: variant.value?.name || '', name: v.name, image: variant.value?.image || v.images?.[0],
     unitPrice: unitPrice.value, oldPrice: oldPrice.value, quantity: qty.value, stock: stock.value, flash: !!fs.value })
-  if (buyNow) router.push('/cart')
+  if (buyNow) { if (!silent) router.push('/cart') }
   else { flyToCart(curImg.value, gal.value); toast(`Đã thêm “${v.name}” vào giỏ hàng`) }
 }
+const canBuy = () => { if (variants.value.length && !variant.value) { toast('Vui lòng chọn phiên bản', 'error'); return false } }
+const buyNow = async () => { add(true, true); await router.push('/checkout') }
 watch(() => route.params.id, id => id && load(), { immediate: true })
 </script>
 
@@ -274,5 +277,13 @@ watch(() => route.params.id, id => id && load(), { immediate: true })
 .ok { color: var(--success); } .out { color: var(--danger); }
 .qty { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 8px; } .qty button { width: 30px; height: 34px; border: none; background: none; cursor: pointer; font-size: 1rem; } .qty span { width: 26px; text-align: center; }
 .bb-price { text-align: right; } .bb-price small { display: block; color: var(--danger); font-size: .72rem; font-weight: 600; } .bb-price b { font-size: 1.15rem; white-space: nowrap; }
+@media (max-width: 899px) {
+  .buybar { bottom: var(--tabbar-h, 0px); }
+  .bb-in { display: grid !important; grid-template-columns: auto 1fr 1fr; gap: 8px; padding: 8px 12px; flex-wrap: nowrap; }
+  .bb-l { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; min-width: 0; } .bb-l img { width: 44px; height: 32px; }
+  .bb-l b { display: block; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62vw; }
+  .bb-l .mode { min-height: 36px; font-size: 14px; padding: 4px 8px; }
+  .bb-price { display: none; } .bb-in .btn { padding: 0 10px; font-size: .8rem; }
+}
 @media (max-width: 860px) { .carousel { height: 300px; } .head, .bb-in { flex-wrap: wrap; } .rv-row, .spec, .feature, .promo, .perks { grid-template-columns: 1fr; } .recent { grid-template-columns: repeat(3, 1fr); } .mode { width: 100%; } }
 </style>

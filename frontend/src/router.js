@@ -20,6 +20,7 @@ const routes = [
   { path: '/cart', component: () => import('./views/Cart.vue') },
   { path: '/checkout', component: () => import('./views/Checkout.vue'), meta: { auth: true } },
   { path: '/orders/:code', component: () => import('./views/OrderDetail.vue'), meta: { auth: true } },
+  { path: '/admin/labels', component: () => import('./views/admin/ShippingLabels.vue'), meta: { admin: true, bare: true } },
   { path: '/login', component: () => import('./views/Login.vue'), meta: { bare: true } },
   { path: '/register', component: () => import('./views/Register.vue'), meta: { bare: true } },
   { path: '/forgot-password', component: () => import('./views/ForgotPassword.vue'), meta: { bare: true } },
@@ -43,7 +44,9 @@ const routes = [
       { path: 'tickets', component: () => import('./views/admin/AdminTickets.vue') },
       { path: 'reports', component: () => import('./views/admin/AdminReports.vue'), meta: { adminOnly: true } },
       { path: 'reviews', component: () => import('./views/admin/AdminReviews.vue') },
-      { path: 'chat', component: () => import('./views/admin/AdminChat.vue') }
+      { path: 'chat', component: () => import('./views/admin/AdminChat.vue') },
+      { path: 'audit', component: () => import('./views/admin/AdminAudit.vue'), meta: { adminOnly: true } },
+      { path: 'permissions', component: () => import('./views/admin/AdminPermissions.vue'), meta: { adminOnly: true } }
     ]
   },
   { path: '/:pathMatch(.*)*', component: () => import('./views/NotFound.vue') }

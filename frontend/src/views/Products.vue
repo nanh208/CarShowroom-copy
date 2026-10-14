@@ -7,12 +7,15 @@
         <button :class="['chip', { on: !f.type }]" @click="setType('')">Tất cả</button>
         <button v-for="c in shownCats" :key="c.code" :class="['chip', { on: f.type === c.code }]" @click="setType(c.code)">{{ c.name }}</button>
       </div>
-      <select v-model="f.sort" class="input sort" @change="apply()">
+      <button class="btn btn-sm btn-outline fbtn" type="button" :aria-expanded="sheet" aria-controls="fsheet" @click="sheet = true">Bộ lọc<b v-if="activeCount" class="fcount">{{ activeCount }}</b></button>
+      <select v-model="f.sort" class="input sort" aria-label="Sắp xếp" @change="apply()">
         <option value="featured">Sắp xếp: Nổi bật</option><option value="newest">Mới nhất</option><option value="bestseller">Bán chạy</option>
         <option value="rating">Đánh giá cao</option><option value="price_asc">Giá tăng dần</option><option value="price_desc">Giá giảm dần</option><option value="name">Tên A–Z</option>
       </select>
     </div>
-    <div class="fbar2">
+    <transition name="sh-fade"><div v-if="sheet" class="sh-scrim" @click="sheet = false" /></transition>
+    <div id="fsheet" :class="['fbar2', { open: sheet }]" :role="sheet ? 'dialog' : null" :aria-modal="sheet ? 'true' : null" aria-label="Bộ lọc sản phẩm">
+      <div class="sh-head"><b>Bộ lọc</b><button type="button" class="sh-x" aria-label="Đóng bộ lọc" @click="sheet = false">✕</button></div>
       <input v-model="f.q" class="input" type="search" aria-label="Tìm sản phẩm" placeholder="Tìm tên, hãng, mã SKU..." @input="typed" @keyup.enter="apply()" />
       <select v-model="f.brandId" class="input" @change="apply()"><option value="">Mọi thương hiệu</option><option v-for="b in catalog.brands" :key="b.id" :value="String(b.id)">{{ b.name }}</option></select>
       <select v-model="price" class="input" @change="apply()">
@@ -24,6 +27,7 @@
       <select v-model="f.minRating" class="input" @change="apply()"><option value="">Mọi đánh giá</option><option value="4.5">★ 4.5 trở lên</option><option value="4">★ 4 trở lên</option><option value="3">★ 3 trở lên</option></select>
       <label class="check"><input v-model="f.inStock" type="checkbox" @change="apply()" /> Còn hàng</label>
       <button class="btn btn-sm btn-outline" @click="reset">Xoá lọc</button>
+      <button type="button" class="btn sh-done" @click="sheet = false">Xem {{ total }} sản phẩm</button>
     </div>
     </div>
     <p class="muted small cnt">{{ total }} sản phẩm<span v-if="f.q"> cho “{{ f.q }}”</span> · Trang {{ page + 1 }}/{{ Math.max(pages, 1) }}</p>
@@ -51,6 +55,9 @@ import ProductCard from '../components/ProductCard.vue'
 
 const route = useRoute(), router = useRouter()
 const items = ref([]), total = ref(0), pages = ref(0), page = ref(0), loading = ref(true), price = ref(''), flashes = ref([])
+const sheet = ref(false)
+const activeCount = computed(() => [f.brandId, price.value, f.scale, f.age, f.minRating, f.inStock].filter(Boolean).length)
+watch(sheet, v => { document.documentElement.style.overflow = v ? 'hidden' : '' })
 const f = reactive({ q: '', brandId: '', type: '', grp: '', scale: '', age: '', minRating: '', inStock: false, sort: 'featured' })
 const accMode = computed(() => f.grp === 'ACCESSORY' || catalog.categories.find(c => c.code === f.type)?.grp === 'ACCESSORY')
 const shownCats = computed(() => catalog.categories.filter(c => !f.grp || c.grp === f.grp || c.code === f.type))
@@ -103,5 +110,26 @@ onMounted(() => { fromQuery(); load(); loadCatalog(); api.get('/flash-sales').th
 .grid-4 { gap: 22px 18px; }
 .link { background: none; border: none; color: var(--bronze); cursor: pointer; font: inherit; }
 .pager { justify-content: center; margin-top: 26px; }
-@media (max-width: 960px) { .fbar { flex-direction: column; align-items: stretch; } .fbar2 { grid-template-columns: 1fr 1fr; } }
+.fbtn, .sh-head, .sh-done { display: none; }
+.fcount { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; border-radius: 9px; background: var(--accent); color: #fff; font-size: .7rem; }
+@media (max-width: 1100px) and (min-width: 900px) { .fbar2 { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 899px) {
+  .filters { top: 56px; margin: 0 -16px; padding: 8px 16px 6px; }
+  .fbar { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; padding: 8px; }
+  .chips { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding-bottom: 2px; }
+  .chip { flex-shrink: 0; min-height: 36px; }
+  .fbtn { display: inline-flex; grid-column: 2; } .sort { width: auto; grid-column: 3; max-width: 46vw; }
+  .fbar2 { position: fixed; left: 0; right: 0; bottom: 0; z-index: 185; margin: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+    background: var(--surface); max-height: 82vh; overflow-y: auto; box-shadow: 0 -20px 50px rgba(0,0,0,.3); transform: translateY(105%); visibility: hidden; transition: transform .22s ease-out, visibility 0s .22s; }
+  .fbar2.open { transform: none; visibility: visible; transition: transform .22s ease-out; }
+  .fbar2 .input { min-height: 44px; font-size: 16px; } .check { min-height: 40px; }
+  .sh-head { display: flex; justify-content: space-between; align-items: center; } .sh-head b { font: 600 1.1rem 'Oswald', sans-serif; text-transform: uppercase; }
+  .sh-x { width: 40px; height: 40px; border: none; background: none; font-size: 1.1rem; cursor: pointer; color: var(--text); }
+  .sh-done { display: inline-flex; }
+  .sh-scrim { position: fixed; inset: 0; z-index: 184; background: rgba(0,0,0,.4); }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
+}
+@media (min-width: 600px) and (max-width: 899px) { .grid-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.sh-fade-enter-active, .sh-fade-leave-active { transition: opacity .2s ease-out; } .sh-fade-enter-from, .sh-fade-leave-to { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .fbar2, .fbar2.open { transition: none; } }
 </style>

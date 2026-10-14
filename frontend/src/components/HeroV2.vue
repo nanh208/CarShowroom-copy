@@ -63,7 +63,7 @@ const hero = computed(() => {
 })
 const card = (re, title, sub, to, img) => { const p = find(re); return { title, sub, to, img, name: p?.name, price: p?.price } }
 const cards = computed(() => [
-  card(/bburago-sf90-0/, 'Xe mô hình', 'Diecast · 1:64 · 1:18 · Limited', { path: '/products', query: { type: 'MODEL,DISPLAY' } }, '/images/toys/bburago-sf90-0.jpg'),
+  card(/bburago-sf90-0/, 'Xe mô hình', 'Diecast · 1:64 · 1:18 · Limited', { path: '/products', query: { type: 'MODEL,DISPLAY' } }, '/images/toys/bburago-sf90-card.jpg'),
   card(/traxxas-xmaxx-0/, 'Xe RC', 'Off-road · On-road · Drift · RTR', { path: '/products', query: { type: 'RC' } }, '/images/toys/traxxas-xmaxx-0.jpg'),
   card(/charger-[01]/, 'Phụ kiện', 'Pin & sạc · Khiển RC · Bánh xe', { path: '/products', query: { grp: 'ACCESSORY' } }, '/images/toys/charger-1.jpg')])
 const deal = computed(() => {
@@ -151,5 +151,11 @@ h1 { font-size: clamp(3.4rem, 6vw, 5.4rem); } h2 { font-size: clamp(2.6rem, 3.8v
   .grid { grid-template-columns: 1fr; } .hpanel { width: 60%; top: auto; height: 420px; } .stage { height: 420px; } .car { bottom: 96px; }
   .cards { grid-template-columns: 1fr 1fr; gap: 10px; } .ccard { min-height: 300px; margin: 0 !important; clip-path: none; } .deal { margin: 0; clip-path: none; }
   .badges { display: none; }
+  .pick { grid-template-columns: 1fr; } .cards { height: auto; }
+}
+@media (max-width: 1000px) { .pick { grid-template-columns: 1fr; } }
+@media (max-width: 599px) {
+  .flow { white-space: normal; letter-spacing: .24em; min-width: 0; }
+  .cards { grid-template-columns: 1fr; } .ccard { min-height: 220px; } .deal { min-height: 140px; }
 }
 </style>

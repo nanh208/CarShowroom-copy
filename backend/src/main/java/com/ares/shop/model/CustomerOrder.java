@@ -15,6 +15,8 @@ public class CustomerOrder {
     public String email;
     public String shippingAddress;
     @Column(length = 1000) public String note;
+    /** Gói quà (20.000đ) + lời nhắn kèm thiệp. Kiểu bọc để tương thích DB cũ (ddl-auto=update). */
+    public Boolean giftWrap; @Column(length = 300) public String giftMessage; public Long giftFee;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     public List<OrderItem> items = new ArrayList<>();
     public long subtotal;

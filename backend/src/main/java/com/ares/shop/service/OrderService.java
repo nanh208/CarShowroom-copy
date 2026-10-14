@@ -12,6 +12,7 @@ import java.util.*;
 
 @Service
 public class OrderService {
+    public static final long GIFT_FEE = 20_000;
     /** Miễn phí vận chuyển cho đơn từ 500.000đ (sau giảm giá). */
     public static final long FREE_SHIP_FROM = 500_000;
     /** 1 điểm = 1.000đ khi dùng; tích 1 điểm cho mỗi 10.000đ khi đơn hoàn tất. */
@@ -31,7 +32,8 @@ public class OrderService {
 
     public record ItemReq(Long productId, Long variantId, int quantity) {}
     public record CheckoutReq(String buyerName, String phone, String email, String shippingAddress, String city, String note,
-                              String promoCode, Integer usePoints, Enums.PaymentMethod paymentMethod, Integer installmentMonths, List<ItemReq> items) {}
+                              String promoCode, Integer usePoints, Enums.PaymentMethod paymentMethod, Integer installmentMonths, List<ItemReq> items,
+                              Boolean giftWrap, String giftMessage) {}
 
     /** Phí vận chuyển theo khu vực. */
     public static long shippingFee(String city, long amount) {
@@ -124,7 +126,8 @@ public class OrderService {
         }
         long afterDiscount = o.subtotal - o.discount - o.pointsDiscount;
         o.shippingFee = freeShip ? 0 : shippingFee(r.city(), afterDiscount);
-        o.total = afterDiscount + o.shippingFee;
+        if (Boolean.TRUE.equals(r.giftWrap())) { o.giftWrap = true; o.giftFee = GIFT_FEE; o.giftMessage = r.giftMessage() == null ? null : r.giftMessage().trim().substring(0, Math.min(300, r.giftMessage().trim().length())); }
+        o.total = afterDiscount + o.shippingFee + (o.giftFee == null ? 0 : o.giftFee);
 
         switch (r.paymentMethod()) {
             case INSTALLMENT -> {
