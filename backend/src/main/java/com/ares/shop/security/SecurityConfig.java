@@ -1,0 +1,48 @@
+package com.ares.shop.security;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.*;
+
+import java.util.List;
+
+@Configuration
+public class SecurityConfig {
+    @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+
+    @Bean
+    SecurityFilterChain chain(HttpSecurity http, JwtFilter jwtFilter, @Value("${app.frontend-url}") String frontend) throws Exception {
+        http.csrf(c -> c.disable())
+            .headers(h -> h.frameOptions(f -> f.sameOrigin()))
+            .cors(c -> c.configurationSource(cors(frontend)))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            .authorizeHttpRequests(a -> a
+                .requestMatchers("/api/auth/**", "/api/chat/**", "/h2-console/**", "/error").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/brands/**", "/api/promotions/**", "/api/options").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/bookings", "/api/promotions/check").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated())
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    private CorsConfigurationSource cors(String frontend) {
+        var cfg = new CorsConfiguration();
+        cfg.setAllowedOrigins(List.of(frontend, "http://localhost:5173", "http://localhost:4173"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("*"));
+        var src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", cfg);
+        return src;
+    }
+}
