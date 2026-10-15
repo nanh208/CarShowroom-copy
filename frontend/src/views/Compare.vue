@@ -5,7 +5,8 @@
     <p>Đặt tối đa 3 sản phẩm cùng nhóm cạnh nhau. Những dòng có thông số khác nhau được làm nổi bật.</p>
     <div v-if="!items.length" class="empty card">Chưa có sản phẩm nào để so sánh. Bấm biểu tượng ⇄ trên ảnh sản phẩm để thêm. <router-link to="/products">Chọn sản phẩm →</router-link></div>
     <template v-else>
-      <label class="check diffonly"><input v-model="diffOnly" type="checkbox" /> Chỉ hiện thông số khác nhau</label>
+      <div class="row between tools"><label class="check diffonly"><input v-model="diffOnly" type="checkbox" /> Chỉ hiện thông số khác nhau</label>
+        <div class="row exp"><button class="btn btn-sm btn-outline" @click="exportCsv">⤓ Xuất CSV (Excel)</button><button class="btn btn-sm btn-outline" @click="print">🖨 In / PDF</button><button class="btn btn-sm btn-outline" @click="copyLink">🔗 Sao chép liên kết</button></div></div>
       <div class="table-wrap card flush">
         <table class="cmp">
           <thead><tr><th />
@@ -55,12 +56,24 @@ const rows = computed(() => {
   return diffOnly.value ? all.filter(r => r.diff) : all
 })
 const router = useRouter()
+function exportCsv() {
+  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const lines = [['Thông số', ...items.value.map(p => p.name)], ...rows.value.map(r => [r.label, ...r.values])].map(r => r.map(esc).join(','))
+  const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `so-sanh-ares-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+  toast('Đã xuất bảng so sánh')
+}
+const print = () => window.print()
+const copyLink = () => { navigator.clipboard?.writeText(location.origin + '/wishlist/shared?ids=' + items.value.map(p => p.id).join(',')); toast('Đã sao chép liên kết các sản phẩm') }
 const add = p => {
   if (p.hasVariants) return router.push(`/products/${p.id}`)
   cart.add({ productId: p.id, name: p.name, image: p.images?.[0], unitPrice: p.price, oldPrice: p.oldPrice, quantity: 1, stock: p.stock }); toast(`Đã thêm “${p.name}” vào giỏ hàng`)
 }
 </script>
 <style scoped>
+.tools { gap: 10px; flex-wrap: wrap; margin-bottom: 10px; } .exp { gap: 6px; flex-wrap: wrap; }
+@media print { .tools, .rm, .addslot, .head .btn { display: none !important; } }
+
 .diffonly { margin-bottom: 16px; }
 .flush { padding: 0; overflow: hidden; }
 .cmp { width: 100%; border-collapse: collapse; table-layout: fixed; }

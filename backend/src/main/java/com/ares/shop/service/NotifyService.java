@@ -10,6 +10,7 @@ public class NotifyService {
     public NotifyService(NotificationRepo repo) { this.repo = repo; }
     public void send(User u, String kind, String title, String body, String link) {
         if (u == null) return;
+        if (u == null) return;
         Notification n = new Notification(); n.user = u; n.kind = kind; n.title = title; n.body = body; n.link = link;
         repo.save(n);
     }

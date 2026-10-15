@@ -16,6 +16,7 @@ public class Review {
     @ElementCollection(fetch = FetchType.EAGER) @OrderColumn public java.util.List<String> images = new java.util.ArrayList<>();
     public String variantName;
     public boolean verified;
+    public Integer helpful;
     public boolean approved = true;
     public LocalDateTime createdAt = LocalDateTime.now();
 }

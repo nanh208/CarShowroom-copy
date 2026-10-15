@@ -8,7 +8,8 @@
         <transition name="fade" mode="out-in"><img fetchpriority="high" :key="curImg" :src="curImg" :alt="p.name" class="photo" /></transition>
         <button v-if="imgs.length > 1" class="arr l" aria-label="Ảnh trước" @click="step(-1)">‹</button>
         <button v-if="imgs.length > 1" class="arr r" aria-label="Ảnh sau" @click="step(1)">›</button>
-        <span v-if="fs" class="flashtag">⚡ Flash sale · còn <Countdown :to="fs.endTime" /></span>
+        <span v-if="fs" class="flashtag">⚡ Flash sale · còn <Countdown :to="fs.endTime" /><template v-if="fs.quota"> · {{ fs.quota - fs.sold }} suất</template></span>
+        <div class="mediabtns"><button type="button" @click="v360 = '360'">⟳ 360°</button><button type="button" @click="v360 = 'video'">▶ Video</button></div>
         <div class="iconbtns">
           <button :class="['wish', { on: prefs.isWished(p.id) }]" :aria-pressed="prefs.isWished(p.id)" title="Yêu thích" @click="prefs.toggleWish(p)"><svg viewBox="0 0 24 24" width="18" height="18" :fill="prefs.isWished(p.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
           <button :class="{ on: prefs.inCompare(p.id) }" title="So sánh" @click="prefs.toggleCompare(p)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M8 21H3v-5M21 3l-7 7M3 21l7-7"/></svg></button>
@@ -19,7 +20,7 @@
 
       <div class="head">
         <div>
-          <div class="brandline"><img loading="lazy" decoding="async" v-if="p.brand?.logoUrl" :src="p.brand.logoUrl" alt="" />{{ p.brand?.name }} · {{ TYPES[p.type] }}<span v-if="p.scale"> · Tỷ lệ {{ p.scale }}</span> · {{ p.ageMin }}+ tuổi<span v-if="p.isNew" class="badge tag-yellow">Mới</span></div>
+          <div class="brandline"><img loading="lazy" decoding="async" v-if="p.brand?.logoUrl" :src="p.brand.logoUrl" alt="" />{{ p.brand?.name }} · {{ TYPES[p.type] }}<span v-if="p.scale"> · Tỷ lệ {{ p.scale }} <button type="button" class="lnk" @click="guide = true">Hướng dẫn tỷ lệ</button></span> · {{ p.ageMin }}+ tuổi<span v-if="p.isNew" class="badge tag-yellow">Mới</span></div>
           <h1 class="title">{{ p.name }}</h1>
           <a v-if="rv.count" href="#reviews" class="ratingline"><Stars :value="rv.avg" /><b>{{ rv.avg }}</b><span>{{ rv.count }} đánh giá · Đã bán {{ p.sold }} · SKU {{ p.sku }}</span></a>
         </div>
@@ -39,8 +40,13 @@
         </div>
       </div>
 
+      <div v-if="!stock" class="notify">
+        <b>Tạm hết hàng</b><span>Để lại email, chúng tôi báo ngay khi có hàng.</span>
+        <form class="row" @submit.prevent="notifyMe"><input v-model.trim="nEmail" type="email" class="input grow" :placeholder="auth.user?.email || 'Email của bạn'" aria-label="Email nhận thông báo" /><button class="btn btn-sm" :disabled="nDone">{{ nDone ? '✓ Đã đăng ký' : 'Báo tôi' }}</button></form>
+      </div>
+
       <div class="perks">
-        <div><b>🚚 Giao nhanh</b><span>Nội thành HCM/HN 1–2 ngày, tỉnh 2–4 ngày</span></div>
+        <div><b>🚚 Giao dự kiến {{ etaLabel }}</b><span>{{ etaCity }} · hoả tốc nhận sớm hơn 1 ngày</span></div>
         <div><b>↩ Đổi trả 7 ngày</b><span>Lỗi do nhà sản xuất đổi mới miễn phí</span></div>
         <div><b>🛡 Bảo hành</b><span>{{ p.warrantyMonths ? p.warrantyMonths + ' tháng chính hãng' : 'Đổi mới 7 ngày nếu lỗi' }}</span></div>
         <div v-if="unitPrice >= catalog.options.installmentMin"><b>💳 Trả góp 0%</b><span>3–12 tháng qua thẻ tín dụng · từ {{ vnd(Math.ceil(unitPrice / 12)) }}/tháng</span></div>
@@ -48,6 +54,8 @@
       </div>
 
       <p class="desc">{{ p.description }}</p>
+
+      <section v-if="pBundles.length" class="pbundles"><h3>Mua kèm tiết kiệm hơn</h3><div class="bgrid"><BundleCard v-for="b in pBundles" :key="b.bundle.id" :b="b" /></div></section>
 
       <div class="specs">
         <button class="specs-h" @click="specsOpen = !specsOpen"><span>Thông số kỹ thuật</span><i :class="{ open: specsOpen }">⌄</i></button>
@@ -64,6 +72,7 @@
             <div class="rv-h"><span class="av">{{ r.authorName?.split(' ').pop()[0] }}</span><div><b>{{ r.authorName }}</b><div class="muted small">{{ d(r.createdAt) }}<span v-if="r.verified" class="vb"> · ✓ Đã mua hàng</span><span v-if="r.variantName"> · {{ r.variantName }}</span></div></div><span class="rate-pill sm">★ {{ r.rating }}</span></div>
             <p>{{ r.comment }}</p>
             <div v-if="r.images?.length" class="rimgs"><a v-for="im in r.images" :key="im" :href="im" target="_blank"><img loading="lazy" decoding="async" :src="im" alt="" /></a></div>
+            <button type="button" :class="['helpful', { on: voted[r.id] }]" :aria-pressed="!!voted[r.id]" @click="helpful(r)">👍 Hữu ích<span v-if="r.helpful"> ({{ r.helpful }})</span></button>
           </div>
         </div>
         <form v-if="auth.loggedIn && !rv.mine" class="rv-form" @submit.prevent="sendReview">
@@ -125,6 +134,8 @@
           <BuyNowButton :disabled="!stock" :before="canBuy" :after="buyNow" />
         </div>
       </div>
+      <ScaleGuide v-if="guide" :current="p.scale" @close="guide = false" />
+      <Viewer360 v-if="v360" :key="v360" :images="imgs" :name="p.name" :video="p.videoUrl" @close="v360 = ''" />
     </template>
   </div>
 </template>
@@ -143,10 +154,24 @@ import { useCart } from '../stores/cart'
 import ProductCard from '../components/ProductCard.vue'
 import { flyToCart } from '../motion'
 import BuyNowButton from '../components/BuyNowButton.vue'
+import BundleCard from '../components/BundleCard.vue'
+import ScaleGuide from '../components/ScaleGuide.vue'
+import Viewer360 from '../components/Viewer360.vue'
 
 const route = useRoute(), router = useRouter(), cart = useCart(), prefs = usePrefs(), auth = useAuth()
 const p = ref(null), related = ref([]), variants = ref([]), flashes = ref([]), suggested = ref([]), qa = ref([]), gal = ref(null)
 const rv = ref({}), mine = reactive({ rating: 5, comment: '', images: [] }), sending = ref(false), uploading = ref(false), showAll = ref(false), rf = ref('all')
+const guide = ref(false), v360 = ref(''), pBundles = ref([]), nEmail = ref(''), nDone = ref(false), eta = ref(null)
+const voted = reactive(JSON.parse(localStorage.getItem('helpfulVotes') || '{}'))
+const etaCity = computed(() => auth.user?.city || localStorage.getItem('etaCity') || 'TP. Hồ Chí Minh')
+const etaLabel = computed(() => { if (!eta.value) return ''; const f = x => new Date(x + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' }); return eta.value.etaFrom === eta.value.etaTo ? f(eta.value.etaFrom) : `${f(eta.value.etaFrom)} – ${f(eta.value.etaTo)}` })
+async function notifyMe() {
+  try { const { data } = await api.post('/public/notify-me', { productId: p.value.id, email: nEmail.value }); nDone.value = true; toast(`Sẽ báo về ${data.email} khi có hàng`) } catch (e) { toast(errMsg(e), 'error') }
+}
+async function helpful(r) {
+  if (!auth.loggedIn) return router.push({ path: '/login', query: { redirect: route.fullPath } })
+  try { const { data } = await api.post(`/reviews/${r.id}/helpful`); r.helpful = data.helpful; voted[r.id] = data.voted; if (!data.voted) delete voted[r.id]; localStorage.setItem('helpfulVotes', JSON.stringify(voted)) } catch (e) { toast(errMsg(e), 'error') }
+}
 const qty = ref(1), view = ref(0), specsOpen = ref(false), variantId = ref(null), question = ref('')
 const variant = computed(() => variants.value.find(v => v.id === variantId.value))
 const imgs = computed(() => { const l = [...(p.value?.images || [])]; variants.value.forEach(v => v.image && !l.includes(v.image) && l.push(v.image)); return l })
@@ -185,7 +210,9 @@ async function load() {
   const { data } = await api.get(`/products/${route.params.id}`)
   p.value = data.product; related.value = data.related; variants.value = data.variants; flashes.value = data.flash
   variantId.value = data.variants.find(v => v.stock > 0)?.id || data.variants[0]?.id || null
-  prefs.viewed(p.value); loadReviews(p.value.id); loadQa(p.value.id)
+  prefs.viewed(p.value); loadReviews(p.value.id); loadQa(p.value.id); nDone.value = false
+  api.get('/public/bundles', { params: { productId: p.value.id } }).then(r => { pBundles.value = r.data }).catch(() => {})
+  api.get('/public/shipping-options', { params: { city: etaCity.value, amount: 0 } }).then(r => { eta.value = r.data[0] }).catch(() => {})
   const relIds = new Set([p.value.id, ...related.value.map(r => r.id)])
   api.get('/products', { params: { type: p.value.type, size: 8, sort: 'bestseller' } }).then(r => { suggested.value = r.data.content.filter(x => !relIds.has(x.id)).slice(0, 4) })
 }
@@ -203,6 +230,16 @@ watch(() => route.params.id, id => id && load(), { immediate: true })
 </script>
 
 <style scoped>
+.mediabtns { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 6px; z-index: 2; }
+.mediabtns button { background: rgba(17,17,17,.82); color: #fff; border: none; padding: 6px 10px; font: 600 .76rem inherit; font-family: inherit; cursor: pointer; }
+.mediabtns button:hover { background: var(--accent); }
+.lnk { background: none; border: none; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.notify { border: 1.5px dashed var(--accent); padding: 12px 14px; margin: 12px 0; display: flex; flex-direction: column; gap: 6px; } .notify span { font-size: .86rem; color: var(--muted); }
+.notify .row { gap: 8px; flex-wrap: nowrap; } .notify .input { min-width: 0; }
+.pbundles { margin: 18px 0; } .pbundles h3 { margin-bottom: 10px; } .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.helpful { margin-top: 8px; background: none; border: 1px solid var(--border); padding: 4px 10px; font: 500 .78rem inherit; font-family: inherit; cursor: pointer; color: var(--text-2, var(--text)); }
+.helpful.on { border-color: var(--accent); color: var(--accent); background: var(--bronze-soft); }
+
 .pd { padding-bottom: 120px; }
 .carousel { position: relative; height: 500px; border-radius: 12px; overflow: hidden; background: var(--tile); }
 .photo { width: 100%; height: 100%; object-fit: contain; background: #f1f1f1; }

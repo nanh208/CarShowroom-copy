@@ -2,8 +2,8 @@ import { reactive } from 'vue'
 import api from './api'
 
 export const vnd = n => (Number(n) || 0).toLocaleString('vi-VN') + 'đ'
-export const dt = s => s ? new Date(s).toLocaleString('vi-VN') : ''
-export const d = s => s ? new Date(s).toLocaleDateString('vi-VN') : ''
+export const dt = s => s ? new Date(s).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
+export const d = s => s ? new Date(s).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
 export const k = n => { n = Number(n) || 0; return n >= 1e6 ? (n / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tr' : (n / 1e3).toLocaleString('vi-VN') + 'K' }
 export const ty = k
 
@@ -34,3 +34,15 @@ export const AGES = { 3: 'Từ 3 tuổi', 6: 'Từ 6 tuổi', 8: 'Từ 8 tuổi'
 // Tên tỉnh/thành (đầy đủ, VD "Thành phố Hồ Chí Minh") → khu vực tính phí ship của hệ thống
 export const stripPlace = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/^(tinh|thanh pho)\s+/, '').replace(/^tp\.?\s*/, '').trim()
 export const toShipCity = (name, cities = catalog.options.cities) => { if (!name) return ''; const k = stripPlace(name); return cities.find(c => stripPlace(c) === k) || (cities.includes('Tỉnh khác') ? 'Tỉnh khác' : name) }
+// Thời gian tương đối tiếng Việt: "vừa xong", "5 phút trước", "hôm qua"…
+export const ago = s => {
+  if (!s) return ''
+  const sec = Math.max(0, (Date.now() - new Date(s).getTime()) / 1000)
+  if (sec < 60) return 'vừa xong'
+  if (sec < 3600) return Math.floor(sec / 60) + ' phút trước'
+  if (sec < 86400) return Math.floor(sec / 3600) + ' giờ trước'
+  if (sec < 172800) return 'hôm qua'
+  if (sec < 2592000) return Math.floor(sec / 86400) + ' ngày trước'
+  return new Date(s).toLocaleDateString('vi-VN')
+}
+export const dateLong = s => s ? new Date(s).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) : ''

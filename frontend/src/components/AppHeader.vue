@@ -52,7 +52,7 @@
                 <b>{{ n.title }}</b><p>{{ n.body }}</p><small>{{ dt(n.createdAt) }}</small></router-link>
             </div>
           </div>
-          <router-link id="cart-target" to="/cart" :class="['cartpill', { bump }]">
+          <router-link id="cart-target" to="/cart" :class="['cartpill', { bump }]" aria-haspopup="dialog" @click.prevent="openCart">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
             <span><b class="cc">{{ cart.count }}</b><em> món</em></span>
           </router-link>
@@ -91,7 +91,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import ThemeSwitch from './ThemeSwitch.vue'
 import A11yPanel from './A11yPanel.vue'
-import { navOpen } from '../stores/ui'
+import { navOpen, cartOpen, isMobile } from '../stores/ui'
 import { theme } from '../stores/theme'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../api'
@@ -101,6 +101,7 @@ import { usePrefs } from '../stores/prefs'
 import { vnd, dt } from '../format'
 const auth = useAuth(), cart = useCart(), prefs = usePrefs(), router = useRouter(), route = useRoute()
 const bump = ref(false)
+const openCart = () => { if (isMobile.value && route.path !== '/cart') router.push('/cart'); else if (route.path !== '/cart') cartOpen.value = true }
 watch(() => cart.fly, () => { bump.value = false; requestAnimationFrame(() => { bump.value = true; setTimeout(() => bump.value = false, 250) }) })
 const mega = ref(''), scrolled = ref(false), scrollY = ref(0)
 const isRC = computed(() => route.path === '/products' && route.query.type === 'RC')

@@ -24,4 +24,7 @@ public class User {
     @JsonIgnore @ElementCollection(fetch = FetchType.EAGER) public Set<String> tags = new LinkedHashSet<>();
     /** Phương thức thanh toán ưa thích. */
     public String preferredPayment;
+    /** Tín dụng cửa hàng (từ thẻ quà / hoàn tiền), mã giới thiệu, 2FA TOTP (tuỳ chọn). */
+    public Long storeCredit; public Long referredBy;
+    @JsonIgnore public String totpSecret; public Boolean totpEnabled;
 }

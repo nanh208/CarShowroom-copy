@@ -35,7 +35,7 @@
           <div class="row between"><b>{{ a.label || 'Địa chỉ' }}</b><span v-if="a.isDefault" class="badge badge-new">Mặc định</span></div>
           <p>{{ a.receiverName }} · {{ a.phone }}</p>
           <p class="muted small">{{ [a.line, a.ward, a.district, a.city].filter(Boolean).join(', ') }}</p>
-          <div class="row"><button class="btn btn-sm btn-outline" @click="editAddr(a)">Sửa</button><button class="btn btn-sm btn-outline" @click="delAddr(a)">Xoá</button></div>
+          <div class="row"><button class="btn btn-sm btn-outline" @click="editAddr(a)">Sửa</button><button class="btn btn-sm btn-outline" @click="delAddr(a)">Xoá</button><button v-if="!a.isDefault" class="btn btn-sm btn-outline" @click="makeDefault(a)">Đặt mặc định</button></div>
         </div>
       </div>
     </div>
@@ -104,7 +104,46 @@
       </table>
     </div>
 
+    <div v-if="tab === 'wallet'" class="grid grid-2 wallet">
+      <div class="card wcard">
+        <small>Ví tín dụng ARES</small><b class="bal">{{ vnd(w.storeCredit || 0) }}</b>
+        <p class="small muted">Dùng trừ thẳng vào đơn ở bước thanh toán. Nguồn: thẻ quà, hoàn tiền vào ví.</p>
+        <form class="row" @submit.prevent="redeem"><input v-model.trim="gcCode" class="input grow" placeholder="Nhập mã thẻ quà GC…" aria-label="Mã thẻ quà" /><button class="btn btn-sm">Nạp vào ví</button></form>
+        <router-link to="/gift-cards" class="small">🎁 Mua thẻ quà tặng bạn bè →</router-link>
+      </div>
+      <div class="card">
+        <h3>Giới thiệu bạn bè</h3>
+        <p class="small muted">Bạn bè giảm <b>{{ vnd(w.referral?.discount) }}</b> cho đơn đầu tiên; bạn nhận <b>{{ w.referral?.reward }} điểm</b> mỗi lượt.</p>
+        <div class="refcode"><code>{{ w.referral?.code }}</code><button class="btn btn-sm" @click="copyRef">Sao chép liên kết</button></div>
+        <p class="small muted">Đã có {{ w.referral?.uses || 0 }} người dùng mã của bạn.</p>
+      </div>
+      <div class="card">
+        <h3>Thẻ quà của tôi</h3>
+        <p v-if="!w.giftCards?.length" class="muted small">Chưa có thẻ quà.</p>
+        <div v-for="g in w.giftCards" :key="g.id" class="row between gc"><code>{{ g.code }}</code><span class="small">{{ vnd(g.balance) }} / {{ vnd(g.initial) }}</span><span class="small muted">HSD {{ d(g.expiresAt) }}</span></div>
+      </div>
+      <div class="card">
+        <h3>Hộp thư (email mô phỏng)</h3>
+        <p v-if="!w.inbox?.length" class="muted small">Chưa có email.</p>
+        <details v-for="m in w.inbox" :key="m.id" class="mail"><summary><b>{{ m.subject }}</b><small class="muted"> · {{ ago(m.createdAt) }}</small></summary><pre>{{ m.body }}</pre></details>
+      </div>
+    </div>
+
     <div v-if="tab === 'settings'" class="grid grid-2">
+      <div class="card">
+        <h3>Xác thực 2 bước (TOTP)</h3>
+        <p class="muted small">Bảo vệ tài khoản bằng mã 6 số từ Google Authenticator / Authy mỗi lần đăng nhập.</p>
+        <template v-if="auth.user.totpEnabled">
+          <p class="ok">✓ Đang bật</p>
+          <form class="row" @submit.prevent="off2fa"><input v-model.trim="otp" class="input grow" inputmode="numeric" maxlength="6" placeholder="Mã 6 số để tắt" aria-label="Mã xác thực" /><button class="btn btn-sm btn-outline">Tắt 2FA</button></form>
+        </template>
+        <template v-else-if="tf">
+          <div class="tf"><img v-if="tfQr" :src="tfQr" alt="Mã QR thiết lập 2FA" width="160" height="160" /><div><p class="small">1. Quét mã QR bằng ứng dụng xác thực<br />2. Hoặc nhập khoá: <code class="key">{{ tf.secret.match(/.{1,4}/g).join(' ') }}</code></p>
+            <form class="row" @submit.prevent="on2fa"><input v-model.trim="otp" class="input grow" inputmode="numeric" maxlength="6" placeholder="Mã 6 số" aria-label="Mã xác thực" /><button class="btn btn-sm">Kích hoạt</button></form></div></div>
+        </template>
+        <button v-else class="btn btn-sm" @click="setup2fa">Bật xác thực 2 bước</button>
+        <p v-if="msg.tf" :class="msg.tfOk ? 'ok' : 'err'">{{ msg.tf }}</p>
+      </div>
       <div class="card">
         <h3>Thanh toán ưa thích</h3>
         <p class="muted small">Tự chọn sẵn ở bước thanh toán.</p>
@@ -152,10 +191,10 @@ import A11yPanel from '../components/A11yPanel.vue'
 import { toast } from '../stores/prefs'
 const TIERS = [{ name: 'Đồng', label: 'mặc định', at: 0 }, { name: 'Bạc', label: 'chi 3 tr', at: 300 }, { name: 'Vàng', label: 'chi 10 tr', at: 1000 }, { name: 'Kim cương', label: 'chi 20 tr', at: 2000 }]
 import { useAuth } from '../stores/auth'
-import { catalog, loadCatalog, vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, AUCTION_STATUS, RETURN_STATUS, TICKET_STATUS } from '../format'
+import { ago, catalog, loadCatalog, vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, AUCTION_STATUS, RETURN_STATUS, TICKET_STATUS } from '../format'
 
 const auth = useAuth(), route = useRoute(), router = useRouter()
-const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Đơn hàng', points: 'Điểm thưởng', returns: 'Đổi trả', tickets: 'Hỗ trợ', bids: 'Đấu giá của tôi', settings: 'Cài đặt' }
+const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Đơn hàng', points: 'Điểm thưởng', wallet: 'Ví & quà tặng', returns: 'Đổi trả', tickets: 'Hỗ trợ', bids: 'Đấu giá của tôi', settings: 'Cài đặt' }
 const nextTier = computed(() => TIERS.find(t => t.at > (pts.value.points || 0)) || { at: 2000 })
 const tab = ref(tabs[route.query.tab] ? route.query.tab : 'profile')
 const profile = reactive({ fullName: auth.user.fullName, phone: auth.user.phone, avatarUrl: auth.user.avatarUrl })
@@ -168,10 +207,21 @@ const savePay = async () => { try { await api.put('/account/payment-preference',
 const delAlert = async a => { await api.delete(`/alerts/${a.id}`); myAlerts.value = myAlerts.value.filter(x => x !== a) }
 const loadAlerts = async () => { const list = (await api.get('/alerts')).data; await Promise.all(list.map(async a => { try { a.name = (await api.get(`/products/${a.productId}`)).data.product.name } catch {} })); myAlerts.value = list }
 const setTab = k => router.replace({ query: { tab: k } })
+const w = ref({}), gcCode = ref(''), tf = ref(null), tfQr = ref(''), otp = ref('')
+async function redeem() { try { const { data } = await api.post('/account/giftcards/redeem', { code: gcCode.value }); gcCode.value = ''; toast(`Đã nạp ${vnd(data.added)} vào ví`); load() } catch (e) { toast(errMsg(e), 'error') } }
+const copyRef = () => { const u = `${location.origin}/register?ref=${w.value.referral.code}`; navigator.clipboard?.writeText(u); toast('Đã sao chép liên kết giới thiệu') }
+async function setup2fa() {
+  msg.tf = ''; tf.value = (await api.post('/account/2fa/setup')).data
+  try { const QR = await import('qrcode'); tfQr.value = await QR.toDataURL(tf.value.otpauth, { margin: 1, width: 320 }) } catch { tfQr.value = '' }
+}
+async function on2fa() { try { await api.post('/account/2fa/enable', { code: otp.value }); auth.user.totpEnabled = true; localStorage.setItem('user', JSON.stringify(auth.user)); tf.value = null; otp.value = ''; msg.tf = 'Đã bật xác thực 2 bước'; msg.tfOk = true } catch (e) { msg.tf = errMsg(e); msg.tfOk = false } }
+async function off2fa() { try { await api.post('/account/2fa/disable', { code: otp.value }); auth.user.totpEnabled = false; localStorage.setItem('user', JSON.stringify(auth.user)); otp.value = ''; msg.tf = 'Đã tắt xác thực 2 bước'; msg.tfOk = true } catch (e) { msg.tf = errMsg(e); msg.tfOk = false } }
+async function makeDefault(a) { await api.put(`/account/addresses/${a.id}`, { ...a, isDefault: true }); toast('Đã đặt làm địa chỉ mặc định'); load() }
 watch(() => route.query.tab, t => { tab.value = tabs[t] ? t : 'profile'; load() })
 
 async function load() {
   if (tab.value === 'settings') loadAlerts()
+  if (tab.value === 'wallet') w.value = (await api.get('/account/wallet')).data
   if (tab.value === 'addresses') { loadCatalog() }
   if (tab.value === 'addresses') addresses.value = (await api.get('/account/addresses')).data
   if (tab.value === 'orders') orders.value = (await api.get('/account/orders')).data
@@ -198,6 +248,15 @@ async function delAddr(a) { if (confirm('Xoá địa chỉ này?')) { await api.
 onMounted(load)
 </script>
 <style scoped>
+.wcard { display: flex; flex-direction: column; gap: 8px; background: linear-gradient(135deg, #111 0 62%, var(--accent) 62%); color: #fff; }
+.wcard small { letter-spacing: .2em; text-transform: uppercase; font-size: .7rem; opacity: .8; } .wcard .bal { font: 700 2rem 'Oswald', sans-serif; } .wcard .muted { color: #ddd; } .wcard a { color: #fff; }
+.wallet form { gap: 8px; flex-wrap: nowrap; } .wallet .input { min-width: 0; }
+.refcode { display: flex; gap: 10px; align-items: center; margin: 10px 0; flex-wrap: wrap; } .refcode code { font: 700 1.3rem 'Oswald', sans-serif; letter-spacing: .12em; border: 2px dashed var(--accent); padding: 4px 12px; }
+.gc { padding: 6px 0; border-bottom: 1px solid var(--border); gap: 8px; flex-wrap: wrap; }
+.mail { border-bottom: 1px solid var(--border); padding: 6px 0; } .mail summary { cursor: pointer; font-size: .86rem; } .mail pre { white-space: pre-wrap; font: .82rem/1.5 inherit; font-family: inherit; background: var(--bg-2); padding: 10px; margin-top: 6px; }
+.tf { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; } .tf img { background: #fff; padding: 6px; border: 1px solid var(--border); } .tf > div { flex: 1 1 200px; min-width: 0; }
+.key { font-size: .85rem; word-break: break-all; background: var(--bg-2); padding: 2px 6px; } .tf form { gap: 8px; flex-wrap: nowrap; margin-top: 10px; } .tf .input { min-width: 0; }
+
 .addr p { margin: 8px 0; }
 .pcard { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .tiers { display: flex; gap: 6px; } .tiers span { padding: 6px 10px; border-radius: 8px; background: var(--bg-2); font-size: .82rem; text-align: center; } .tiers span.on { background: var(--bronze); color: #fff; } .tiers small { display: block; font-size: .68rem; opacity: .8; }

@@ -1,7 +1,25 @@
 <template>
   <div>
-    <div class="row between"><h1>Chương trình ưu đãi</h1><button class="btn" @click="edit()">+ Tạo ưu đãi</button></div>
-    <div class="card table-wrap">
+    <div class="row between"><h1>Chương trình ưu đãi</h1><div class="row" style="gap:8px"><div class="seg" role="tablist"><button role="tab" :aria-selected="view === 'list'" :class="{ on: view === 'list' }" @click="view = 'list'">Danh sách</button><button role="tab" :aria-selected="view === 'stats'" :class="{ on: view === 'stats' }" @click="view = 'stats'; loadStats()">Hiệu quả mã</button></div><button class="btn" @click="edit()">+ Tạo ưu đãi</button></div></div>
+    <div v-if="view === 'stats'">
+      <div class="kp">
+        <div class="card"><small class="muted">Lượt dùng</small><b>{{ stats.reduce((a, x) => a + x.orders, 0) }}</b></div>
+        <div class="card"><small class="muted">Doanh thu có mã</small><b>{{ vnd(stats.reduce((a, x) => a + x.revenue, 0)) }}</b></div>
+        <div class="card"><small class="muted">Tổng tiền đã giảm</small><b>{{ vnd(stats.reduce((a, x) => a + x.discountGiven, 0)) }}</b></div>
+        <div class="card"><small class="muted">ROI (doanh thu / giảm)</small><b>{{ roi }}×</b></div>
+      </div>
+      <div class="card table-wrap">
+        <table class="table">
+          <thead><tr><th>Mã</th><th>Đơn</th><th>Khách</th><th>Doanh thu</th><th>Đã giảm</th><th>AOV</th><th>Tỉ trọng</th><th>Lượt</th></tr></thead>
+          <tbody><tr v-for="x in stats" :key="x.id">
+            <td><b>{{ x.code }}</b><div class="small muted">{{ x.title }}</div></td><td>{{ x.orders }}</td><td>{{ x.customers }}</td><td>{{ vnd(x.revenue) }}</td><td>{{ vnd(x.discountGiven) }}</td><td>{{ vnd(x.aov) }}</td>
+            <td style="min-width:120px"><div class="sb"><i :style="{ width: (maxRev ? x.revenue * 100 / maxRev : 0) + '%' }" /></div></td>
+            <td class="small">{{ x.usedCount }}{{ x.usageLimit ? '/' + x.usageLimit : '' }} <span :class="['badge', x.active ? 'badge-COMPLETED' : 'badge-CANCELLED']">{{ x.active ? 'Chạy' : 'Dừng' }}</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div v-else class="card table-wrap">
       <table class="table">
         <thead><tr><th>Mã</th><th>Tiêu đề</th><th>Loại</th><th>Giảm</th><th>Tối đa</th><th>Đơn tối thiểu</th><th>Thời gian</th><th>Trạng thái</th><th /></tr></thead>
         <tbody><tr v-for="p in list" :key="p.id">
@@ -39,10 +57,13 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api, { errMsg } from '../../api'
 import { vnd, d, VOUCHER_KIND } from '../../format'
-const list = ref([]), form = ref(null), err = ref('')
+const list = ref([]), form = ref(null), err = ref(''), view = ref('list'), stats = ref([])
+const loadStats = async () => { stats.value = (await api.get('/admin/promotions/stats')).data }
+const maxRev = computed(() => Math.max(0, ...stats.value.map(x => x.revenue)))
+const roi = computed(() => { const g = stats.value.reduce((a, x) => a + x.discountGiven, 0); return g ? (stats.value.reduce((a, x) => a + x.revenue, 0) / g).toFixed(1) : '—' })
 async function load() { list.value = (await api.get('/admin/promotions')).data }
 const edit = p => { err.value = ''; form.value = p ? { ...p } : { code: '', title: '', kind: 'PERCENT', discountPercent: 10, amount: 0, usageLimit: 0, isPublic: true, maxDiscount: 0, minOrder: 0, active: true, bannerColor: '#a87a3c', startDate: new Date().toISOString().slice(0, 10), endDate: '' } }
 async function save() {
@@ -53,3 +74,9 @@ async function save() {
 async function remove(p) { if (confirm(`Xoá mã ${p.code}?`)) { await api.delete(`/admin/promotions/${p.id}`); load() } }
 onMounted(load)
 </script>
+
+<style scoped>
+.seg { display: flex; border: 1px solid var(--border); } .seg button { border: none; background: none; padding: 7px 12px; font: 600 .82rem inherit; font-family: inherit; cursor: pointer; color: var(--muted); } .seg button.on { background: #111; color: #fff; }
+.kp { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 16px 0; } .kp b { display: block; font-size: 1.3rem; margin-top: 4px; }
+.sb { height: 8px; background: var(--bg-2); } .sb i { display: block; height: 100%; background: var(--accent); }
+</style>

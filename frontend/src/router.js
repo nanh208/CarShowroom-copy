@@ -18,8 +18,13 @@ const routes = [
   { path: '/compare', component: () => import('./views/Compare.vue') },
   { path: '/faq', component: () => import('./views/Faq.vue') },
   { path: '/cart', component: () => import('./views/Cart.vue') },
-  { path: '/checkout', component: () => import('./views/Checkout.vue'), meta: { auth: true } },
+  { path: '/checkout', component: () => import('./views/Checkout.vue') },
+  { path: '/track/:code?', component: () => import('./views/Track.vue') },
+  { path: '/gift-cards', component: () => import('./views/GiftCards.vue') },
+  { path: '/wishlist/shared', component: () => import('./views/SharedWishlist.vue') },
+  { path: '/bundles', component: () => import('./views/Bundles.vue') },
   { path: '/orders/:code', component: () => import('./views/OrderDetail.vue'), meta: { auth: true } },
+  { path: '/admin/packing', component: () => import('./views/admin/PackingSlips.vue'), meta: { admin: true, bare: true } },
   { path: '/admin/labels', component: () => import('./views/admin/ShippingLabels.vue'), meta: { admin: true, bare: true } },
   { path: '/login', component: () => import('./views/Login.vue'), meta: { bare: true } },
   { path: '/register', component: () => import('./views/Register.vue'), meta: { bare: true } },
@@ -46,6 +51,13 @@ const routes = [
       { path: 'reviews', component: () => import('./views/admin/AdminReviews.vue') },
       { path: 'chat', component: () => import('./views/admin/AdminChat.vue') },
       { path: 'audit', component: () => import('./views/admin/AdminAudit.vue'), meta: { adminOnly: true } },
+      { path: 'purchasing', component: () => import('./views/admin/AdminPurchasing.vue') },
+      { path: 'segments', component: () => import('./views/admin/AdminSegments.vue') },
+      { path: 'carts', component: () => import('./views/admin/AdminCarts.vue') },
+      { path: 'bundles', component: () => import('./views/admin/AdminBundles.vue') },
+      { path: 'home-layout', component: () => import('./views/admin/AdminHomeLayout.vue') },
+      { path: 'analytics', component: () => import('./views/admin/AdminAnalytics.vue') },
+      { path: 'emails', component: () => import('./views/admin/AdminEmails.vue') },
       { path: 'permissions', component: () => import('./views/admin/AdminPermissions.vue'), meta: { adminOnly: true } }
     ]
   },
@@ -64,5 +76,12 @@ router.beforeEach(async to => {
   if (to.meta.admin && !auth.isStaff) return '/'
   if (to.meta.adminOnly && !auth.isAdmin) return '/admin'
 })
+
+// Tiêu đề trang tiếng Việt cho từng màn hình
+const TITLES = [[/^\/$/, 'Trang chủ'], [/^\/products\/\d+/, 'Chi tiết sản phẩm'], [/^\/products/, 'Sản phẩm'], [/^\/cart/, 'Giỏ hàng'], [/^\/checkout/, 'Thanh toán'],
+  [/^\/track/, 'Tra cứu đơn hàng'], [/^\/gift-cards/, 'Thẻ quà tặng'], [/^\/bundles/, 'Combo ưu đãi'], [/^\/wishlist/, 'Yêu thích'], [/^\/compare/, 'So sánh'],
+  [/^\/account/, 'Tài khoản'], [/^\/orders/, 'Đơn hàng'], [/^\/support/, 'Hỗ trợ'], [/^\/faq/, 'Câu hỏi thường gặp'], [/^\/auctions/, 'Đấu giá'], [/^\/promotions/, 'Khuyến mãi'],
+  [/^\/login/, 'Đăng nhập'], [/^\/register/, 'Đăng ký'], [/^\/admin/, 'Quản trị'], [/^\/about/, 'Về chúng tôi']]
+router.afterEach(to => { const t = TITLES.find(([re]) => re.test(to.path)); document.title = (t ? t[1] + ' · ' : '') + 'ARES Toys — Xe mô hình & RC' })
 
 export default router
