@@ -12,6 +12,14 @@
         <button class="btn" :disabled="busy">{{ busy ? 'Đang gửi…' : 'Gửi thông báo' }}</button>
         <p v-if="sent != null" class="ok">✓ Đã gửi tới {{ sent }} khách hàng.</p>
       </form>
+      <form class="card" @submit.prevent="sendPush">
+        <h3>Thông báo đẩy (Web Push)</h3>
+        <p class="small muted">{{ devices.length }} thiết bị đã bật. Thông báo trong ứng dụng ở bên cạnh cũng tự đẩy tới thiết bị của khách đã bật.</p>
+        <div class="field"><label>Tiêu đề *</label><input v-model="pf.title" class="input" maxlength="80" required /></div>
+        <div class="field"><label>Nội dung</label><input v-model="pf.body" class="input" maxlength="240" /></div>
+        <div class="field"><label>Liên kết</label><input v-model="pf.url" class="input" placeholder="/promotions" pattern="/.*" /></div>
+        <button class="btn btn-outline" :disabled="pbusy || !devices.length">Đẩy tới mọi thiết bị</button>
+      </form>
       <div class="card"><h3>Xem trước</h3>
         <div class="pv"><span>📣</span><div><b>{{ f.title || 'Tiêu đề thông báo' }}</b><p>{{ f.body || 'Nội dung sẽ hiện ở đây.' }}</p><small class="muted">vừa xong</small></div></div>
         <p class="small muted" style="margin-top:12px">Tối đa 30 thông báo gần nhất hiển thị ở chuông. Không gửi email/SMS.</p></div>
@@ -19,6 +27,7 @@
   </div>
 </template>
 <script setup>
+import { toast as pushToast } from '../../stores/prefs'
 import { reactive, ref } from 'vue'
 import api, { errMsg } from '../../api'
 import { toast } from '../../stores/prefs'
@@ -28,6 +37,10 @@ async function send() {
   if (!confirm('Gửi thông báo này?')) return
   busy.value = true; try { sent.value = (await api.post('/admin/notifications/broadcast', f)).data.sent; toast('Đã gửi') } catch (e) { toast(errMsg(e), 'error') } finally { busy.value = false }
 }
+const devices = ref([]), pf = ref({ title: '', body: '', url: '/' }), pbusy = ref(false)
+const loadDevices = () => api.get('/admin/push/subscriptions').then(r => { devices.value = r.data }).catch(() => {})
+loadDevices()
+async function sendPush() { pbusy.value = true; try { const { data } = await api.post('/admin/push/broadcast', pf.value); pushToast(`Đã đẩy tới ${data.delivered} thiết bị (${data.failed} lỗi)`); loadDevices() } catch (e) { pushToast(e?.response?.data?.message || 'Lỗi', 'error') } finally { pbusy.value = false } }
 </script>
 <style scoped>
 .g2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; margin-top: 14px; } .g2 > * { min-width: 0; }

@@ -1,7 +1,20 @@
 import { reactive } from 'vue'
 import api from './api'
 
-export const vnd = n => (Number(n) || 0).toLocaleString('vi-VN') + 'đ'
+// ===== Đa tiền tệ: chỉ HIỂN THỊ (thanh toán luôn VND). Tỷ giá do admin đặt ở backend (/api/public/currency). =====
+export const currency = reactive({ code: localStorage.getItem('currency') === 'USD' ? 'USD' : 'VND', rates: { VND: 1, USD: 25400 }, updatedAt: '', loaded: false })
+export const vndRaw = n => (Number(n) || 0).toLocaleString('vi-VN') + 'đ'
+const forceVnd = () => typeof location !== 'undefined' && /^\/(admin|pay)/.test(location.pathname)
+export const vnd = n => {
+  if (currency.code === 'VND' || forceVnd()) return vndRaw(n)
+  const r = Number(currency.rates[currency.code]) || 0; if (!r) return vndRaw(n)
+  return '$' + ((Number(n) || 0) / r).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+export async function loadCurrency() { try { const { data } = await api.get('/public/currency'); currency.rates = data.rates; currency.updatedAt = data.updatedAt; currency.loaded = true } catch { /* dùng mặc định */ } }
+export function setCurrency(code, { persist = true } = {}) {
+  currency.code = code === 'USD' ? 'USD' : 'VND'; localStorage.setItem('currency', currency.code)
+  if (persist && localStorage.getItem('token')) api.put('/account/prefs/currency', JSON.stringify(currency.code), { headers: { 'Content-Type': 'application/json' } }).catch(() => {})
+}
 export const dt = s => s ? new Date(s).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
 export const d = s => s ? new Date(s).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
 export const k = n => { n = Number(n) || 0; return n >= 1e6 ? (n / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + ' tr' : (n / 1e3).toLocaleString('vi-VN') + 'K' }

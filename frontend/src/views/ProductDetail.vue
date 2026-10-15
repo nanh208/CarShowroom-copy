@@ -51,6 +51,7 @@
       </div>
 
       <PriceWatch v-if="!p.preorder" :product-id="p.id" :price="unitPrice" />
+      <SubscribeBox v-if="!p.preorder" :product-id="p.id" :variant-id="variantId" :qty="qty" :price="unitPrice" :disabled="!stock || (variants.length > 0 && !variantId)" />
       <div class="perks">
         <div><b>🚚 Giao dự kiến {{ etaLabel }}</b><span>{{ etaCity }} · hoả tốc nhận sớm hơn 1 ngày</span></div>
         <div><b>↩ Đổi trả 7 ngày</b><span>Lỗi do nhà sản xuất đổi mới miễn phí</span></div>
@@ -152,6 +153,7 @@
 
 <script setup>
 import PriceWatch from '../components/PriceWatch.vue'
+import SubscribeBox from '../components/SubscribeBox.vue'
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { uploadImage, errMsg } from '../api'

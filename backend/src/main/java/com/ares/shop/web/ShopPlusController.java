@@ -29,13 +29,15 @@ public class ShopPlusController {
     }
 
     @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.CarrierService carrierService;
+    @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.AffiliateService affiliates;
     // ===== Khách vãng lai: đặt hàng không cần tài khoản (COD) =====
     @PostMapping("/api/public/checkout")
-    public Map<String, Object> guestCheckout(@RequestBody OrderService.CheckoutReq r) {
+    public Map<String, Object> guestCheckout(@RequestBody OrderService.CheckoutReq r, @RequestHeader(value = "X-Aff", required = false) String aff) {
         if (r.paymentMethod() != Enums.PaymentMethod.COD) throw ApiException.bad("Khách vãng lai thanh toán khi nhận hàng (COD). Đăng nhập để dùng ví/thẻ.");
         if (r.email() == null || !r.email().contains("@")) throw ApiException.bad("Vui lòng nhập email hợp lệ để nhận hoá đơn");
         CustomerOrder o = orderService.place(null, new OrderService.CheckoutReq(r.buyerName(), r.phone(), r.email(), r.shippingAddress(), r.city(), r.note(),
                 r.promoCode(), 0, r.paymentMethod(), null, r.items(), r.giftWrap(), r.giftMessage(), r.shippingMethod(), r.giftCardCode(), null, true, r.autoBestPromo(), false, r.carrier()));
+        try { affiliates.attribute(o, aff); } catch (Exception ignored) {}
         return Map.of("code", o.code, "total", o.total, "etaFrom", o.etaFrom, "etaTo", o.etaTo, "email", o.email);
     }
 

@@ -5,6 +5,7 @@ const api = axios.create({ baseURL: (import.meta.env.VITE_API_URL || '') + '/api
 api.interceptors.request.use(cfg => {
   const t = localStorage.getItem('token')
   if (t) cfg.headers.Authorization = `Bearer ${t}`
+  try { const a = JSON.parse(localStorage.getItem('aff') || 'null'); if (a && a.exp > Date.now() && /\/(orders|public\/checkout)$/.test(cfg.url || '')) cfg.headers['X-Aff'] = a.code } catch { /* bỏ qua */ }
   cfg.headers['Accept-Language'] = localStorage.getItem('locale') === 'en' ? 'en' : 'vi'
   return cfg
 })

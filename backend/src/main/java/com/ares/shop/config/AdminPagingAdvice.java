@@ -60,7 +60,7 @@ public class AdminPagingAdvice implements ResponseBodyAdvice<Object> {
             if (!e.getKey().startsWith("f.") || e.getValue()[0].isBlank()) continue;
             Set<String> want = new HashSet<>(Arrays.asList(norm(e.getValue()[0]).split(",")));
             String f = e.getKey().substring(2);
-            rows.removeIf(row -> !want.contains(norm(path(row, f))));
+            rows.removeIf(row -> { Object v = path(row, f); if (v instanceof Collection<?> col) { for (Object x : col) if (want.contains(norm(x))) return false; return true; } return !want.contains(norm(v)); });
         }
         String s = r.getParameter("sort");
         if (s != null && !s.isBlank()) {

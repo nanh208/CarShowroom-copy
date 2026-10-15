@@ -1,7 +1,10 @@
 <template>
   <div>
     <h1>Quản lý khách hàng</h1>
-    <div class="row" style="margin-bottom:14px"><input v-model="q" class="input" style="max-width:320px" placeholder="Tìm theo tên, email, SĐT..." aria-label="Tìm khách" />
+    <div class="row" style="margin-bottom:14px"><input v-model="pg.q.value" class="input" style="max-width:320px" placeholder="Tìm theo tên, email, SĐT..." aria-label="Tìm khách" />
+      <select v-model="roleF" class="input" style="width:auto" aria-label="Lọc vai trò"><option value="">Mọi vai trò</option><option>USER</option><option>STAFF</option><option>ADMIN</option></select>
+      <select v-model="pg.sort.value" class="input" style="width:auto" aria-label="Sắp xếp"><option v-for="(o, k) in pg.sorts" :key="k" :value="k">{{ o.label }}</option></select>
+      <span class="small muted">{{ pg.total.value }} khách</span>
       <select v-model="tagF" class="input" style="width:auto" aria-label="Lọc theo nhãn"><option value="">Mọi nhãn</option><option v-for="t in allTagNames" :key="t">{{ t }}</option></select></div>
     <div class="card table-wrap">
       <table class="table">
@@ -15,7 +18,7 @@
           <td><button :class="['btn btn-sm', c.user.locked ? '' : 'btn-danger']" @click="patch(c.user, { locked: !c.user.locked })">{{ c.user.locked ? 'Mở khoá' : 'Khoá' }}</button></td>
         </tr></tbody>
       </table>
-      <p v-if="!filtered.length" class="muted" style="padding:12px">Không có khách hàng phù hợp.</p>
+      <p v-if="!pg.items.value.length && !pg.loading.value" class="muted" style="padding:12px">Không có khách hàng phù hợp.</p>
       <Pager :p="pg" />
     </div>
     <div v-if="err" class="alert alert-error" style="margin-top:12px">{{ err }}</div>
@@ -41,22 +44,23 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import Pager from '../../components/Pager.vue'
-import { usePaged } from '../../composables/usePaged'
+import { useServerPaged } from '../../composables/usePaged'
 import api, { errMsg } from '../../api'
 import { vnd, d, dt } from '../../format'
 import { useAuth } from '../../stores/auth'
 const auth = useAuth()
 import { useRoute } from 'vue-router'
 import { toast } from '../../stores/prefs'
-const list = ref([]), q = ref(useRoute().query.q || ''), err = ref(''), tags = ref({}), tagF = ref(''), crm = ref(null), newTag = ref('')
+const roleF = ref(''), err = ref(''), tags = ref({}), tagF = ref(''), crm = ref(null), newTag = ref('')
 const SUGGEST = ['VIP', 'Sưu tầm 1:64', 'Chơi RC', 'Mua sỉ', 'Hay đổi trả', 'Cần gọi trước']
 const allTagNames = computed(() => [...new Set(Object.values(tags.value).flat())])
 const openCrm = async u => { const { data } = await api.get(`/admin/customers/${u.id}/crm`); crm.value = { user: u, note: data.note, tags: [...data.tags], timeline: null }; try { crm.value.timeline = (await api.get(`/admin/customers/${u.id}/timeline`)).data } catch { crm.value.timeline = [] } }
 const addTag = () => { const t = newTag.value.trim(); if (t && !crm.value.tags.includes(t)) crm.value.tags.push(t); newTag.value = '' }
 async function saveCrm() { try { const { data } = await api.put(`/admin/customers/${crm.value.user.id}/crm`, { note: crm.value.note, tags: crm.value.tags }); tags.value = { ...tags.value, [crm.value.user.id]: data.tags }; crm.value = null; toast('Đã lưu ghi chú khách') } catch (e) { toast(errMsg(e), 'error') } }
-const filtered = computed(() => list.value.filter(c => !tagF.value || (tags.value[c.user.id] || []).includes(tagF.value)).filter(c => !q.value || [c.user.fullName, c.user.email, c.user.phone].join(' ').toLowerCase().includes(q.value.toLowerCase())))
-const pg = usePaged(filtered, { size: 25 })
-async function load() { list.value = (await api.get('/admin/customers')).data; tags.value = (await api.get('/admin/customer-tags')).data }
+const pg = useServerPaged('/admin/customers', { size: 25, filters: () => ({ 'f.tags': tagF.value, 'f.role': roleF.value }),
+  sorts: { new: { label: 'Mới nhất', sort: 'user.id,desc' }, spent: { label: 'Chi tiêu cao', sort: 'totalSpent,desc' }, orders: { label: 'Nhiều đơn', sort: 'orderCount,desc' }, name: { label: 'Tên A→Z', sort: 'user.fullName' } } })
+const route = useRoute(); if (route.query.q) pg.q.value = String(route.query.q)
+async function load() { await pg.reload(); tags.value = (await api.get('/admin/customer-tags')).data }
 async function patch(u, body) { err.value = ''; try { await api.patch(`/admin/customers/${u.id}`, body) } catch (e) { err.value = errMsg(e) } load() }
 async function setRole(u, role) { err.value = ''; try { await api.patch(`/admin/staff/${u.id}/role`, { role }) } catch (e) { err.value = errMsg(e) } load() }
 function points(u) {

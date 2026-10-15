@@ -33,30 +33,50 @@ public class BotController {
     static final Pattern PHONE = Pattern.compile("\\b(0\\d{9})\\b");
 
     public record Ask(String text) {}
+    @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.I18nService i18n;
+    /** Câu hỏi tiếng Anh → bổ sung cụm tiếng Việt tương đương để khớp ý định/từ khoá (giữ nguyên câu gốc). */
+    static final Map<String, String> EN = new LinkedHashMap<>();
+    static {
+        String[][] m = {{"discount code", "ma giam"}, {"discount", "giam gia"}, {"promo", "khuyen mai"}, {"coupon", "coupon"}, {"track order", "tra cuu don"}, {"track my order", "tra cuu don"},
+            {"order status", "trang thai don"}, {"my order", "don cua toi"}, {"talk to staff", "gap nhan vien"}, {"talk to a person", "gap nhan vien"}, {"human", "nhan vien"}, {"agent", "nhan vien"}, {"staff", "nhan vien"},
+            {"shipping fee", "phi ship"}, {"shipping", "phi ship"}, {"delivery time", "thoi gian giao"}, {"how long", "bao lau"}, {"return", "doi tra"}, {"refund", "hoan tien"}, {"exchange", "doi hang"},
+            {"payment", "thanh toan"}, {"installment", "tra gop"}, {"instalment", "tra gop"}, {"warranty", "bao hanh"}, {"repair", "sua chua"}, {"spare part", "linh kien"}, {"scale", "ti le"}, {"size", "kich thuoc"},
+            {"gift card", "the qua"}, {"gift idea", "goi y qua tang"}, {"gift", "qua tang"}, {"birthday", "sinh nhat"}, {"kid", "tre em"}, {"points", "tich diem"}, {"reward", "diem"}, {"membership", "hang thanh vien"},
+            {"pre order", "dat truoc"}, {"preorder", "dat truoc"}, {"coming soon", "sap ra mat"}, {"store", "cua hang"}, {"address", "dia chi"}, {"opening hours", "gio mo cua"}, {"hotline", "hotline"}, {"phone number", "so dien thoai"},
+            {"hello", "xin chao"}, {"hi", "chao"}, {"rc car", "xe rc"}, {"remote control", "dieu khien"}, {"car", "xe"}, {"cars", "xe"}, {"battery", "pin"}, {"charger", "sac"}, {"under", "duoi"}, {"see more products", "xem them san pham"}};
+        for (String[] x : m) EN.put(x[0], x[1]);
+    }
+    static String enrich(String n) {
+        StringBuilder extra = new StringBuilder();
+        for (var e : EN.entrySet()) if ((" " + n + " ").contains(" " + e.getKey() + " ")) extra.append(' ').append(e.getValue());
+        return extra.length() == 0 ? n : n + extra;
+    }
+    private List<String> quick(String lang, List<String> q) { return q.stream().map(x -> i18n.bot(lang, x)).toList(); }
 
     @PostMapping("/api/public/bot/{session}") @Transactional
-    public Map<String, Object> ask(@PathVariable String session, @RequestBody Ask a) {
+    public Map<String, Object> ask(@PathVariable String session, @RequestBody Ask a, @RequestHeader(value = "Accept-Language", required = false) String al) {
+        String lang = com.ares.shop.service.I18nService.langOf(al);
         String q = Optional.ofNullable(a.text()).orElse("").trim();
         if (q.isEmpty() || q.length() > 500) throw ApiException.bad("Câu hỏi trống hoặc quá dài");
         if (session.length() > 64) throw ApiException.bad("Phiên không hợp lệ");
-        String n = norm(q); User u = Current.userOrNull();
-        Map<String, Object> r = new LinkedHashMap<>(); r.put("quick", DEFAULT_QUICK); String intent = null;
+        String n = enrich(norm(q)); User u = Current.userOrNull();
+        Map<String, Object> r = new LinkedHashMap<>(); r.put("quick", quick(lang, DEFAULT_QUICK)); r.put("lang", lang); String intent = null;
 
         Matcher om = ORDER.matcher(n);
-        if (om.find()) { intent = "order"; orderLookup(om.group(1).toUpperCase(), n, u, r); }
+        if (om.find()) { intent = "order"; orderLookup(om.group(1).toUpperCase(), n, u, r, lang); }
         else if (has(n, "ma giam", "giam gia", "coupon", "voucher", "khuyen mai", "ma uu dai", "sale")) {
             intent = "coupon";
             var list = promos.findByActiveTrue().stream().filter(p -> p.isPublic && p.isValidNow()).limit(5).map(p -> {
                 Map<String, Object> m = new LinkedHashMap<>(); m.put("code", p.code); m.put("title", p.title);
-                m.put("value", p.kind == Enums.VoucherKind.PERCENT ? "Giảm " + p.discountPercent + "%" : "Giảm " + com.ares.shop.service.MailService.vnd(p.amount));
+                m.put("value", p.kind == Enums.VoucherKind.PERCENT ? i18n.bot(lang, "Giảm {0}%", p.discountPercent) : i18n.bot(lang, "Giảm {0}", com.ares.shop.service.MailService.vnd(p.amount)));
                 m.put("minOrder", p.minOrder); m.put("endDate", p.endDate); return m; }).toList();
-            r.put("text", list.isEmpty() ? "Hiện chưa có mã giảm giá công khai. Bạn đăng ký nhận tin để được báo sớm nhé!" : "Đây là các mã đang dùng được — chạm để sao chép. Ở trang thanh toán, hệ thống cũng tự áp mã có lợi nhất cho bạn.");
+            r.put("text", i18n.bot(lang, list.isEmpty() ? "Hiện chưa có mã giảm giá công khai. Bạn đăng ký nhận tin để được báo sớm nhé!" : "Đây là các mã đang dùng được — chạm để sao chép. Ở trang thanh toán, hệ thống cũng tự áp mã có lợi nhất cho bạn."));
             r.put("coupons", list);
         } else if (has(n, "tra cuu don", "don hang cua toi", "kiem tra don", "don cua toi", "trang thai don")) {
-            intent = "order-help"; r.put("text", "Gõ mã đơn (VD: TS2610151234…) kèm số điện thoại đặt hàng để mình tra cứu. Nếu đã đăng nhập, chọn đơn ngay bên dưới.");
+            intent = "order-help"; r.put("text", i18n.bot(lang, "Gõ mã đơn (VD: TS2610151234…) kèm số điện thoại đặt hàng để mình tra cứu. Nếu đã đăng nhập, chọn đơn ngay bên dưới."));
             r.put("askOrder", true);
         } else if (has(n, "nhan vien", "nguoi that", "tu van vien", "gap nguoi", "support", "khieu nai")) {
-            intent = "handoff"; r.put("text", "Mình sẽ chuyển bạn tới nhân viên ARES. Bấm “Chuyển nhân viên” để gửi kèm nội dung đã trao đổi."); r.put("handoff", true);
+            intent = "handoff"; r.put("text", i18n.bot(lang, "Mình sẽ chuyển bạn tới nhân viên ARES. Bấm “Chuyển nhân viên” để gửi kèm nội dung đã trao đổi.")); r.put("handoff", true);
         } else {
             ChatIntent best = null; int bestScore = 0;
             for (ChatIntent it : intents.findAllByOrderBySortOrderAscIdAsc()) {
@@ -68,18 +88,20 @@ public class BotController {
             List<Map<String, Object>> entHits = (ent.scale() != null || ent.brand() != null) ? search(n, true) : List.of();
             if (!entHits.isEmpty()) {
                 intent = "product-search"; r.put("products", entHits);
-                r.put("text", "Mình tìm thấy " + entHits.size() + " mẫu" + (ent.brand() != null ? " " + ent.brand() : "") + (ent.scale() != null ? " tỉ lệ " + ent.scale() : "")
-                    + (ent.terms().isEmpty() ? "" : " khớp “" + String.join(" ", ent.terms()) + "”") + ":");
+                r.put("text", i18n.bot(lang, "Mình tìm thấy {0} mẫu", entHits.size()) + (ent.brand() != null ? " " + ent.brand() : "") + (ent.scale() != null ? i18n.bot(lang, " tỉ lệ {0}", ent.scale()) : "")
+                    + (ent.terms().isEmpty() ? "" : i18n.bot(lang, " khớp “{0}”", String.join(" ", ent.terms()))) + ":");
                 r.put("entities", Map.of("scale", String.valueOf(ent.scale()), "brand", String.valueOf(ent.brand()), "terms", ent.terms()));
-                r.put("quick", List.of("Xem thêm sản phẩm", "Mã giảm giá", "Phí ship"));
+                r.put("quick", quick(lang, List.of("Xem thêm sản phẩm", "Mã giảm giá", "Phí ship")));
             } else if (best != null) {
                 intent = best.name; best.hits = Optional.ofNullable(best.hits).orElse(0) + 1; intents.save(best);
-                r.put("text", best.answer);
-                if (best.quickReplies != null && !best.quickReplies.isBlank()) r.put("quick", Arrays.stream(best.quickReplies.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
+                boolean en = "en".equals(lang);
+                r.put("text", en && best.answerEn != null && !best.answerEn.isBlank() ? best.answerEn : i18n.bot(lang, best.answer));
+                if (en && best.quickRepliesEn != null && !best.quickRepliesEn.isBlank()) r.put("quick", Arrays.stream(best.quickRepliesEn.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
+                else if (best.quickReplies != null && !best.quickReplies.isBlank()) r.put("quick", quick(lang, Arrays.stream(best.quickReplies.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList()));
             } else {
                 var found = search(n, false);
-                if (!found.isEmpty()) { intent = "product-search"; r.put("text", "Mình tìm thấy " + found.size() + " sản phẩm phù hợp:"); r.put("products", found); }
-                else { r.put("text", "Xin lỗi, mình chưa hiểu câu hỏi. Bạn thử diễn đạt khác, chọn gợi ý bên dưới, hoặc chuyển sang nhân viên nhé."); r.put("handoff", true); }
+                if (!found.isEmpty()) { intent = "product-search"; r.put("text", i18n.bot(lang, "Mình tìm thấy {0} sản phẩm phù hợp:", found.size())); r.put("products", found); }
+                else { r.put("text", i18n.bot(lang, "Xin lỗi, mình chưa hiểu câu hỏi. Bạn thử diễn đạt khác, chọn gợi ý bên dưới, hoặc chuyển sang nhân viên nhé.")); r.put("handoff", true); }
             }
         }
         BotLog l = new BotLog(); l.session = session; l.userId = u == null ? null : u.id; l.question = q; l.intent = intent; l.matched = intent != null;
@@ -88,18 +110,18 @@ public class BotController {
     }
     private static boolean has(String n, String... ks) { for (String k : ks) if (n.contains(k)) return true; return false; }
 
-    private void orderLookup(String code, String n, User u, Map<String, Object> r) {
+    private void orderLookup(String code, String n, User u, Map<String, Object> r, String lang) {
         var o = orders.findByCode(code).orElse(null);
         Matcher pm = PHONE.matcher(n);
         boolean mine = o != null && u != null && o.user != null && o.user.id.equals(u.id);
         boolean phoneOk = o != null && pm.find() && pm.group(1).equals(o.phone);
-        if (o == null) { r.put("text", "Không tìm thấy đơn " + code + ". Bạn kiểm tra lại mã đơn giúp mình nhé."); return; }
+        if (o == null) { r.put("text", i18n.bot(lang, "Không tìm thấy đơn {0}. Bạn kiểm tra lại mã đơn giúp mình nhé.", code)); return; }
         Map<String, Object> m = new LinkedHashMap<>(); m.put("code", o.code); m.put("status", o.status); m.put("paymentStatus", o.paymentStatus);
         m.put("etaFrom", o.etaFrom); m.put("etaTo", o.etaTo); m.put("createdAt", o.createdAt);
         if (mine || phoneOk) { m.put("total", o.total); m.put("timeline", o.timeline); m.put("items", o.items.stream().map(i -> i.quantity + " × " + i.productName).toList()); }
         r.put("order", m);
-        r.put("text", mine || phoneOk ? "Thông tin đơn " + code + ":" : "Trạng thái đơn " + code + " (gửi kèm số điện thoại đặt hàng để xem chi tiết):");
-        r.put("quick", List.of("Đổi trả", "Gặp nhân viên"));
+        r.put("text", mine || phoneOk ? i18n.bot(lang, "Thông tin đơn {0}:", code) : i18n.bot(lang, "Trạng thái đơn {0} (gửi kèm số điện thoại đặt hàng để xem chi tiết):", code));
+        r.put("quick", quick(lang, List.of("Đổi trả", "Gặp nhân viên")));
     }
 
     @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.SearchService searchSvc;
@@ -146,7 +168,7 @@ public class BotController {
     }
     /** Thử câu hỏi ở trang cấu hình (ghi vào phiên admin-test, không tính thống kê). */
     @PostMapping("/api/admin/bot/test")
-    public Map<String, Object> test(@RequestBody Ask a) { var r = ask("admin-test", a); return r; }
+    public Map<String, Object> test(@RequestBody Ask a, @RequestHeader(value = "Accept-Language", required = false) String al) { return ask("admin-test", a, al); }
 
     @GetMapping("/api/admin/bot/transcripts")
     public List<Map<String, Object>> transcripts() {

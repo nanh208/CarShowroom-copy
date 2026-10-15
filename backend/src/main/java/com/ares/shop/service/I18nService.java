@@ -39,5 +39,23 @@ public class I18nService {
         if (e instanceof Map<?, ?> em && em.get(msg) instanceof String s) return s;
         return msg;
     }
+    /** Câu trả lời chatbot: tra "_bot" (mẫu có {0}), rồi từ điển giao diện; không có thì giữ tiếng Việt. */
+    public String bot(String lang, String vi, Object... args) {
+        String out = vi;
+        if ("en".equals(lang)) {
+            Object b = base.getOrDefault("en", Map.of()).get("_bot");
+            String hit = b instanceof Map<?, ?> bm && bm.get(vi) instanceof String s1 ? s1 : null;
+            if (hit == null) hit = overrides("en").get(vi);
+            if (hit == null && base.getOrDefault("en", Map.of()).get(vi) instanceof String s2) hit = s2;
+            if (hit != null) out = hit;
+        }
+        for (int i = 0; i < args.length; i++) out = out.replace("{" + i + "}", String.valueOf(args[i]));
+        return out;
+    }
+    public boolean hasBot(String lang, String vi) {
+        if (!"en".equals(lang)) return true;
+        Object b = base.getOrDefault("en", Map.of()).get("_bot");
+        return (b instanceof Map<?, ?> bm && bm.containsKey(vi)) || overrides("en").containsKey(vi) || base.getOrDefault("en", Map.of()).containsKey(vi);
+    }
     public static String langOf(String acceptLanguage) { return acceptLanguage != null && acceptLanguage.toLowerCase().startsWith("en") ? "en" : "vi"; }
 }

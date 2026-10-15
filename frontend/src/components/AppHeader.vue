@@ -34,7 +34,7 @@
               <button v-else class="all" @mousedown.prevent="search">{{ $t('Xem tất cả kết quả →') }}</button>
             </div>
           </div>
-          <LocaleSwitch class="hide-sm" />
+          <LocaleSwitch class="hide-sm" /><CurrencySwitch class="hide-sm" />
           <router-link to="/wishlist" class="ib wl" :title="$t('Yêu thích')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
             <span v-if="prefs.wish.length" class="cnt">{{ prefs.wish.length }}</span></router-link>
@@ -87,6 +87,7 @@
 
 <script setup>
 import LocaleSwitch from './LocaleSwitch.vue'
+import CurrencySwitch from './CurrencySwitch.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { navOpen, cartOpen, isMobile } from '../stores/ui'
 import { theme } from '../stores/theme'

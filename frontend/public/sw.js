@@ -1,5 +1,5 @@
 /* ARES Toys service worker — PWA: app shell offline, cache ảnh, catalog API network-first. */
-const V = 'ares-v13'
+const V = 'ares-v14'
 const SHELL = ['/', '/offline.html', '/icons/icon-192.png', '/icons/icon-512.png', '/images/logo.png']
 const API_CACHE = /^\/api\/(products(\/\d+)?$|products\?|brands|categories|options|banners|public\/(home-layout|collections|appearance|i18n))/
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())) })
@@ -22,4 +22,15 @@ self.addEventListener('fetch', e => {
   if (u.pathname.startsWith('/assets/')) { e.respondWith(caches.match(req).then(h => h || fetch(req).then(r => { const cl = r.clone(); caches.open(V + '-assets').then(c => c.put(req, cl)); return r }))); return }
   if (u.pathname.startsWith('/images/') || u.pathname.startsWith('/uploads/') || u.pathname.startsWith('/icons/')) { e.respondWith(staleWhileRevalidate(req, V + '-img')); return }
   if (API_CACHE.test(u.pathname + u.search)) { e.respondWith(networkFirst(req, V + '-api')); return }
+})
+
+// ===== Web Push: hiển thị thông báo + mở đúng trang khi bấm =====
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {} } catch { d = { title: 'ARES Toys', body: e.data && e.data.text() } }
+  e.waitUntil(self.registration.showNotification(d.title || 'ARES Toys', { body: d.body || '', icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: d.tag, data: { url: d.url || '/' } }))
+})
+self.addEventListener('notificationclick', e => {
+  e.notification.close(); const url = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin)
+  if (url.origin !== self.location.origin) return
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => { for (const c of cs) if ('focus' in c) { c.navigate(url.href); return c.focus() } return self.clients.openWindow(url.href) }))
 })

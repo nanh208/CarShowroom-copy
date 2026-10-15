@@ -234,7 +234,7 @@ public class AdminController {
         return users.findAll(Sort.by("id").descending()).stream().map(u -> {
             var mine = all.stream().filter(o -> o.user != null && o.user.id.equals(u.id) && counts(o)).toList();
             Map<String, Object> m = new LinkedHashMap<>();
-            m.put("user", u); m.put("orderCount", mine.size()); m.put("totalSpent", mine.stream().mapToLong(o -> o.total).sum());
+            m.put("user", u); m.put("tags", new ArrayList<>(u.tags)); m.put("role", String.valueOf(u.role)); m.put("status", u.locked ? "LOCKED" : "ACTIVE"); m.put("orderCount", mine.size()); m.put("totalSpent", mine.stream().mapToLong(o -> o.total).sum());
             return m;
         }).toList();
     }

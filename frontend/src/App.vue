@@ -49,8 +49,19 @@ import { usePrefs } from './stores/prefs'
 const prefsStore = usePrefs()
 import { reconnect as rtReconnect } from './realtime'
 import { syncLocale } from './i18n'
+import { loadCurrency, setCurrency } from './format'
+import { useRoute as useRouteAff } from 'vue-router'
+import apiAff from './api'
+loadCurrency()
+// Tiếp thị liên kết: ?aff=MA → ghi nhận lượt nhấp + nhớ mã 30 ngày (gửi kèm header X-Aff khi đặt hàng)
+const routeAff = useRouteAff()
+watch(() => routeAff.query.aff, c => {
+  if (!c || typeof c !== 'string' || !/^[A-Za-z0-9]{3,20}$/.test(c)) return
+  apiAff.post(`/public/aff/${c}/click`).then(r => localStorage.setItem('aff', JSON.stringify({ code: r.data.code, exp: Date.now() + r.data.days * 864e5 }))).catch(() => {})
+}, { immediate: true })
+const syncCurrency = () => apiAff.get('/account/prefs').then(r => { if (r.data.currency) setCurrency(r.data.currency, { persist: false }) }).catch(() => {})
 import { online } from './pwa'
-watch(() => auth.loggedIn && auth.user?.id, (v, old) => { if (v) { prefsStore.syncFromServer(); syncLocale() } if (old !== undefined) rtReconnect() }, { immediate: true })
+watch(() => auth.loggedIn && auth.user?.id, (v, old) => { if (v) { prefsStore.syncFromServer(); syncLocale(); syncCurrency() } if (old !== undefined) rtReconnect() }, { immediate: true })
 watch(() => cart.items.map(i => i.key + ':' + i.quantity).join(), () => {
   if (!auth.loggedIn) return
   clearTimeout(syncT); syncT = setTimeout(() => api.put('/public/cart-sync', { items: cart.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, image: i.image, quantity: i.quantity, unitPrice: i.unitPrice })), subtotal: cart.subtotal }).catch(() => {}), 4000)

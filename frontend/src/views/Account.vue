@@ -130,7 +130,10 @@
       </div>
     </div>
 
+    <AccountSubscriptions v-if="tab === 'subscriptions'" />
+    <AccountAffiliate v-if="tab === 'affiliate'" />
     <div v-if="tab === 'settings'" class="grid grid-2">
+      <PushToggle />
       <div class="card">
         <h3>Xác thực 2 bước (TOTP)</h3>
         <p class="muted small">Bảo vệ tài khoản bằng mã 6 số từ Google Authenticator / Authy mỗi lần đăng nhập.</p>
@@ -186,6 +189,9 @@ import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
 import Gauge from '../components/Gauge.vue'
+import AccountSubscriptions from '../components/AccountSubscriptions.vue'
+import AccountAffiliate from '../components/AccountAffiliate.vue'
+import PushToggle from '../components/PushToggle.vue'
 import AddressPicker from '../components/AddressPicker.vue'
 import { toast } from '../stores/prefs'
 const TIERS = [{ name: 'Đồng', label: 'mặc định', at: 0 }, { name: 'Bạc', label: 'chi 3 tr', at: 300 }, { name: 'Vàng', label: 'chi 10 tr', at: 1000 }, { name: 'Kim cương', label: 'chi 20 tr', at: 2000 }]
@@ -193,7 +199,7 @@ import { useAuth } from '../stores/auth'
 import { ago, catalog, loadCatalog, vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS, AUCTION_STATUS, RETURN_STATUS, TICKET_STATUS } from '../format'
 
 const auth = useAuth(), route = useRoute(), router = useRouter()
-const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Đơn hàng', points: 'Điểm thưởng', wallet: 'Ví & quà tặng', returns: 'Đổi trả', tickets: 'Hỗ trợ', bids: 'Đấu giá của tôi', settings: 'Cài đặt' }
+const tabs = { profile: 'Hồ sơ', addresses: 'Sổ địa chỉ', orders: 'Đơn hàng', points: 'Điểm thưởng', wallet: 'Ví & quà tặng', returns: 'Đổi trả', tickets: 'Hỗ trợ', bids: 'Đấu giá của tôi', subscriptions: 'Mua định kỳ', affiliate: 'Tiếp thị liên kết', settings: 'Cài đặt' }
 const nextTier = computed(() => TIERS.find(t => t.at > (pts.value.points || 0)) || { at: 2000 })
 const tab = ref(tabs[route.query.tab] ? route.query.tab : 'profile')
 const profile = reactive({ fullName: auth.user.fullName, phone: auth.user.phone, avatarUrl: auth.user.avatarUrl })

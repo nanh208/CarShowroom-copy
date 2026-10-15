@@ -54,6 +54,7 @@ onMounted(async () => {
     if (o.value.paymentStatus === 'PAID') { toast('Đơn đã được thanh toán'); return router.replace(`/orders/${o.value.code}`) }
     // 1) shop tạo giao dịch + tham số ký → 2) "cổng" kiểm chữ ký và hiển thị
     const { data } = await api.post(`/payments/${o.value.code}/create`, { provider: o.value.paymentMethod })
+    if (!data.sandbox) { err.value = 'Cổng thanh toán thử nghiệm đã tắt trên máy chủ này.'; return }
     const info = (await api.post('/public/payments/sandbox/inspect', data.params)).data
     tx.value = { ...data, ...info }; banks.value = info.banks; bank.value = info.banks[0]
     tick = setInterval(() => (now.value = Date.now()), 1000)
@@ -64,7 +65,7 @@ async function finish(result) {
   busy.value = true
   try {
     await new Promise(r => setTimeout(r, result === 'cancel' ? 200 : 900))
-    const { data } = await api.post(`/public/payments/sandbox/${tx.value.txnRef}/complete`, { result, bankCode: bank.value })
+    const { data } = await api.post(`/public/payments/sandbox/${tx.value.txnRef}/complete`, { result, bankCode: bank.value, token: tx.value.sandboxToken })
     router.replace({ path: '/pay/return', query: data.returnParams })
   } catch (e) { err.value = errMsg(e) } finally { busy.value = false }
 }

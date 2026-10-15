@@ -23,6 +23,7 @@
           <button class="mn-out" @click="logout">{{ $t('Đăng xuất') }}</button>
         </template>
         <div class="mn-lang"><span>{{ $t('Ngôn ngữ') }}</span><LocaleSwitch /></div>
+        <div class="mn-lang"><span>{{ $t('Tiền tệ') }}</span><CurrencySwitch /></div>
         <button v-if="canInstall" class="btn btn-outline btn-block" @click="install">{{ $t('Cài ứng dụng') }}</button>
         <router-link v-if="!auth.loggedIn" to="/login" class="btn btn-block">{{ $t('Đăng nhập / Đăng ký') }}</router-link>
       </div>
@@ -31,6 +32,7 @@
 </template>
 <script setup>
 import LocaleSwitch from './LocaleSwitch.vue'
+import CurrencySwitch from './CurrencySwitch.vue'
 import { canInstall, install } from '../pwa'
 import { ref, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'

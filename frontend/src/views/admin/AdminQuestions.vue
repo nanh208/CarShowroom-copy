@@ -23,16 +23,15 @@
   </div>
 </template>
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import Pager from '../../components/Pager.vue'
-import { usePaged } from '../../composables/usePaged'
+import { useServerPaged } from '../../composables/usePaged'
 import api from '../../api'
 import { d } from '../../format'
-const list = ref([]), draft = ref({}), tab = ref('open')
+const draft = ref({}), tab = ref('open')
 const tabs = [['open', 'Chưa trả lời'], ['done', 'Đã trả lời'], ['all', 'Tất cả']]
-const shown = computed(() => list.value.filter(q => tab.value === 'all' || (tab.value === 'open' ? !q.answer : !!q.answer)))
-const pg = usePaged(shown, { size: 15, fields: q => [q.productName, q.question, q.authorName, q.answer] })
-const load = async () => { list.value = (await api.get('/admin/questions')).data }
+const pg = useServerPaged('/admin/questions', { size: 15, filters: () => ({ 'f.answered': tab.value === 'all' ? '' : String(tab.value === 'done') }), sorts: { new: { label: 'Mới nhất', sort: 'createdAt,desc' } } })
+const load = () => pg.reload()
 const patch = async (q, body) => { await api.patch(`/admin/questions/${q.id}`, body); draft.value[q.id] = ''; load() }
 const remove = async q => { if (confirm('Xoá câu hỏi?')) { await api.delete(`/admin/questions/${q.id}`); load() } }
 onMounted(load)

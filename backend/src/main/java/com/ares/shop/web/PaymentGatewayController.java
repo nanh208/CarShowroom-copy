@@ -26,7 +26,17 @@ public class PaymentGatewayController {
     static final String SECRET = "ARES-SANDBOX-HASHSECRET-2026"; static final String TMN = "ARESTOYS";
     static final DateTimeFormatter F = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private final PaymentTxnRepo txns; private final OrderRepo orders; private final OrderService orderService;
-    public PaymentGatewayController(PaymentTxnRepo txns, OrderRepo orders, OrderService orderService) { this.txns = txns; this.orders = orders; this.orderService = orderService; }
+    private final boolean sandbox;
+    public PaymentGatewayController(PaymentTxnRepo txns, OrderRepo orders, OrderService orderService,
+                                    @org.springframework.beans.factory.annotation.Value("${app.payments.sandbox.enabled:true}") boolean sandbox) {
+        this.txns = txns; this.orders = orders; this.orderService = orderService; this.sandbox = sandbox;
+    }
+    /** Cổng sandbox chỉ chạy khi bật cờ (mặc định bật ở dev; profile prod tắt). Tắt → 404 như không tồn tại. */
+    private void requireSandbox() { if (!sandbox) throw ApiException.notFound("Cổng sandbox đã tắt"); }
+    /** Token hoàn tất: chỉ người nhận được phản hồi create (chủ đơn) mới hoàn tất được giao dịch sandbox. */
+    static String sandboxToken(String txnRef) { return hmac("sandbox-complete|" + txnRef).substring(0, 32); }
+    @GetMapping("/api/public/payments/sandbox/status")
+    public Map<String, Object> sandboxStatus() { return Map.of("enabled", sandbox); }
 
     static String hmac(String data) {
         try { Mac m = Mac.getInstance("HmacSHA512"); m.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
@@ -68,12 +78,15 @@ public class PaymentGatewayController {
         p.put("vnp_CurrCode", "VND"); p.put("vnp_TxnRef", t.txnRef); p.put("vnp_OrderInfo", "Thanh toan don hang " + code); p.put("vnp_Locale", "vn");
         p.put("vnp_CreateDate", t.createdAt.format(F)); p.put("vnp_ExpireDate", t.expiresAt.format(F)); p.put("vnp_ReturnUrl", "/pay/return"); p.put("x_Provider", provider);
         sign(p);
-        return Map.of("txnRef", t.txnRef, "provider", provider, "amount", t.amount, "expiresAt", t.expiresAt, "params", p, "orderCode", code);
+        Map<String, Object> out = new LinkedHashMap<>(Map.of("txnRef", t.txnRef, "provider", provider, "amount", t.amount, "expiresAt", t.expiresAt, "params", p, "orderCode", code, "sandbox", sandbox));
+        if (sandbox) out.put("sandboxToken", sandboxToken(t.txnRef));
+        return out;
     }
 
     /** Trang cổng sandbox lấy thông tin giao dịch (kiểm chữ ký tham số tạo). */
     @PostMapping("/api/public/payments/sandbox/inspect")
     public Map<String, Object> inspect(@RequestBody Map<String, String> p) {
+        requireSandbox();
         if (!verify(p)) throw ApiException.bad("Sai chữ ký yêu cầu thanh toán (97)");
         PaymentTxn t = txns.findByTxnRef(p.get("vnp_TxnRef")).orElseThrow(() -> ApiException.notFound("Không tìm thấy giao dịch"));
         if (Long.parseLong(p.get("vnp_Amount")) != t.amount * 100) throw ApiException.bad("Số tiền không khớp");
@@ -81,10 +94,13 @@ public class PaymentGatewayController {
             "banks", "VNPAY".equals(t.provider) ? List.of("NCB", "VCB", "TCB", "BIDV", "INTCARD") : List.of("MOMO"));
     }
 
-    public record CompleteReq(String result, String bankCode) {}
+    public record CompleteReq(String result, String bankCode, String token) {}
     /** Bước 2 (phía "cổng"): khách xác nhận/huỷ → cổng gọi IPN tới shop rồi trả về tham số return đã ký. */
     @PostMapping("/api/public/payments/sandbox/{txnRef}/complete")
     public Map<String, Object> complete(@PathVariable String txnRef, @RequestBody CompleteReq r) {
+        requireSandbox();
+        if (r.token() == null || !java.security.MessageDigest.isEqual(r.token().getBytes(StandardCharsets.UTF_8), sandboxToken(txnRef).getBytes(StandardCharsets.UTF_8)))
+            throw new ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "Thiếu hoặc sai token giao dịch sandbox");
         PaymentTxn t = txns.findByTxnRef(txnRef).orElseThrow(() -> ApiException.notFound("Không tìm thấy giao dịch"));
         String rc = switch (String.valueOf(r.result())) { case "success" -> "00"; case "cancel" -> "24"; case "insufficient" -> "51"; default -> throw ApiException.bad("Kết quả không hợp lệ"); };
         if (t.expiresAt != null && LocalDateTime.now().isAfter(t.expiresAt)) rc = "11";

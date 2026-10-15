@@ -17,7 +17,12 @@ public class OrderController {
     }
 
     @PostMapping
-    public CustomerOrder place(@RequestBody OrderService.CheckoutReq r) { return service.place(Current.user(), r); }
+    public CustomerOrder place(@RequestBody OrderService.CheckoutReq r, @RequestHeader(value = "X-Aff", required = false) String aff) {
+        CustomerOrder o = service.place(Current.user(), r);
+        try { affiliates.attribute(o, aff); } catch (Exception ignored) {}
+        return o;
+    }
+    @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.AffiliateService affiliates;
 
     @GetMapping("/{code}")
     public Map<String, Object> get(@PathVariable String code) {

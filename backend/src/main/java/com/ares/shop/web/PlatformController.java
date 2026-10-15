@@ -19,7 +19,7 @@ public class PlatformController {
     public PlatformController(UserPrefRepo prefs, ProductViewRepo views, ProductRepo products, JobService jobs) { this.prefs = prefs; this.views = views; this.products = products; this.jobs = jobs; }
 
     /** Khoá cho phép + kiểm tra định dạng. */
-    static final Map<String, Integer> KEYS = Map.of("compare", 3, "dashWidgets", 0, "wishlist", 50, "locale", -1);
+    static final Map<String, Integer> KEYS = Map.of("compare", 3, "dashWidgets", 0, "wishlist", 50, "locale", -1, "currency", -2);
 
     @GetMapping("/api/account/prefs")
     public Map<String, Object> allPrefs() {
@@ -31,7 +31,8 @@ public class PlatformController {
     public Object setPref(@PathVariable String key, @RequestBody Object value) throws Exception {
         if (!KEYS.containsKey(key)) throw ApiException.bad("Khoá tuỳ chọn không hợp lệ");
         int max = KEYS.get(key);
-        if (max < 0) { if (!(value instanceof String str) || !com.ares.shop.service.I18nService.LANGS.contains(str)) throw ApiException.bad("Ngôn ngữ không hỗ trợ"); }
+        if (max == -2) { if (!(value instanceof String str) || !List.of("VND", "USD").contains(str)) throw ApiException.bad("Tiền tệ không hỗ trợ"); }
+        else if (max < 0) { if (!(value instanceof String str) || !com.ares.shop.service.I18nService.LANGS.contains(str)) throw ApiException.bad("Ngôn ngữ không hỗ trợ"); }
         else if (max > 0) {
             if (!(value instanceof List<?> l) || l.size() > max || !l.stream().allMatch(x -> x instanceof Number)) throw ApiException.bad("Danh sách tối đa " + max + " mã sản phẩm");
         } else if (!(value instanceof Map<?, ?> mm) || !mm.values().stream().allMatch(v -> v instanceof Boolean)) throw ApiException.bad("Cấu hình widget không hợp lệ");

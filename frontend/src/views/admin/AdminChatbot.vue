@@ -58,6 +58,9 @@
         <div class="field"><label>Từ khoá * <small class="muted">(phân tách dấu phẩy, gõ có/không dấu đều được)</small></label><textarea v-model="f.keywords" class="input" rows="2" required /></div>
         <div class="field"><label>Câu trả lời *</label><textarea v-model="f.answer" class="input" rows="5" required maxlength="3000" /></div>
         <div class="field"><label>Gợi ý nhanh <small class="muted">(phân tách dấu phẩy)</small></label><input v-model="f.quickReplies" class="input" placeholder="Tra cứu đơn hàng,Gặp nhân viên" /></div>
+        <details class="field"><summary class="small">Bản tiếng Anh (khi khách chọn EN)</summary>
+          <label class="small">Câu trả lời (EN)</label><textarea v-model="f.answerEn" class="input" rows="3" maxlength="3000" placeholder="Để trống: dùng bản dịch có sẵn hoặc giữ tiếng Việt" data-no-i18n />
+          <label class="small">Gợi ý nhanh (EN)</label><input v-model="f.quickRepliesEn" class="input" placeholder="Track an order,Talk to staff" data-no-i18n /></details>
         <div class="row" style="gap:12px"><label class="small row" style="gap:6px"><input v-model="f.active" type="checkbox" /> Đang bật</label><label class="small">Thứ tự <input v-model.number="f.sortOrder" type="number" class="input" style="width:80px" /></label></div>
         <p v-if="err" class="alert alert-error">{{ err }}</p>
         <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px"><button type="button" class="btn btn-outline" @click="f = null">Huỷ</button><button class="btn">Lưu</button></div>
