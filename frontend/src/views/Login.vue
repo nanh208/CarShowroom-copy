@@ -1,18 +1,18 @@
 <template>
   <AuthShell>
-    <h2>Đăng nhập</h2>
-    <p class="muted small" style="margin:4px 0 20px">Chào mừng trở lại với ARES Toys</p>
-    <div v-if="$route.query.expired" class="alert alert-info">Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.</div>
+    <h2>{{ $t('Đăng nhập') }}</h2>
+    <p class="muted small" style="margin:4px 0 20px">{{ $t('Chào mừng trở lại với ARES Toys') }}</p>
+    <div v-if="$route.query.expired" class="alert alert-info">{{ $t('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.') }}</div>
     <div v-if="err" class="alert alert-error">{{ err }}</div>
     <form @submit.prevent="submit">
       <div class="field"><label>Email</label><input v-model="email" class="input" type="email" required autocomplete="email" /></div>
-      <div class="field"><label>Mật khẩu</label><input v-model="password" class="input" type="password" required autocomplete="current-password" /></div>
-      <div v-if="needTotp" class="field totp"><label for="totp">Mã xác thực 2 bước</label><input id="totp" ref="totpEl" v-model.trim="totp" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 số trong ứng dụng xác thực" required /></div>
-      <p class="small" style="text-align:right;margin:-4px 0 12px"><router-link to="/forgot-password">Quên mật khẩu?</router-link></p>
+      <div class="field"><label>{{ $t('Mật khẩu') }}</label><input v-model="password" class="input" type="password" required autocomplete="current-password" /></div>
+      <div v-if="needTotp" class="field totp"><label for="totp">{{ $t('Mã xác thực 2 bước') }}</label><input id="totp" ref="totpEl" v-model.trim="totp" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" :placeholder="$t('6 số trong ứng dụng xác thực')" required /></div>
+      <p class="small" style="text-align:right;margin:-4px 0 12px"><router-link to="/forgot-password">{{ $t('Quên mật khẩu?') }}</router-link></p>
       <button class="btn btn-block" :disabled="busy">{{ busy ? 'Đang đăng nhập...' : 'Đăng nhập' }}</button>
     </form>
     <SocialLogin />
-    <p class="small muted" style="margin-top:18px;text-align:center">Chưa có tài khoản? <router-link :to="{ path: '/register', query: $route.query }">Đăng ký ngay</router-link></p>
+    <p class="small muted" style="margin-top:18px;text-align:center">{{ $t('Chưa có tài khoản?') }} <router-link :to="{ path: '/register', query: $route.query }">{{ $t('Đăng ký ngay') }}</router-link></p>
   </AuthShell>
 </template>
 <script setup>

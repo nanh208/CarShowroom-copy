@@ -21,12 +21,12 @@
         <img loading="lazy" decoding="async" :src="promo.image" alt="" />
         <div />
         <div class="pb-txt"><b>{{ promo.title }}</b><i>{{ promo.kicker }}</i></div>
-        <div class="pb-off"><small>Ưu đãi</small><b>{{ promo.subtitle }}</b></div>
+        <div class="pb-off"><small>{{ $t('Ưu đãi') }}</small><b>{{ promo.subtitle }}</b></div>
         <div class="pb-moon"><svg class="wheel-ico" viewBox="0 0 40 40" width="74" height="74"><circle cx="20" cy="20" r="18" fill="#26262a"/><circle cx="20" cy="20" r="11" fill="#d9d9de"/><g stroke="#8a8a90" stroke-width="2.4"><path d="M20 9v22M9 20h22M12 12l16 16M28 12 12 28"/></g><circle cx="20" cy="20" r="3.5" fill="#555"/></svg></div>
       </router-link>
 
       <section v-if="theme !== 'v2'" v-reveal class="block">
-        <h2>Danh mục</h2>
+        <h2>{{ $t('Danh mục') }}</h2>
         <div class="cats">
           <router-link v-for="c in catalog.categories" :key="c.code" :to="{ path: '/products', query: { type: c.code } }" class="cat">
             <span>{{ c.name }}</span>
@@ -36,27 +36,27 @@
       </section>
 
       <div v-if="theme !== 'v2'" class="usp" v-reveal>
-        <div><b><CountUp :value="catalog.options.freeShipFrom / 1000" />K</b><span>Freeship từ</span></div>
-        <div><b><CountUp :value="totalProducts" />+</b><span>Mẫu xe & phụ kiện</span></div>
-        <div><b><CountUp :value="7" /> ngày</b><span>Đổi trả miễn phí</span></div>
-        <div><b>0%</b><span>Trả góp RC từ 3 triệu</span></div>
+        <div><b><CountUp :value="catalog.options.freeShipFrom / 1000" />K</b><span>{{ $t('Freeship từ') }}</span></div>
+        <div><b><CountUp :value="totalProducts" />+</b><span>{{ $t('Mẫu xe & phụ kiện') }}</span></div>
+        <div><b><CountUp :value="7" /> {{ $t('ngày') }}</b><span>{{ $t('Đổi trả miễn phí') }}</span></div>
+        <div><b>0%</b><span>{{ $t('Trả góp RC từ 3 triệu') }}</span></div>
       </div>
 
       <Skeleton v-if="loading" :count="6" :cols="3" />
       <div v-else class="hsections">
         <section v-if="flash.length && show('flash')" v-reveal class="block" :style="ord('flash')">
-          <div class="bh"><h2>⚡ Flash sale <span class="cd">kết thúc sau <Countdown :to="flashEnd" /></span><span class="livedot" title="Cập nhật trực tiếp">LIVE</span></h2><router-link to="/promotions">Xem tất cả →</router-link></div>
+          <div class="bh"><h2>⚡ Flash sale <span class="cd">{{ $t('kết thúc sau') }} <Countdown :to="flashEnd" /></span><span class="livedot" :title="$t('Cập nhật trực tiếp')">LIVE</span></h2><router-link to="/promotions">{{ $t('Xem tất cả →') }}</router-link></div>
           <div class="grid grid-4"><ProductCard v-for="(x, i) in flash" :key="x.flash.id" v-reveal :p="x.product" :flash="x.flash" /></div>
         </section>
 
         <section v-if="bundles.length && show('bundles')" class="block" :style="ord('bundles')">
-          <div class="bh"><h2>Combo ưu đãi</h2><router-link to="/bundles">Tất cả combo →</router-link></div>
+          <div class="bh"><h2>{{ $t('Combo ưu đãi') }}</h2><router-link to="/bundles">{{ $t('Tất cả combo →') }}</router-link></div>
           <div class="bgrid"><BundleCard v-for="b in bundles.slice(0, 3)" :key="b.bundle.id" :b="b" /></div>
         </section>
 
         <div v-if="show('featured')" :style="ord('featured')">
         <section v-for="(s, si) in sections" :key="s.title" class="block">
-          <div class="bh"><h2>{{ s.title }}</h2><router-link :to="s.to">Xem tất cả →</router-link></div>
+          <div class="bh"><h2>{{ s.title }}</h2><router-link :to="s.to">{{ $t('Xem tất cả →') }}</router-link></div>
           <div class="grid grid-3">
             <router-link v-for="(p, i) in s.items" :key="p.id" v-reveal :to="`/products/${p.id}`" class="tile">
               <img :src="p.images?.[0]" :alt="p.name" loading="lazy" />
@@ -68,7 +68,7 @@
         </div>
 
         <section v-if="auctions.length && show('auctions')" class="block" :style="ord('auctions')">
-          <div class="bh"><h2>Đấu giá hàng hiếm</h2><router-link to="/auctions">Tất cả phiên →</router-link></div>
+          <div class="bh"><h2>{{ $t('Đấu giá hàng hiếm') }}</h2><router-link to="/auctions">{{ $t('Tất cả phiên →') }}</router-link></div>
           <div class="grid grid-3">
             <router-link v-for="(a, i) in auctions" :key="a.id" v-reveal :to="`/auctions/${a.id}`" class="tile">
               <img :src="a.images?.[0]" :alt="a.title" loading="lazy" />
@@ -79,17 +79,17 @@
         </section>
 
         <section v-if="reco.personal && reco.items.length && show('recent')" v-reveal class="block" :style="ord('recent')">
-          <div class="bh"><h2>Dành riêng cho bạn</h2><small class="muted">Dựa trên đơn đã mua và mẫu bạn đã xem</small></div>
+          <div class="bh"><h2>{{ $t('Dành riêng cho bạn') }}</h2><small class="muted">{{ $t('Dựa trên đơn đã mua và mẫu bạn đã xem') }}</small></div>
           <div v-stagger class="grid grid-4"><div v-for="it in reco.items.slice(0, 8)" :key="it.product.id" class="rec"><ProductCard :p="it.product" /><small class="why">{{ it.reason }}</small></div></div>
         </section>
 
         <section v-if="prefs.recent.length && show('recent')" v-reveal class="block" :style="ord('recent')">
-          <div class="bh"><h2>Bạn đã xem gần đây</h2></div>
+          <div class="bh"><h2>{{ $t('Bạn đã xem gần đây') }}</h2></div>
           <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img loading="lazy" decoding="async" :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b></router-link></div>
         </section>
 
         <section v-if="reviews.length && show('reviews')" class="block" :style="ord('reviews')">
-          <div class="bh"><h2>Đánh giá của khách hàng</h2></div>
+          <div class="bh"><h2>{{ $t('Đánh giá của khách hàng') }}</h2></div>
           <div class="grid grid-3">
             <router-link v-for="(r, i) in reviews" :key="r.id" v-reveal :to="`/products/${r.productId}`" class="rev">
               <div class="rimg"><img :src="imgOf(r.productId)" alt="" loading="lazy" /></div>

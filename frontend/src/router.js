@@ -70,6 +70,7 @@ const routes = [
       { path: 'collections', component: () => import('./views/admin/AdminCollections.vue') },
       { path: 'warehouses', component: () => import('./views/admin/AdminWarehouses.vue') },
       { path: 'broadcast', component: () => import('./views/admin/AdminBroadcast.vue') },
+      { path: 'translations', component: () => import('./views/admin/AdminTranslations.vue') },
       { path: 'payments', component: () => import('./views/admin/AdminPayments.vue') },
       { path: 'fulfillment', component: () => import('./views/admin/AdminFulfillment.vue') },
       { path: 'price-alerts', component: () => import('./views/admin/AdminPriceAlerts.vue') },

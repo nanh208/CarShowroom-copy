@@ -3,11 +3,11 @@
     <transition name="mc">
       <div v-if="cartOpen" class="mc-wrap" @keydown.esc="cartOpen = false">
         <div class="mc-dim" @click="cartOpen = false" />
-        <aside ref="panel" class="mc" role="dialog" aria-modal="true" aria-label="Giỏ hàng nhanh" tabindex="-1">
-          <header><h3>Giỏ hàng <small>({{ cart.count }})</small></h3><button class="x" aria-label="Đóng" @click="cartOpen = false">×</button></header>
-          <div v-if="remain > 0 && cart.items.length" class="fs"><span>Mua thêm <b>{{ vnd(remain) }}</b> để được miễn phí vận chuyển</span><div class="bar"><i :style="{ width: pct + '%' }" /></div></div>
-          <div v-else-if="cart.items.length" class="fs ok">🎉 Đơn của bạn được <b>miễn phí vận chuyển</b></div>
-          <div v-if="!cart.items.length" class="empty"><p>Giỏ hàng đang trống.</p><router-link to="/products" class="btn btn-sm" @click="cartOpen = false">Khám phá sản phẩm</router-link></div>
+        <aside ref="panel" class="mc" role="dialog" aria-modal="true" :aria-label="$t('Giỏ hàng nhanh')" tabindex="-1">
+          <header><h3>{{ $t('Giỏ hàng') }} <small>({{ cart.count }})</small></h3><button class="x" :aria-label="$t('Đóng')" @click="cartOpen = false">×</button></header>
+          <div v-if="remain > 0 && cart.items.length" class="fs"><span>{{ $t('Mua thêm') }} <b>{{ vnd(remain) }}</b> {{ $t('để được miễn phí vận chuyển') }}</span><div class="bar"><i :style="{ width: pct + '%' }" /></div></div>
+          <div v-else-if="cart.items.length" class="fs ok">{{ $t('🎉 Đơn của bạn được') }} <b>{{ $t('miễn phí vận chuyển') }}</b></div>
+          <div v-if="!cart.items.length" class="empty"><p>{{ $t('Giỏ hàng đang trống.') }}</p><router-link to="/products" class="btn btn-sm" @click="cartOpen = false">{{ $t('Khám phá sản phẩm') }}</router-link></div>
           <ul v-else class="lines">
             <li v-for="i in cart.items" :key="i.key">
               <img :src="i.image" alt="" />
@@ -19,9 +19,9 @@
             </li>
           </ul>
           <footer v-if="cart.items.length">
-            <div v-if="bundleOff" class="row between ok small"><span>Combo ưu đãi</span><span>−{{ vnd(bundleOff) }}</span></div>
-            <div class="row between sub"><span>Tạm tính</span><b class="price">{{ vnd(cart.subtotal - bundleOff) }}</b></div>
-            <div class="acts"><router-link to="/cart" class="btn btn-outline" @click="cartOpen = false">Xem giỏ</router-link><router-link to="/checkout" class="btn" @click="cartOpen = false">Thanh toán</router-link></div>
+            <div v-if="bundleOff" class="row between ok small"><span>{{ $t('Combo ưu đãi') }}</span><span>−{{ vnd(bundleOff) }}</span></div>
+            <div class="row between sub"><span>{{ $t('Tạm tính') }}</span><b class="price">{{ vnd(cart.subtotal - bundleOff) }}</b></div>
+            <div class="acts"><router-link to="/cart" class="btn btn-outline" @click="cartOpen = false">{{ $t('Xem giỏ') }}</router-link><router-link to="/checkout" class="btn" @click="cartOpen = false">{{ $t('Thanh toán') }}</router-link></div>
           </footer>
         </aside>
       </div>

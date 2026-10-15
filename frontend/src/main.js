@@ -7,8 +7,9 @@ import './theme2.css'
 import './stores/theme'
 
 import motion from './motion'
+import i18n from './i18n'
 
-createApp(App).use(createPinia()).use(router).use(motion).mount('#app')
+createApp(App).use(createPinia()).use(router).use(motion).use(i18n).mount('#app')
 
 // Prefetch các trang hay dùng khi trình duyệt rảnh -> chuyển trang tức thì
 const idle = window.requestIdleCallback || (cb => setTimeout(cb, 1500))
@@ -17,3 +18,6 @@ idle(() => {
   ;[() => import('./views/Products.vue'), () => import('./views/ProductDetail.vue'), () => import('./views/Cart.vue'),
     () => import('./views/Checkout.vue'), () => import('./views/Account.vue')].forEach((f, i) => setTimeout(f, i * 150))
 })
+
+// PWA: service worker (chỉ bản build) — app shell offline, cache ảnh & catalog
+if ('serviceWorker' in navigator && import.meta.env.PROD) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}))

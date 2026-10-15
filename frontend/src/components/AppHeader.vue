@@ -1,57 +1,58 @@
 <template>
   <header :class="['hdr', { dark: onDark, scrolled }]" @mouseleave="mega = ''">
     <div class="wrap">
-      <button class="burger" type="button" aria-label="Mở menu" :aria-expanded="navOpen" @click="navOpen = true"><i /><i /><i /></button>
+      <button class="burger" type="button" :aria-label="$t('Mở menu')" :aria-expanded="navOpen" @click="navOpen = true"><i /><i /><i /></button>
       <router-link to="/" class="logo" @mouseenter="mega = ''">
         <img loading="lazy" decoding="async" src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span>
       </router-link>
       <nav class="pill">
         <div v-if="theme === 'v2'" class="menu">
-          <router-link :to="{ path: '/products', query: { type: 'MODEL,DISPLAY' } }" :class="{ on: isModel }" @mouseenter="mega = 'cars'">Xe mô hình</router-link>
-          <router-link :to="{ path: '/products', query: { type: 'RC' } }" :class="{ on: isRC }" @mouseenter="mega = ''">Xe RC</router-link>
-          <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
-          <router-link to="/collections" active-class="on" @mouseenter="mega = ''">Bộ sưu tập</router-link>
-          <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">Đấu giá</router-link>
-          <router-link to="/support" active-class="on" @mouseenter="mega = ''">Hỗ trợ</router-link>
+          <router-link :to="{ path: '/products', query: { type: 'MODEL,DISPLAY' } }" :class="{ on: isModel }" @mouseenter="mega = 'cars'">{{ $t('Xe mô hình') }}</router-link>
+          <router-link :to="{ path: '/products', query: { type: 'RC' } }" :class="{ on: isRC }" @mouseenter="mega = ''">{{ $t('Xe RC') }}</router-link>
+          <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">{{ $t('Phụ kiện') }}</router-link>
+          <router-link to="/collections" active-class="on" @mouseenter="mega = ''">{{ $t('Bộ sưu tập') }}</router-link>
+          <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">{{ $t('Đấu giá') }}</router-link>
+          <router-link to="/support" active-class="on" @mouseenter="mega = ''">{{ $t('Hỗ trợ') }}</router-link>
         </div>
         <div v-else class="menu">
-          <router-link to="/" exact-active-class="on" @mouseenter="mega = ''">Trang chủ</router-link>
-          <router-link to="/products" :class="{ on: isCars }" @mouseenter="mega = 'cars'">Danh mục xe</router-link>
-          <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
-          <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">Đấu giá</router-link>
-          <router-link to="/support" active-class="on" @mouseenter="mega = ''">Dịch vụ</router-link>
-          <router-link to="/faq" active-class="on" @mouseenter="mega = ''">Hỗ trợ</router-link>
-          <router-link to="/about" active-class="on" @mouseenter="mega = ''">Về chúng tôi</router-link>
+          <router-link to="/" exact-active-class="on" @mouseenter="mega = ''">{{ $t('Trang chủ') }}</router-link>
+          <router-link to="/products" :class="{ on: isCars }" @mouseenter="mega = 'cars'">{{ $t('Danh mục xe') }}</router-link>
+          <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">{{ $t('Phụ kiện') }}</router-link>
+          <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">{{ $t('Đấu giá') }}</router-link>
+          <router-link to="/support" active-class="on" @mouseenter="mega = ''">{{ $t('Dịch vụ') }}</router-link>
+          <router-link to="/faq" active-class="on" @mouseenter="mega = ''">{{ $t('Hỗ trợ') }}</router-link>
+          <router-link to="/about" active-class="on" @mouseenter="mega = ''">{{ $t('Về chúng tôi') }}</router-link>
         </div>
         <div class="tools" @mouseenter="mega = ''">
           <div class="search" :class="{ open: sOpen }">
-            <button class="ib" title="Tìm kiếm" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
-            <input ref="sInput" v-model="q" placeholder="Tìm xe đồ chơi, hãng… (phím /)" aria-label="Tìm kiếm" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
+            <button class="ib" :title="$t('Tìm kiếm')" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+            <input ref="sInput" v-model="q" :placeholder="$t('Tìm xe đồ chơi, hãng… (phím /)')" :aria-label="$t('Tìm kiếm')" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
             <div v-if="sOpen && q.trim() && (sugg.length || searched)" class="sugg">
               <router-link v-for="(x, i) in sugg" :key="x.id" :to="`/products/${x.id}`" :class="['si', { hl: i === hl }]" @mousedown.prevent="go(x)">
                 <img loading="lazy" decoding="async" :src="x.image" alt="" /><div><b v-html="mark(x.name)" /><small>{{ x.brand }} · {{ vnd(x.price) }}</small></div></router-link>
               <div v-if="!sugg.length" class="none">Không tìm thấy “{{ q }}”</div>
-              <button v-else class="all" @mousedown.prevent="search">Xem tất cả kết quả →</button>
+              <button v-else class="all" @mousedown.prevent="search">{{ $t('Xem tất cả kết quả →') }}</button>
             </div>
           </div>
-          <router-link to="/wishlist" class="ib wl" title="Yêu thích">
+          <LocaleSwitch class="hide-sm" />
+          <router-link to="/wishlist" class="ib wl" :title="$t('Yêu thích')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
             <span v-if="prefs.wish.length" class="cnt">{{ prefs.wish.length }}</span></router-link>
           <div v-if="auth.loggedIn" class="bellwrap">
-            <button class="ib" title="Thông báo" @click="toggleBell"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <button class="ib" :title="$t('Thông báo')" @click="toggleBell"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
               <span v-if="unread" class="cnt red">{{ unread }}</span></button>
             <div v-if="bell" class="panel">
-              <div class="ph"><b>Thông báo</b><button v-if="notes.length" class="lnk" @click="readAll">Đánh dấu đã đọc</button></div>
-              <div v-if="!notes.length" class="none">Chưa có thông báo nào.</div>
+              <div class="ph"><b>{{ $t('Thông báo') }}</b><button v-if="notes.length" class="lnk" @click="readAll">{{ $t('Đánh dấu đã đọc') }}</button></div>
+              <div v-if="!notes.length" class="none">{{ $t('Chưa có thông báo nào.') }}</div>
               <router-link v-for="n in notes" :key="n.id" :to="n.link || '/account'" :class="['ni', { unread: !n.read }]" @click="bell = false">
                 <span :class="['kind', n.kind]">{{ n.kind === 'AUCTION' ? 'Đấu giá' : n.kind === 'ORDER' ? 'Đơn hàng' : 'Hệ thống' }}</span>
                 <b>{{ n.title }}</b><p>{{ n.body }}</p><small>{{ dt(n.createdAt) }}</small></router-link>
-              <router-link to="/notifications" class="all" @click="bell = false">Xem tất cả thông báo →</router-link>
+              <router-link to="/notifications" class="all" @click="bell = false">{{ $t('Xem tất cả thông báo →') }}</router-link>
             </div>
           </div>
           <router-link id="cart-target" to="/cart" :class="['cartpill', { bump }]" aria-haspopup="dialog" @click.prevent="openCart">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
-            <span><b class="cc">{{ cart.count }}</b><em> món</em></span>
+            <span><b class="cc">{{ cart.count }}</b><em> {{ $t('món') }}</em></span>
           </router-link>
           <div class="userwrap">
             <router-link :to="auth.loggedIn ? '/account' : '/login'" class="avatar" :title="auth.loggedIn ? auth.user.fullName : 'Đăng nhập'">
@@ -60,10 +61,10 @@
             </router-link>
             <div v-if="auth.loggedIn" class="umenu">
               <b>{{ auth.user.fullName }}</b><small>{{ auth.user.email }}</small>
-              <router-link to="/account">Tài khoản của tôi</router-link>
+              <router-link to="/account">{{ $t('Tài khoản của tôi') }}</router-link>
               <router-link to="/compare">So sánh xe ({{ prefs.compare.length }})</router-link>
-              <router-link v-if="auth.isStaff" to="/admin">Trang quản trị</router-link>
-              <button @click="logout">Đăng xuất</button>
+              <router-link v-if="auth.isStaff" to="/admin">{{ $t('Trang quản trị') }}</router-link>
+              <button @click="logout">{{ $t('Đăng xuất') }}</button>
             </div>
           </div>
         </div>
@@ -73,11 +74,11 @@
     <transition name="mega">
       <div v-if="mega" class="mega" @mouseenter="mega = mega">
         <div class="mega-in">
-          <div class="mtitle">{{ megaData[mega].title }}</div>
+          <div class="mtitle">{{ $t(megaData[mega].title) }}</div>
           <router-link v-for="t in megaData[mega].tiles" :key="t.label" :to="t.to" class="mtile" @click="mega = ''">
-            <img loading="lazy" decoding="async" :src="t.img" :alt="t.label" /><span>{{ t.label }}</span>
+            <img loading="lazy" decoding="async" :src="t.img" :alt="$t(t.label)" /><span>{{ $t(t.label) }}</span>
           </router-link>
-          <router-link :to="megaData[mega].all" class="mall" @click="mega = ''">Tất cả<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></router-link>
+          <router-link :to="megaData[mega].all" class="mall" @click="mega = ''">{{ $t('Tất cả') }}<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></router-link>
         </div>
       </div>
     </transition>
@@ -85,6 +86,7 @@
 </template>
 
 <script setup>
+import LocaleSwitch from './LocaleSwitch.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { navOpen, cartOpen, isMobile } from '../stores/ui'
 import { theme } from '../stores/theme'
@@ -148,6 +150,7 @@ const logout = () => { auth.logout(); router.push('/') }
 </script>
 
 <style scoped>
+@media (max-width: 860px) { .hide-sm { display: none; } }
 .hdr { position: fixed; top: 0; left: 0; right: 0; z-index: 50; padding: 14px 0 0; pointer-events: none; transition: background .25s; }
 .hdr.scrolled:not(.dark) { background: linear-gradient(#fff 70%, rgba(255,255,255,0)); }
 .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 16px; pointer-events: auto; }

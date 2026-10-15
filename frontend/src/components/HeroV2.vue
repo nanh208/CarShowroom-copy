@@ -5,16 +5,16 @@
       <div class="v2wrap grid">
         <div class="copy">
           <span class="kick">Ares Toys</span>
-          <h1><span>Nhỏ tỉ lệ.</span><span class="or">Lớn đam mê.</span></h1>
-          <p>Thế giới xe mô hình và RC chính hãng dành cho những người thật sự đam mê.</p>
+          <h1><span>{{ $t('Nhỏ tỉ lệ.') }}</span><span class="or">{{ $t('Lớn đam mê.') }}</span></h1>
+          <p>{{ $t('Thế giới xe mô hình và RC chính hãng dành cho những người thật sự đam mê.') }}</p>
           <div class="cta">
-            <router-link to="/products" class="btn v2-black">Khám phá bộ sưu tập <b aria-hidden="true">›</b></router-link>
-            <router-link :to="{ path: '/products', query: { sort: 'newest' } }" class="btn btn-outline">Xem xe mới về <b aria-hidden="true">›</b></router-link>
+            <router-link to="/products" class="btn v2-black">{{ $t('Khám phá bộ sưu tập') }} <b aria-hidden="true">›</b></router-link>
+            <router-link :to="{ path: '/products', query: { sort: 'newest' } }" class="btn btn-outline">{{ $t('Xem xe mới về') }} <b aria-hidden="true">›</b></router-link>
           </div>
           <dl class="stats">
-            <div><dt><CountUp :value="statProducts" />+</dt><dd>mẫu chính hãng</dd></div>
-            <div><dt><CountUp :value="statBrands" /></dt><dd>thương hiệu</dd></div>
-            <div><dt>{{ statRating }}★</dt><dd>đánh giá trung bình</dd></div>
+            <div><dt><CountUp :value="statProducts" />+</dt><dd>{{ $t('mẫu chính hãng') }}</dd></div>
+            <div><dt><CountUp :value="statBrands" /></dt><dd>{{ $t('thương hiệu') }}</dd></div>
+            <div><dt>{{ statRating }}★</dt><dd>{{ $t('đánh giá trung bình') }}</dd></div>
           </dl>
         </div>
         <div class="stage">
@@ -39,9 +39,9 @@
 
     <section class="v2wrap pick">
       <div class="pick-copy">
-        <span class="kick">Bộ sưu tập nổi bật</span>
-        <h2><span>Chọn gu.</span><span class="or">Chọn xe.</span></h2>
-        <p>Từ những huyền thoại thu nhỏ đến mẫu RC mạnh mẽ và phụ kiện cao cấp — tất cả dành cho nhà sưu tầm như bạn.</p>
+        <span class="kick">{{ $t('Bộ sưu tập nổi bật') }}</span>
+        <h2><span>{{ $t('Chọn gu.') }}</span><span class="or">{{ $t('Chọn xe.') }}</span></h2>
+        <p>{{ $t('Từ những huyền thoại thu nhỏ đến mẫu RC mạnh mẽ và phụ kiện cao cấp — tất cả dành cho nhà sưu tầm như bạn.') }}</p>
         <i class="checker" aria-hidden="true" />
       </div>
       <div class="cards" v-stagger>
@@ -51,13 +51,13 @@
           <div class="cc-bot"><h3>{{ c.title }}</h3><small class="sub">{{ c.sub }}</small><small v-if="c.name" class="nm">{{ c.name }}</small><b v-if="c.price" class="money">{{ vnd(c.price) }}</b></div>
         </router-link>
         <router-link to="/promotions" class="deal">
-          <b>Deal</b><strong>-{{ deal }}%</strong><small>Phụ kiện chính hãng</small><span class="arr" aria-hidden="true">→</span>
+          <b>Deal</b><strong>-{{ deal }}%</strong><small>{{ $t('Phụ kiện chính hãng') }}</small><span class="arr" aria-hidden="true">→</span>
         </router-link>
       </div>
     </section>
 
     <section v-if="collections.length" class="v2wrap cols">
-      <div class="row between ch"><div><span class="kick">Tuyển chọn theo chủ đề</span><h2><span>Bộ sưu tập</span></h2></div><router-link to="/collections" class="btn btn-outline">Tất cả <b aria-hidden="true">›</b></router-link></div>
+      <div class="row between ch"><div><span class="kick">{{ $t('Tuyển chọn theo chủ đề') }}</span><h2><span>{{ $t('Bộ sưu tập') }}</span></h2></div><router-link to="/collections" class="btn btn-outline">{{ $t('Tất cả') }} <b aria-hidden="true">›</b></router-link></div>
       <div class="crow" v-stagger>
         <router-link v-for="c in collections" :key="c.id" :to="`/collections/${c.slug}`" class="col" :style="{ '--ac': c.accent || 'var(--v2-orange)' }">
           <img :src="c.cover" alt="" loading="lazy" decoding="async" /><div><small>{{ c.subtitle }}</small><b>{{ c.title }}</b><em>{{ c.count }} mẫu →</em></div></router-link>
@@ -66,10 +66,10 @@
 
     <section v-if="upcoming.length" class="v2wrap upc" v-reveal>
       <div class="up-in">
-        <div class="up-copy"><span class="kick">Sắp ra mắt · đặt trước</span><h2><span>{{ upcoming[0].name }}</span></h2>
+        <div class="up-copy"><span class="kick">{{ $t('Sắp ra mắt · đặt trước') }}</span><h2><span>{{ upcoming[0].name }}</span></h2>
           <p>Phát hành dự kiến {{ d(upcoming[0].releaseDate) }} — giữ suất ngay, chỉ cọc khi hàng về.</p>
-          <div class="cdn"><div><b>{{ daysTo }}</b><small>ngày</small></div><div><b>{{ upcoming.length }}</b><small>mẫu mở đặt trước</small></div></div>
-          <router-link to="/upcoming" class="btn v2-black">Đặt trước <b aria-hidden="true">›</b></router-link></div>
+          <div class="cdn"><div><b>{{ daysTo }}</b><small>{{ $t('ngày') }}</small></div><div><b>{{ upcoming.length }}</b><small>{{ $t('mẫu mở đặt trước') }}</small></div></div>
+          <router-link to="/upcoming" class="btn v2-black">{{ $t('Đặt trước') }} <b aria-hidden="true">›</b></router-link></div>
         <img :src="upcoming[0].images?.[0]" alt="" loading="lazy" decoding="async" />
       </div>
     </section>

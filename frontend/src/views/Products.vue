@@ -4,45 +4,45 @@
     <div class="filters">
     <div class="fbar">
       <div class="chips">
-        <button :class="['chip', { on: !f.type }]" @click="setType('')">Tất cả</button>
+        <button :class="['chip', { on: !f.type }]" @click="setType('')">{{ $t('Tất cả') }}</button>
         <button v-for="c in shownCats" :key="c.code" :class="['chip', { on: f.type === c.code }]" @click="setType(c.code)">{{ c.name }}</button>
       </div>
-      <button class="btn btn-sm btn-outline fbtn" type="button" :aria-expanded="sheet" aria-controls="fsheet" @click="sheet = true">Bộ lọc<b v-if="activeCount" class="fcount">{{ activeCount }}</b></button>
-      <select v-model="f.sort" class="input sort" aria-label="Sắp xếp" @change="apply()">
-        <option value="featured">Sắp xếp: Nổi bật</option><option value="newest">Mới nhất</option><option value="bestseller">Bán chạy</option>
-        <option value="rating">Đánh giá cao</option><option value="price_asc">Giá tăng dần</option><option value="price_desc">Giá giảm dần</option><option value="name">Tên A–Z</option>
+      <button class="btn btn-sm btn-outline fbtn" type="button" :aria-expanded="sheet" aria-controls="fsheet" @click="sheet = true">{{ $t('Bộ lọc') }}<b v-if="activeCount" class="fcount">{{ activeCount }}</b></button>
+      <select v-model="f.sort" class="input sort" :aria-label="$t('Sắp xếp')" @change="apply()">
+        <option value="featured">{{ $t('Sắp xếp: Nổi bật') }}</option><option value="newest">{{ $t('Mới nhất') }}</option><option value="bestseller">{{ $t('Bán chạy') }}</option>
+        <option value="rating">{{ $t('Đánh giá cao') }}</option><option value="price_asc">{{ $t('Giá tăng dần') }}</option><option value="price_desc">{{ $t('Giá giảm dần') }}</option><option value="name">{{ $t('Tên A–Z') }}</option>
       </select>
     </div>
     <transition name="sh-fade"><div v-if="sheet" class="sh-scrim" @click="sheet = false" /></transition>
-    <div id="fsheet" :class="['fbar2', { open: sheet }]" :role="sheet ? 'dialog' : null" :aria-modal="sheet ? 'true' : null" aria-label="Bộ lọc sản phẩm">
-      <div class="sh-head"><b>Bộ lọc</b><button type="button" class="sh-x" aria-label="Đóng bộ lọc" @click="sheet = false">✕</button></div>
-      <input v-model="f.q" class="input" type="search" aria-label="Tìm sản phẩm" placeholder="Tìm tên, hãng, mã SKU..." @input="typed" @keyup.enter="apply()" />
-      <select v-model="f.brandId" class="input" @change="apply()"><option value="">Mọi thương hiệu</option><option v-for="b in catalog.brands" :key="b.id" :value="String(b.id)">{{ b.name }}</option></select>
+    <div id="fsheet" :class="['fbar2', { open: sheet }]" :role="sheet ? 'dialog' : null" :aria-modal="sheet ? 'true' : null" :aria-label="$t('Bộ lọc sản phẩm')">
+      <div class="sh-head"><b>{{ $t('Bộ lọc') }}</b><button type="button" class="sh-x" :aria-label="$t('Đóng bộ lọc')" @click="sheet = false">✕</button></div>
+      <input v-model="f.q" class="input" type="search" :aria-label="$t('Tìm sản phẩm')" :placeholder="$t('Tìm tên, hãng, mã SKU...')" @input="typed" @keyup.enter="apply()" />
+      <select v-model="f.brandId" class="input" @change="apply()"><option value="">{{ $t('Mọi thương hiệu') }}</option><option v-for="b in catalog.brands" :key="b.id" :value="String(b.id)">{{ b.name }}</option></select>
       <select v-model="price" class="input" @change="apply()">
-        <option value="">Mọi mức giá</option><option value="0-300000">Dưới 300K</option><option value="300000-1000000">300K – 1 triệu</option>
-        <option value="1000000-5000000">1 – 5 triệu</option><option value="5000000-15000000">5 – 15 triệu</option><option value="15000000-">Trên 15 triệu</option>
+        <option value="">{{ $t('Mọi mức giá') }}</option><option value="0-300000">{{ $t('Dưới 300K') }}</option><option value="300000-1000000">{{ $t('300K – 1 triệu') }}</option>
+        <option value="1000000-5000000">{{ $t('1 – 5 triệu') }}</option><option value="5000000-15000000">{{ $t('5 – 15 triệu') }}</option><option value="15000000-">{{ $t('Trên 15 triệu') }}</option>
       </select>
-      <select v-model="f.scale" class="input" @change="apply()"><option value="">Mọi tỷ lệ</option><option v-for="s in catalog.options.scales" :key="s" :value="s">Tỷ lệ {{ s }}</option></select>
-      <select v-model="f.age" class="input" @change="apply()"><option value="">Mọi độ tuổi</option><option v-for="(v, a) in AGES" :key="a" :value="String(a)">Phù hợp bé {{ a }}+</option></select>
-      <select v-model="f.minRating" class="input" @change="apply()"><option value="">Mọi đánh giá</option><option value="4.5">★ 4.5 trở lên</option><option value="4">★ 4 trở lên</option><option value="3">★ 3 trở lên</option></select>
-      <label class="check"><input v-model="f.inStock" type="checkbox" @change="apply()" /> Còn hàng</label>
-      <button class="btn btn-sm btn-outline" @click="reset">Xoá lọc</button>
+      <select v-model="f.scale" class="input" @change="apply()"><option value="">{{ $t('Mọi tỷ lệ') }}</option><option v-for="s in catalog.options.scales" :key="s" :value="s">Tỷ lệ {{ s }}</option></select>
+      <select v-model="f.age" class="input" @change="apply()"><option value="">{{ $t('Mọi độ tuổi') }}</option><option v-for="(v, a) in AGES" :key="a" :value="String(a)">Phù hợp bé {{ a }}+</option></select>
+      <select v-model="f.minRating" class="input" @change="apply()"><option value="">{{ $t('Mọi đánh giá') }}</option><option value="4.5">{{ $t('★ 4.5 trở lên') }}</option><option value="4">{{ $t('★ 4 trở lên') }}</option><option value="3">{{ $t('★ 3 trở lên') }}</option></select>
+      <label class="check"><input v-model="f.inStock" type="checkbox" @change="apply()" /> {{ $t('Còn hàng') }}</label>
+      <button class="btn btn-sm btn-outline" @click="reset">{{ $t('Xoá lọc') }}</button>
       <button type="button" class="btn sh-done" @click="sheet = false">Xem {{ total }} sản phẩm</button>
     </div>
     </div>
     <div v-if="meta && f.q" class="smart small">
-      <span v-if="meta.didYouMean">Có phải bạn muốn tìm <a href="#" @click.prevent="f.q = meta.didYouMean">“{{ meta.didYouMean }}”</a>? · </span>
+      <span v-if="meta.didYouMean">{{ $t('Có phải bạn muốn tìm') }} <a href="#" @click.prevent="f.q = meta.didYouMean">“{{ meta.didYouMean }}”</a>? · </span>
       <span v-if="meta.scale" class="chip">Tỉ lệ {{ meta.scale }}</span><span v-if="meta.brand" class="chip">{{ meta.brand }}</span>
       <span v-if="meta.maxPrice" class="chip">≤ {{ meta.maxPrice.toLocaleString('vi-VN') }}đ</span><span v-if="meta.age" class="chip">{{ meta.age }}+ tuổi</span>
     </div>
-    <div v-if="loadErr" class="alert alert-error">Không tải được sản phẩm: {{ loadErr }} <button class="btn btn-sm btn-outline" @click="load">Thử lại</button></div>
-    <p class="muted small cnt">{{ total }} sản phẩm<span v-if="f.q"> cho “{{ f.q }}”</span> · Trang {{ page + 1 }}/{{ Math.max(pages, 1) }} · <router-link to="/finder">Chưa biết chọn gì? Tìm mẫu phù hợp →</router-link></p>
+    <div v-if="loadErr" class="alert alert-error">Không tải được sản phẩm: {{ loadErr }} <button class="btn btn-sm btn-outline" @click="load">{{ $t('Thử lại') }}</button></div>
+    <p class="muted small cnt">{{ total }} sản phẩm<span v-if="f.q"> cho “{{ f.q }}”</span> · Trang {{ page + 1 }}/{{ Math.max(pages, 1) }} · <router-link to="/finder">{{ $t('Chưa biết chọn gì? Tìm mẫu phù hợp →') }}</router-link></p>
     <section>
       <Skeleton v-if="loading && !items.length" :count="8" />
-      <div v-else-if="!items.length && !loading" class="empty card">Không tìm thấy sản phẩm phù hợp. <button class="link" @click="reset">Xoá bộ lọc</button></div>
+      <div v-else-if="!items.length && !loading" class="empty card">{{ $t('Không tìm thấy sản phẩm phù hợp.') }} <button class="link" @click="reset">{{ $t('Xoá bộ lọc') }}</button></div>
       <div v-else v-stagger class="grid grid-4" :class="{ dim: loading }" :aria-busy="loading"><ProductCard v-for="(p, i) in items" :key="p.id" :p="p" :flash="flashOf(p.id)" /></div>
       <div v-if="pages > 1" class="row pager">
-        <button class="btn btn-sm btn-outline" :disabled="page === 0" @click="go(page - 1)">← Trước</button>
+        <button class="btn btn-sm btn-outline" :disabled="page === 0" @click="go(page - 1)">{{ $t('← Trước') }}</button>
         <button v-for="i in pages" :key="i" :class="['btn btn-sm', i - 1 === page ? '' : 'btn-outline']" @click="go(i - 1)">{{ i }}</button>
         <button class="btn btn-sm btn-outline" :disabled="page >= pages - 1" @click="go(page + 1)">Sau →</button>
       </div>

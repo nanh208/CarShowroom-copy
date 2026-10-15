@@ -4,30 +4,34 @@
     <aside v-if="navOpen" ref="panel" class="mnav" role="dialog" aria-modal="true" aria-label="Menu" @keydown.esc="navOpen = false">
       <div class="mn-head">
         <router-link to="/" class="mn-logo"><img src="/images/logo-mark.png" alt="" /><span><b>Ares</b> Toys</span></router-link>
-        <button ref="closeBtn" class="mn-x" aria-label="Đóng menu" @click="navOpen = false">✕</button>
+        <button ref="closeBtn" class="mn-x" :aria-label="$t('Đóng menu')" @click="navOpen = false">✕</button>
       </div>
       <form class="mn-search" role="search" @submit.prevent="search">
-        <input v-model="q" type="search" placeholder="Tìm xe, hãng, phụ kiện…" aria-label="Tìm kiếm" enterkeyhint="search" />
-        <button aria-label="Tìm">→</button>
+        <input v-model="q" type="search" :placeholder="$t('Tìm xe, hãng, phụ kiện…')" :aria-label="$t('Tìm kiếm')" enterkeyhint="search" />
+        <button :aria-label="$t('Tìm')">→</button>
       </form>
-      <nav class="mn-links" aria-label="Danh mục">
-        <router-link v-for="l in links" :key="l.label" :to="l.to">{{ l.label }}<span aria-hidden="true">›</span></router-link>
+      <nav class="mn-links" :aria-label="$t('Danh mục')">
+        <router-link v-for="l in links" :key="l.label" :to="l.to">{{ $t(l.label) }}<span aria-hidden="true">›</span></router-link>
       </nav>
       <div class="mn-sec">
         <template v-if="auth.loggedIn">
           <div class="mn-user"><span class="av">{{ (auth.user.fullName || '?').split(' ').pop()[0] }}</span><div><b>{{ auth.user.fullName }}</b><small>{{ auth.user.email }}</small></div></div>
-          <router-link to="/account">Tài khoản của tôi</router-link>
-          <router-link to="/wishlist">Yêu thích ({{ prefs.wish.length }})</router-link>
-          <router-link to="/compare">So sánh ({{ prefs.compare.length }})</router-link>
-          <router-link v-if="auth.isStaff" to="/admin">Trang quản trị</router-link>
-          <button class="mn-out" @click="logout">Đăng xuất</button>
+          <router-link to="/account">{{ $t('Tài khoản của tôi') }}</router-link>
+          <router-link to="/wishlist">{{ $t('Yêu thích') }} ({{ prefs.wish.length }})</router-link>
+          <router-link to="/compare">{{ $t('So sánh') }} ({{ prefs.compare.length }})</router-link>
+          <router-link v-if="auth.isStaff" to="/admin">{{ $t('Trang quản trị') }}</router-link>
+          <button class="mn-out" @click="logout">{{ $t('Đăng xuất') }}</button>
         </template>
-        <router-link v-else to="/login" class="btn btn-block">Đăng nhập / Đăng ký</router-link>
+        <div class="mn-lang"><span>{{ $t('Ngôn ngữ') }}</span><LocaleSwitch /></div>
+        <button v-if="canInstall" class="btn btn-outline btn-block" @click="install">{{ $t('Cài ứng dụng') }}</button>
+        <router-link v-if="!auth.loggedIn" to="/login" class="btn btn-block">{{ $t('Đăng nhập / Đăng ký') }}</router-link>
       </div>
     </aside>
   </transition>
 </template>
 <script setup>
+import LocaleSwitch from './LocaleSwitch.vue'
+import { canInstall, install } from '../pwa'
 import { ref, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { navOpen } from '../stores/ui'
@@ -47,6 +51,7 @@ watch(() => route.fullPath, () => { navOpen.value = false })
 watch(navOpen, async v => { document.documentElement.style.overflow = v ? 'hidden' : ''; if (v) { await nextTick(); closeBtn.value?.focus() } })
 </script>
 <style scoped>
+.mn-lang { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
 .mn-scrim { position: fixed; inset: 0; z-index: 180; background: rgba(0,0,0,.45); }
 .mnav { position: fixed; top: 0; bottom: 0; left: 0; z-index: 190; width: min(88vw, 360px); background: var(--surface); color: var(--text); overflow-y: auto; overscroll-behavior: contain;
   display: flex; flex-direction: column; padding-bottom: calc(24px + env(safe-area-inset-bottom)); box-shadow: 12px 0 40px rgba(0,0,0,.25); }
