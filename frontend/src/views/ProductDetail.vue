@@ -50,6 +50,7 @@
         <form class="row" @submit.prevent="notifyMe"><input v-model.trim="nEmail" type="email" class="input grow" :placeholder="auth.user?.email || 'Email của bạn'" aria-label="Email nhận thông báo" /><button class="btn btn-sm" :disabled="nDone">{{ nDone ? '✓ Đã đăng ký' : 'Báo tôi' }}</button></form>
       </div>
 
+      <PriceWatch v-if="!p.preorder" :product-id="p.id" :price="unitPrice" />
       <div class="perks">
         <div><b>🚚 Giao dự kiến {{ etaLabel }}</b><span>{{ etaCity }} · hoả tốc nhận sớm hơn 1 ngày</span></div>
         <div><b>↩ Đổi trả 7 ngày</b><span>Lỗi do nhà sản xuất đổi mới miễn phí</span></div>
@@ -113,6 +114,10 @@
           <router-link to="/support" class="btn btn-outline btn-sm">Cần tư vấn? Chat với ARES →</router-link></div>
       </section>
 
+      <section v-if="also.length" class="block">
+        <div class="ph"><h2>Thường được mua cùng</h2></div>
+        <div v-stagger class="grid grid-4"><ProductCard v-for="r in also" :key="r.id" :p="r" /></div>
+      </section>
       <section v-if="likes.length" class="block">
         <div class="ph"><h2>Có thể bạn thích</h2><router-link :to="{ path: '/products', query: { type: p.type } }" class="link">Xem tất cả →</router-link></div>
         <div class="grid grid-4"><ProductCard v-for="(r, i) in likes" :key="r.id" v-reveal :p="r" /></div>
@@ -146,6 +151,7 @@
 </template>
 
 <script setup>
+import PriceWatch from '../components/PriceWatch.vue'
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { uploadImage, errMsg } from '../api'
@@ -187,7 +193,8 @@ const basePrice = computed(() => variant.value ? variant.value.price : p.value.p
 const unitPrice = computed(() => fs.value ? fs.value.salePrice : basePrice.value)
 const oldPrice = computed(() => fs.value ? basePrice.value : (variant.value ? variant.value.oldPrice : p.value.oldPrice))
 const filtered = computed(() => (rv.value.items || []).filter(r => rf.value === 'all' || (rf.value === 'photo' ? r.images?.length : r.rating === rf.value)))
-const likes = computed(() => [...suggested.value, ...related.value].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i).slice(0, 4))
+const also = ref([])
+const likes = computed(() => [...suggested.value, ...related.value].filter(x => !also.value.some(a => a.id === x.id)).filter((x, i, a) => a.findIndex(y => y.id === x.id) === i).slice(0, 4))
 const recent = computed(() => prefs.recent.filter(r => r.id !== p.value?.id).slice(0, 6))
 const step = k => { view.value = (view.value + k + imgs.value.length) % imgs.value.length }
 const pickVariant = v => { variantId.value = v.id; qty.value = 1; if (v.image) view.value = imgs.value.indexOf(v.image) }
@@ -219,6 +226,7 @@ async function load() {
   variantId.value = data.variants.find(v => v.stock > 0)?.id || data.variants[0]?.id || null
   if (route.hash) nextTick(() => setTimeout(() => document.querySelector(route.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300))
   prefs.viewed(p.value); loadReviews(p.value.id); loadQa(p.value.id); nDone.value = false
+  api.get(`/products/${p.value.id}/also-bought`).then(r => { also.value = r.data }).catch(() => { also.value = [] })
   api.get('/public/bundles', { params: { productId: p.value.id } }).then(r => { pBundles.value = r.data }).catch(() => {})
   api.get('/public/shipping-options', { params: { city: etaCity.value, amount: 0 } }).then(r => { eta.value = r.data[0] }).catch(() => {})
   const relIds = new Set([p.value.id, ...related.value.map(r => r.id)])

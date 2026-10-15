@@ -78,6 +78,11 @@
           </div>
         </section>
 
+        <section v-if="reco.personal && reco.items.length && show('recent')" v-reveal class="block" :style="ord('recent')">
+          <div class="bh"><h2>Dành riêng cho bạn</h2><small class="muted">Dựa trên đơn đã mua và mẫu bạn đã xem</small></div>
+          <div v-stagger class="grid grid-4"><div v-for="it in reco.items.slice(0, 8)" :key="it.product.id" class="rec"><ProductCard :p="it.product" /><small class="why">{{ it.reason }}</small></div></div>
+        </section>
+
         <section v-if="prefs.recent.length && show('recent')" v-reveal class="block" :style="ord('recent')">
           <div class="bh"><h2>Bạn đã xem gần đây</h2></div>
           <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img loading="lazy" decoding="async" :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b></router-link></div>
@@ -115,6 +120,7 @@ import { vnd, d, catalog, loadCatalog } from '../format'
 import { usePrefs } from '../stores/prefs'
 
 const prefs = usePrefs()
+const reco = ref({ personal: false, items: [] })
 const layout = ref([]), bundles = ref([])
 const show = k => { const x = layout.value.find(l => l.key === k); return !x || x.visible !== false }
 const ord = k => ({ order: Math.max(0, layout.value.findIndex(l => l.key === k)) })
@@ -147,6 +153,7 @@ const sections = computed(() => {
 const flashEnd = computed(() => flash.value.filter(x => x.live).map(x => x.flash.endTime).sort()[0])
 const imgOf = id => all.value.find(p => p.id === id)?.images?.[0] || '/images/toys/hw-r34-0.jpg'
 onMounted(async () => {
+  api.get('/public/recommendations', { params: { limit: 8 } }).then(r => { reco.value = r.data }).catch(() => {})
   loadCatalog()
   t = setInterval(() => { if (!pause.value && hero.value.length) cur.value = (cur.value + 1) % hero.value.length }, 5500)
   api.get('/banners').then(r => { banners.value = r.data })
@@ -166,6 +173,7 @@ onUnmounted(() => { clearInterval(t); clearInterval(ft) })
 </script>
 
 <style scoped>
+.rec { display: flex; flex-direction: column; gap: 4px; } .why { color: var(--accent); font-weight: 600; font-size: .78rem; }
 .hsections { display: flex; flex-direction: column; }
 .bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
 .livedot { margin-left: 10px; font: 700 .62rem/1 'Oswald', sans-serif; letter-spacing: .14em; color: #fff; background: #c62828; padding: 3px 6px; vertical-align: middle; }

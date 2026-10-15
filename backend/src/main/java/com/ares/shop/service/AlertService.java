@@ -22,8 +22,19 @@ public class AlertService {
     @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.service.MailService mail;
     @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.repo.StockNotifyRepo stockNotify;
 
+    @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.repo.PriceHistoryRepo history;
+    /** Ghi lịch sử giá khi giá đổi (chạy trước khi xét cảnh báo). */
+    public void recordPrices() {
+        for (Product p : products.findAll()) {
+            var last = history.findTopByProductIdOrderByIdDesc(p.id);
+            if (last.isEmpty() && p.oldPrice != null && p.oldPrice > p.price) { PriceHistory o = new PriceHistory(); o.productId = p.id; o.price = p.oldPrice; o.at = java.time.LocalDateTime.now().minusDays(20); history.save(o); }
+            if (last.isEmpty() || last.get().price != p.price) { PriceHistory h = new PriceHistory(); h.productId = p.id; h.price = p.price; history.save(h); }
+        }
+    }
+
     @Scheduled(fixedDelay = 30_000, initialDelay = 20_000)
     public void scan() {
+        recordPrices();
         for (StockNotify n : stockNotify.findBySentIsNullOrSentFalse()) {
             Product p = products.findById(n.productId).orElse(null);
             if (p == null || !p.active || p.stock <= 0) continue;
@@ -33,12 +44,14 @@ public class AlertService {
         for (WatchAlert w : alerts.findByFiredIsNullOrFiredFalse()) {
             Product p = products.findById(w.productId).orElse(null);
             if (p == null || !p.active) continue;
-            boolean hit = "PRICE".equals(w.kind) ? p.price < w.basePrice : p.stock > 0;
+            boolean hit = "PRICE".equals(w.kind) ? p.price < w.basePrice && (w.targetPrice == null || p.price <= w.targetPrice) : p.stock > 0;
             if (!hit) continue;
             String title = "PRICE".equals(w.kind) ? "Giảm giá: " + p.name : "Đã có hàng lại: " + p.name;
             String body = "PRICE".equals(w.kind) ? "Giá mới " + String.format("%,d", p.price).replace(',', '.') + "đ (trước " + String.format("%,d", w.basePrice).replace(',', '.') + "đ)." : "Còn " + p.stock + " sản phẩm — đặt ngay kẻo hết.";
-            notify.send(w.user, "SYSTEM", title, body, "/products/" + p.id);
-            w.fired = true; alerts.save(w);
+            if (w.user != null) notify.send(w.user, "SYSTEM", title, body, "/products/" + p.id);
+            String to = w.email != null ? w.email : w.user != null ? w.user.email : null;
+            if (to != null) mail.send(to, title, "PRICE".equals(w.kind) ? "PRICE_DROP" : "BACK_IN_STOCK", body + "\nXem ngay: /products/" + p.id);
+            w.fired = true; w.firedAt = java.time.LocalDateTime.now(); w.firedPrice = p.price; alerts.save(w);
         }
         var staff = users.findAll().stream().filter(u -> u.role != Enums.Role.USER && !u.locked).toList();
         var low = products.findByActiveTrueAndStockLessThanEqualOrderByStockAsc(LOW_STOCK);

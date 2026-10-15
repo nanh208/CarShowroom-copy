@@ -69,6 +69,7 @@ const routes = [
       { path: 'collections', component: () => import('./views/admin/AdminCollections.vue') },
       { path: 'warehouses', component: () => import('./views/admin/AdminWarehouses.vue') },
       { path: 'broadcast', component: () => import('./views/admin/AdminBroadcast.vue') },
+      { path: 'price-alerts', component: () => import('./views/admin/AdminPriceAlerts.vue') },
       { path: 'jobs', component: () => import('./views/admin/AdminJobs.vue'), meta: { adminOnly: true } },
       { path: 'appearance', component: () => import('./views/admin/AdminAppearance.vue'), meta: { adminOnly: true } },
       { path: 'permissions', component: () => import('./views/admin/AdminPermissions.vue'), meta: { adminOnly: true } }
