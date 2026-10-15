@@ -6,8 +6,8 @@
       <div v-if="$route.query.new" class="alert alert-success">Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
       <div v-if="o.giftWrap" class="alert gift-note"><b>Gói quà</b> (+{{ vnd(o.giftFee) }})<span v-if="o.giftMessage"> · Thiệp: “{{ o.giftMessage }}”</span></div>
       <div class="row between"><h1>Đơn hàng {{ o.code }}</h1>
-        <div class="row"><router-link :to="`/orders/${o.code}/invoice`" class="btn btn-sm btn-outline">🧾 Hoá đơn</router-link><span :class="['badge', 'badge-' + o.status]">{{ ORDER_STATUS[o.status] }}</span></div></div>
-      <p class="muted">Đặt lúc {{ dt(o.createdAt) }}</p>
+        <div class="row acts"><button class="btn btn-sm" :disabled="busy" @click="reorder">↻ Mua lại</button><button class="btn btn-sm btn-outline" :disabled="mailed" @click="mailInvoice">{{ mailed ? '✓ Đã gửi email' : '✉ Gửi hoá đơn' }}</button><router-link :to="`/orders/${o.code}/invoice`" class="btn btn-sm btn-outline">🧾 Hoá đơn</router-link><span :class="['badge', 'badge-' + o.status]">{{ ORDER_STATUS[o.status] }}</span></div></div>
+      <p class="muted">Đặt lúc {{ dt(o.createdAt) }}<template v-if="o.etaFrom && !['COMPLETED', 'CANCELLED'].includes(o.status)"> · 📦 Dự kiến giao <b>{{ dshort(o.etaFrom) }}{{ o.etaTo !== o.etaFrom ? ' – ' + dshort(o.etaTo) : '' }}</b> ({{ o.shippingMethod === 'EXPRESS' ? 'hoả tốc' : 'tiêu chuẩn' }})</template></p>
 
       <div v-reveal class="card track">
         <h3>Theo dõi đơn hàng</h3>
@@ -51,9 +51,12 @@
             <b>{{ vnd(i.unitPrice * i.quantity) }}</b>
           </div>
           <div class="row between"><span>Tạm tính</span><span>{{ vnd(o.subtotal) }}</span></div>
-          <div v-if="o.discount" class="row between"><span>Voucher ({{ o.promoCode }})</span><span>−{{ vnd(o.discount) }}</span></div>
+          <div v-if="o.bundleDiscount" class="row between"><span>Combo ưu đãi</span><span>−{{ vnd(o.bundleDiscount) }}</span></div>
+          <div v-if="o.discount - (o.bundleDiscount || 0) > 0" class="row between"><span>Giảm giá<template v-if="o.promoCode"> ({{ o.promoCode }})</template></span><span>−{{ vnd(o.discount - (o.bundleDiscount || 0)) }}</span></div>
           <div v-if="o.pointsDiscount" class="row between"><span>Dùng {{ o.pointsUsed }} điểm</span><span>−{{ vnd(o.pointsDiscount) }}</span></div>
-          <div class="row between"><span>Phí vận chuyển</span><span>{{ o.shippingFee ? vnd(o.shippingFee) : 'Miễn phí' }}</span></div>
+          <div class="row between"><span>Phí vận chuyển<small v-if="o.shippingMethod === 'EXPRESS'" class="muted"> (hoả tốc)</small></span><span>{{ o.shippingFee ? vnd(o.shippingFee) : 'Miễn phí' }}</span></div>
+          <div v-if="o.giftFee" class="row between"><span>Gói quà</span><span>{{ vnd(o.giftFee) }}</span></div>
+          <div v-if="o.creditUsed" class="row between"><span>Thẻ quà / ví tín dụng</span><span>−{{ vnd(o.creditUsed) }}</span></div>
           <div class="row between total"><span>Tổng cộng</span><span class="price">{{ vnd(o.total) }}</span></div>
           <p v-if="o.pointsEarned" class="small ok">+{{ o.pointsEarned }} điểm thưởng đã được cộng</p>
         </div>
@@ -68,6 +71,7 @@
             <p>{{ PAY_METHOD[o.paymentMethod] }} <span :class="['badge', 'badge-' + o.paymentStatus]">{{ PAY_STATUS[o.paymentStatus] }}</span></p>
             <div class="row between"><span>Đã thanh toán</span><b class="ok">{{ vnd(o.paidAmount) }}</b></div>
             <p v-if="o.transactionRef" class="small muted">Mã giao dịch: {{ o.transactionRef }}</p>
+            <div v-if="o.refundedAmount" class="row between"><span>Đã hoàn tiền</span><b>{{ vnd(o.refundedAmount) }}</b></div>
             <div class="row" style="margin-top:12px; flex-wrap:wrap">
               <button v-if="['PENDING', 'CONFIRMED'].includes(o.status)" class="btn btn-sm btn-danger" @click="cancelOpen = !cancelOpen">Huỷ đơn</button>
               <button v-if="canReturn" class="btn btn-sm btn-outline" @click="retOpen = !retOpen">Đổi trả / Hoàn tiền</button>
@@ -94,12 +98,22 @@
 import ReturnWizard from '../components/ReturnWizard.vue'
 import Breadcrumb from '../components/Breadcrumb.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { addById } from '../cartAdd'
 import api, { errMsg, uploadImage } from '../api'
 import { vnd, dt, ORDER_STATUS, PAY_METHOD, PAY_STATUS, RETURN_STATUS } from '../format'
 import { toast } from '../stores/prefs'
 
-const route = useRoute()
+const route = useRoute(), router = useRouter()
+const busy = ref(false), mailed = ref(false)
+const dshort = s => new Date(s + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })
+async function reorder() {
+  busy.value = true; let n = 0; const its = o.value.items.filter(i => i.productId)
+  try { for (const i of its) if (await addById(i.productId, i.quantity, i.variantId)) n++ } finally { busy.value = false }
+  if (!n) return toast('Các sản phẩm trong đơn đã hết hàng', 'error')
+  toast(n === its.length ? 'Đã thêm lại toàn bộ sản phẩm vào giỏ' : `Đã thêm ${n}/${its.length} sản phẩm (một số đã hết hàng)`); router.push('/cart')
+}
+async function mailInvoice() { try { const { data } = await api.post(`/orders/${o.value.code}/email-invoice`); mailed.value = true; toast(`Đã gửi hoá đơn tới ${data.sentTo}`) } catch (e) { toast(errMsg(e), 'error') } }
 const o = ref(null), bank = ref({}), returns = ref([]), err = ref(''), cancelOpen = ref(false), retOpen = ref(false)
 const reasons = ['Đổi ý, không muốn mua nữa', 'Muốn đổi sang sản phẩm/màu khác', 'Tìm được giá tốt hơn', 'Thời gian giao quá lâu', 'Lý do khác']
 const cancelReason = ref(reasons[0]), ret = reactive({ kind: 'RETURN', reason: '', images: [] })
@@ -124,6 +138,8 @@ async function sendReturn() { err.value = ''; try { await api.post(`/orders/${o.
 onMounted(load)
 </script>
 <style scoped>
+.acts { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
 .track { margin: 18px 0; }
 .road { position: relative; height: 10px; margin: 26px 12px 8px; border-radius: 5px; background: #3a3a3e; }
 .road::after { content: ''; position: absolute; left: 0; right: 0; top: 4.5px; height: 1px; background: repeating-linear-gradient(90deg, #f5c400 0 10px, transparent 10px 20px); }

@@ -23,6 +23,7 @@ import { errMsg } from '../api'
 import AuthShell from '../components/AuthShell.vue'
 import SocialLogin from '../components/SocialLogin.vue'
 const auth = useAuth(), route = useRoute(), router = useRouter()
+if (route.query.ref) localStorage.setItem('refCode', String(route.query.ref).slice(0, 20))
 const f = reactive({ fullName: '', email: '', phone: '', password: '' }), confirm = ref(''), err = ref(''), busy = ref(false)
 async function submit() {
   err.value = ''

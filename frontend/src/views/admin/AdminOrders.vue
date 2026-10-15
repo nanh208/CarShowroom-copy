@@ -10,6 +10,7 @@
       <select v-model="bulkTo" class="input" aria-label="Chuyển trạng thái"><option value="">Chuyển trạng thái…</option><option v-for="(v, k) in LABEL" :key="k" :value="k">{{ v }}</option></select>
       <button class="btn btn-sm" :disabled="!bulkTo || busy" @click="bulk">Áp dụng</button>
       <button class="btn btn-sm btn-outline" @click="labels(sel)">In nhãn vận chuyển</button>
+      <button class="btn btn-sm btn-outline" @click="labels(sel, 'packing')">In phiếu đóng gói</button>
       <button class="btn btn-sm btn-outline" @click="sel = []">Bỏ chọn</button>
     </div>
     <div class="card table-wrap">
@@ -18,14 +19,15 @@
         <thead><tr><th class="ck"><input type="checkbox" :checked="sel.length && sel.length === list.length" :indeterminate.prop="sel.length > 0 && sel.length < list.length" aria-label="Chọn tất cả" @change="sel = $event.target.checked ? list.map(o => o.id) : []" /></th><th>Mã đơn</th><th>Khách hàng</th><th>Ngày</th><th>Tổng</th><th>Thanh toán</th><th>Trạng thái</th><th /></tr></thead>
         <tbody><tr v-for="o in list" :key="o.id" :class="{ picked: sel.includes(o.id) }">
           <td class="ck"><input v-model="sel" type="checkbox" :value="o.id" :aria-label="`Chọn đơn ${o.code}`" /></td>
-          <td><b>{{ o.code }}</b><div v-if="o.giftWrap" class="small gift">Gói quà</div></td><td>{{ o.buyerName }}<div class="small muted">{{ o.phone }}</div></td><td class="small">{{ dt(o.createdAt) }}</td>
+          <td><b>{{ o.code }}</b><div v-if="o.giftWrap" class="small gift">Gói quà</div><div class="small"><span v-if="o.guest" class="badge badge-PENDING">Khách vãng lai</span> <span v-if="o.shippingMethod === 'EXPRESS'" class="badge badge-CONFIRMED">Giao nhanh</span></div></td><td>{{ o.buyerName }}<div class="small muted">{{ o.phone }}</div></td><td class="small">{{ dt(o.createdAt) }}</td>
           <td class="price">{{ vnd(o.total) }}</td>
-          <td class="small">{{ PAY_METHOD[o.paymentMethod] }}<br /><span :class="['badge', 'badge-' + o.paymentStatus]">{{ PAY_STATUS[o.paymentStatus] }}</span> {{ vnd(o.paidAmount) }}</td>
+          <td class="small">{{ PAY_METHOD[o.paymentMethod] }}<br /><span :class="['badge', 'badge-' + o.paymentStatus]">{{ PAY_STATUS[o.paymentStatus] }}</span> {{ vnd(o.paidAmount) }}<div v-if="o.refundedAmount" class="small" style="color:var(--danger)">Đã hoàn {{ vnd(o.refundedAmount) }}</div></td>
           <td><span :class="['badge', 'badge-' + o.status]">{{ ORDER_STATUS[o.status] }}</span>
             <div class="row flow"><button v-for="n in NEXT[o.status]" :key="n" :class="['btn btn-sm', n === 'CANCELLED' ? 'btn-danger' : '']" @click="setStatus(o, n)">{{ LABEL[n] }}</button></div></td>
-          <td><div class="row flow"><button class="btn btn-sm btn-outline" @click="view = o">Xem</button>
+          <td><div class="row flow"><button class="btn btn-sm btn-outline" @click="open(o)">Xem</button>
             <router-link :to="`/orders/${o.code}/invoice`" target="_blank" class="btn btn-sm btn-outline">In HĐ</router-link>
             <button class="btn btn-sm btn-outline" @click="labels([o.id])">Nhãn</button>
+            <button class="btn btn-sm btn-outline" @click="labels([o.id], 'packing')">Phiếu ĐG</button>
             <button v-if="o.paymentStatus !== 'PAID' && o.paymentStatus !== 'REFUNDED' && !['CANCELLED','RETURNED'].includes(o.status)" class="btn btn-sm btn-outline" @click="markPaid(o)">Đã thu tiền</button></div></td>
         </tr></tbody>
       </table>
@@ -42,7 +44,22 @@
         <p>Tạm tính {{ vnd(view.subtotal) }} · Giảm {{ vnd(view.discount) }} {{ view.promoCode ? '(' + view.promoCode + ')' : '' }} · Ship {{ vnd(view.shippingFee) }}<span v-if="view.pointsUsed"> · Dùng {{ view.pointsUsed }} điểm (−{{ vnd(view.pointsDiscount) }})</span></p>
         <p v-if="view.cancelReason" class="small" style="color:var(--danger)">Lý do huỷ: {{ view.cancelReason }}</p>
         <p><b>Tổng: {{ vnd(view.total) }}</b> — Đã thu {{ vnd(view.paidAmount) }} ({{ PAY_METHOD[view.paymentMethod] }}<span v-if="view.installmentMonths">, {{ view.installmentMonths }} tháng</span>)</p>
-        <button class="btn btn-outline" style="margin-top:12px" @click="view = null">Đóng</button>
+        <p class="small">Vận chuyển: <b>{{ view.shippingMethod === 'EXPRESS' ? 'Giao nhanh' : 'Tiêu chuẩn' }}</b><span v-if="view.etaFrom"> · Dự kiến {{ d(view.etaFrom) }} – {{ d(view.etaTo) }}</span><span v-if="view.guest"> · Khách vãng lai</span></p>
+        <p v-if="view.bundleDiscount || view.creditUsed" class="small">Combo −{{ vnd(view.bundleDiscount || 0) }} · Ví/thẻ quà −{{ vnd(view.creditUsed || 0) }}</p>
+        <div class="rf">
+          <div class="row between"><b>Hoàn tiền</b><small class="muted">Đã hoàn {{ vnd(view.refundedAmount || 0) }} / {{ vnd(view.paidAmount) }}</small></div>
+          <div v-if="view.paidAmount > (view.refundedAmount || 0)" class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">
+            <input v-model.number="rf.amount" type="number" min="1" :max="view.paidAmount - (view.refundedAmount || 0)" class="input" style="width:130px" aria-label="Số tiền hoàn" />
+            <input v-model.trim="rf.reason" class="input" style="flex:1;min-width:140px" placeholder="Lý do (bắt buộc)" aria-label="Lý do hoàn" />
+            <label v-if="!view.guest" class="small row" style="gap:4px"><input v-model="rf.toCredit" type="checkbox" /> Vào ví tín dụng</label>
+            <button class="btn btn-sm btn-danger" :disabled="!rf.amount || !rf.reason" @click="refund">Hoàn tiền</button></div>
+          <p v-else class="small muted">Chưa có khoản thu để hoàn.</p>
+        </div>
+        <div class="nt"><b>Ghi chú nội bộ</b> <small class="muted">(khách không thấy)</small>
+          <ul><li v-for="n in notes" :key="n.id"><small class="muted">{{ n.author }} · {{ dt(n.createdAt) }}</small><div>{{ n.text }}</div></li><li v-if="!notes.length" class="muted small">Chưa có ghi chú.</li></ul>
+          <div class="row" style="gap:6px"><input v-model.trim="noteText" class="input" style="flex:1" placeholder="Thêm ghi chú…" aria-label="Ghi chú nội bộ" @keyup.enter="addNote" /><button class="btn btn-sm" :disabled="!noteText" @click="addNote">Thêm</button></div>
+        </div>
+        <div class="row" style="gap:8px;margin-top:12px"><button class="btn btn-outline" @click="view = null">Đóng</button><button class="btn btn-outline" @click="labels([view.id], 'packing')">In phiếu đóng gói</button></div>
       </div>
     </div>
   </div>
@@ -52,10 +69,17 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '../../stores/prefs'
 import api, { errMsg } from '../../api'
-import { vnd, dt, ORDER_STATUS, PAY_METHOD, PAY_STATUS } from '../../format'
+import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS } from '../../format'
 const route = useRoute(), router = useRouter()
 const list = ref([]), status = ref(route.query.status || ''), view = ref(null), err = ref(''), q = ref(route.query.q || ''), sel = ref([]), bulkTo = ref(''), busy = ref(false)
-const labels = ids => { const u = router.resolve({ path: '/admin/labels', query: { ids: ids.join(','), auto: 1 } }).href; window.open(u, '_blank') }
+const labels = (ids, kind = 'labels') => { const u = router.resolve({ path: '/admin/' + kind, query: { ids: ids.join(','), auto: 1 } }).href; window.open(u, '_blank') }
+const rf = ref({ amount: 0, reason: '', toCredit: false }), notes = ref([]), noteText = ref('')
+async function open(o) { view.value = o; rf.value = { amount: o.paidAmount - (o.refundedAmount || 0), reason: '', toCredit: false }; notes.value = (await api.get(`/admin/orders/${o.id}/notes`)).data }
+async function refund() {
+  if (!confirm(`Hoàn ${vnd(rf.value.amount)} cho đơn ${view.value.code}?`)) return
+  try { const { data } = await api.post(`/admin/orders/${view.value.id}/refund`, rf.value); toast('Đã hoàn tiền'); await load(); open(list.value.find(o => o.id === data.id) || data) } catch (e) { toast(errMsg(e), 'error') }
+}
+async function addNote() { try { notes.value.push((await api.post(`/admin/orders/${view.value.id}/notes`, { text: noteText.value })).data); noteText.value = '' } catch (e) { toast(errMsg(e), 'error') } }
 async function bulk() {
   if (bulkTo.value === 'CANCELLED' && !confirm(`Huỷ ${sel.value.length} đơn? Hàng sẽ được hoàn kho.`)) return
   busy.value = true; err.value = ''
@@ -79,4 +103,4 @@ onMounted(async () => { await load(); if (route.query.labels && list.value.lengt
 <style scoped>
 .bulk { position: sticky; top: 64px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 12px; background: #111; color: #fff; }
 .bulk .input { width: auto; min-width: 180px; padding: 6px 10px; } .bulk .btn-outline { color: #fff; border-color: #fff; background: transparent; }
-.ck { width: 36px; } .ck input { width: 17px; height: 17px; accent-color: var(--accent); } tr.picked { background: var(--bronze-soft); } .gift { color: var(--accent); font-weight: 600; }.flow { gap: 4px; flex-wrap: nowrap; margin-top: 4px; } .modal p { margin-bottom: 6px; }</style>
+.ck { width: 36px; } .ck input { width: 17px; height: 17px; accent-color: var(--accent); } tr.picked { background: var(--bronze-soft); } .gift { color: var(--accent); font-weight: 600; }.flow { gap: 4px; flex-wrap: nowrap; margin-top: 4px; } .modal p { margin-bottom: 6px; } .rf, .nt { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; } .nt ul { list-style: none; padding: 0; margin: 6px 0; max-height: 180px; overflow-y: auto; } .nt li { padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: .88rem; }</style>

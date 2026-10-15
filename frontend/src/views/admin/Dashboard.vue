@@ -1,9 +1,11 @@
 <template>
   <div>
-    <h1>Tổng quan</h1>
+    <div class="row between dh"><h1>Tổng quan</h1>
+      <details class="wt"><summary class="btn btn-sm btn-outline">⚙ Tuỳ chỉnh widget</summary>
+        <div class="wtp card"><label v-for="(l, k) in WIDGETS" :key="k" class="small"><input v-model="show[k]" type="checkbox" /> {{ l }}</label></div></details></div>
     <div v-if="!s" class="spinner" />
     <template v-else>
-      <div class="grid stats">
+      <div v-show="show.stats" class="grid stats">
         <div class="card"><div class="muted small">Doanh thu đã thu</div><div class="val price"><CountUp :value="s.revenue" :format="vnd" /></div></div>
         <div class="card"><div class="muted small">Đơn hàng</div><div class="val"><CountUp :value="s.orders" /></div><div class="small warn">{{ s.pendingOrders }} chờ xác nhận</div></div>
         <div class="card"><div class="muted small">Khách hàng</div><div class="val"><CountUp :value="s.customers" /></div></div>
@@ -13,7 +15,7 @@
           <router-link to="/admin/tickets" class="todo">🎫 {{ s.ticketsOpen }} phiếu hỗ trợ mở</router-link>
           <router-link to="/admin/questions" class="todo">❓ {{ s.questionsOpen }} câu hỏi chưa trả lời</router-link></div>
       </div>
-      <div class="card chart">
+      <div v-show="show.chart" class="card chart">
         <div class="rangebar">
           <div><h3>Hiệu quả kinh doanh</h3><span class="muted small">{{ fmtD(from) }} – {{ fmtD(to) }} · so với {{ spanDays }} ngày trước đó</span></div>
           <div class="range">
@@ -39,12 +41,12 @@
         </div>
       </div>
       <div class="grid grid-2" style="margin-top:24px">
-        <div class="card">
+        <div v-show="show.top" class="card">
           <h3>Top sản phẩm bán chạy</h3>
           <div v-for="(p, i) in s.topProducts" :key="p.id" class="row tp"><span class="rank">{{ i + 1 }}</span><img loading="lazy" decoding="async" :src="p.image" alt="" />
             <div style="flex:1;min-width:0"><b class="ell">{{ p.name }}</b><div class="small muted">{{ p.qty }} đã bán</div></div><b class="price">{{ ty(p.revenue) }}</b></div>
         </div>
-        <div class="card">
+        <div v-show="show.low" class="card">
           <div class="row between"><h3>⚠ Cảnh báo tồn kho thấp</h3><router-link to="/admin/inventory" class="small">Nhập hàng →</router-link></div>
           <div v-if="!s.lowStockItems.length" class="muted">Tồn kho ổn định.</div>
           <div v-for="p in s.lowStockItems" :key="p.id" class="row tp"><img loading="lazy" decoding="async" :src="p.images?.[0]" alt="" /><div style="flex:1;min-width:0"><b class="ell">{{ p.name }}</b><div class="small muted">{{ p.sku }}</div></div>
@@ -52,14 +54,14 @@
         </div>
       </div>
       <div class="grid grid-2" style="margin-top:24px">
-        <div class="card">
+        <div v-show="show.status" class="card">
           <h3>Đơn theo trạng thái</h3>
           <div v-for="(n, k) in s.ordersByStatus" :key="k" class="bar-row">
             <span>{{ ORDER_STATUS[k] }}</span>
             <div class="bar"><div :style="{ width: (s.orders ? n * 100 / s.orders : 0) + '%' }" /></div><b>{{ n }}</b>
           </div>
         </div>
-        <div class="card">
+        <div v-show="show.recent" class="card">
           <h3>Đơn mới nhất</h3>
           <div v-if="!s.recentOrders.length" class="muted">Chưa có đơn.</div>
           <div v-for="o in s.recentOrders" :key="o.id" class="row between ro">
@@ -73,7 +75,10 @@
   </div>
 </template>
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
+const WIDGETS = { stats: 'Chỉ số tổng', chart: 'Biểu đồ hiệu quả', top: 'Top bán chạy', low: 'Tồn kho thấp', status: 'Đơn theo trạng thái', recent: 'Đơn mới nhất' }
+const show = reactive(Object.assign(Object.fromEntries(Object.keys(WIDGETS).map(k => [k, true])), JSON.parse(localStorage.getItem('dashWidgets') || '{}')))
+watch(show, v => localStorage.setItem('dashWidgets', JSON.stringify(v)))
 import api from '../../api'
 import CountUp from '../../components/CountUp.vue'
 import { vnd, dt, ty, ORDER_STATUS } from '../../format'
@@ -95,6 +100,7 @@ const loadKpi = async () => { if (from.value > to.value) return; k.value = (awai
 onMounted(async () => { s.value = (await api.get('/admin/stats')).data; loadKpi() })
 </script>
 <style scoped>
+.dh { gap: 10px; flex-wrap: wrap; } .wt { position: relative; } .wt summary { list-style: none; } .wt summary::-webkit-details-marker { display: none; } .wtp { position: absolute; right: 0; top: 110%; z-index: 20; display: flex; flex-direction: column; gap: 6px; min-width: 210px; box-shadow: 0 8px 24px rgba(0,0,0,.12); } .wtp label { display: flex; gap: 6px; align-items: center; }
 .stats { grid-template-columns: repeat(5, 1fr) } @media (max-width: 1100px) { .stats { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) }; }
 .val { font-size: 1.7rem; font-weight: 800; margin: 4px 0; } .warn { color: #f5b800; }
 .bar-row { display: grid; grid-template-columns: 120px 1fr 30px; gap: 10px; align-items: center; margin-bottom: 10px; font-size: .9rem; }

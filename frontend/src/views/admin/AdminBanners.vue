@@ -1,11 +1,12 @@
 <template>
   <div>
-    <div class="row between"><h1>Banner trang chủ</h1><button class="btn" @click="edit()">+ Thêm banner</button></div>
+    <div class="row between"><h1>Banner & lịch chạy</h1><button class="btn" @click="edit()">+ Thêm banner</button></div>
     <div class="grid bgrid">
       <div v-for="b in list" :key="b.id" class="card bcard" :class="{ off: !b.active }">
         <div class="img"><img loading="lazy" decoding="async" :src="b.image" alt="" /><span class="pos">{{ b.position }} · #{{ b.sortOrder }}</span></div>
         <div class="small muted">{{ b.kicker }}</div><b>{{ b.title }}</b><div class="small">{{ b.subtitle }}</div>
         <div class="small muted">→ {{ b.link }}</div>
+        <div class="small"><span :class="['badge', sched(b).b]">{{ sched(b).l }}</span> <span class="muted">{{ b.startAt ? dt(b.startAt) : '—' }} → {{ b.endAt ? dt(b.endAt) : 'không hạn' }}</span></div>
         <div class="row" style="gap:6px;margin-top:8px"><button class="btn btn-sm btn-outline" @click="edit(b)">Sửa</button><button class="btn btn-sm btn-danger" @click="remove(b)">Xoá</button></div>
       </div>
     </div>
@@ -23,6 +24,7 @@
         <div class="field"><label>Liên kết</label><input v-model="form.link" class="input" placeholder="/products?type=RC" /></div>
         <div class="field"><label>Ảnh</label><div class="row" style="gap:8px"><input v-model="form.image" class="input" style="flex:1" /><label class="btn btn-sm btn-outline">Tải lên<input type="file" accept="image/*" hidden @change="up" /></label></div></div>
         <img loading="lazy" decoding="async" v-if="form.image" :src="form.image" class="prev" />
+        <div class="form-grid"><div class="field"><label>Bắt đầu chạy</label><input v-model="form.startAt" type="datetime-local" class="input" /></div><div class="field"><label>Kết thúc</label><input v-model="form.endAt" type="datetime-local" class="input" /></div></div>
         <label class="check"><input v-model="form.active" type="checkbox" /> Hiển thị</label>
         <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn btn-outline" @click="form = null">Huỷ</button><button class="btn" @click="save">Lưu</button></div>
       </div>
@@ -32,11 +34,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api, { errMsg, uploadImage } from '../../api'
+import { dt } from '../../format'
+const sched = b => { const n = Date.now(); if (!b.active) return { l: 'Tắt', b: 'badge-CANCELLED' }; if (b.startAt && new Date(b.startAt) > n) return { l: 'Lên lịch', b: 'badge-PENDING' }; if (b.endAt && new Date(b.endAt) < n) return { l: 'Hết hạn', b: 'badge-CANCELLED' }; return { l: 'Đang chạy', b: 'badge-COMPLETED' } }
 const list = ref([]), form = ref(null), err = ref('')
 const load = async () => { list.value = (await api.get('/admin/banners')).data }
-const edit = b => { err.value = ''; form.value = b ? { ...b } : { position: 'HERO', sortOrder: list.value.length + 1, title: '', kicker: '', subtitle: '', image: '', link: '/products', active: true } }
+const edit = b => { err.value = ''; form.value = b ? { ...b, startAt: b.startAt?.slice(0, 16) || '', endAt: b.endAt?.slice(0, 16) || '' } : { position: 'HERO', sortOrder: list.value.length + 1, title: '', kicker: '', subtitle: '', image: '', link: '/products', active: true } }
 const up = async e => { try { form.value.image = await uploadImage(e.target.files[0]) } catch (x) { err.value = errMsg(x) } }
-const save = async () => { const f = form.value; try { f.id ? await api.put(`/admin/banners/${f.id}`, f) : await api.post('/admin/banners', f); form.value = null; load() } catch (e) { err.value = errMsg(e) } }
+const save = async () => { const f = { ...form.value, startAt: form.value.startAt || null, endAt: form.value.endAt || null }; try { f.id ? await api.put(`/admin/banners/${f.id}`, f) : await api.post('/admin/banners', f); form.value = null; load() } catch (e) { err.value = errMsg(e) } }
 const remove = async b => { if (confirm('Xoá banner?')) { await api.delete(`/admin/banners/${b.id}`); load() } }
 onMounted(load)
 </script>

@@ -1,7 +1,7 @@
 <template>
   <div class="container page">
     <h1 style="margin-bottom:20px">Giỏ hàng</h1>
-    <div v-if="!cart.items.length && !cart.saved.length" class="empty card"><div class="spinner idle" />Giỏ hàng đang trống. <router-link to="/products">Tiếp tục mua sắm →</router-link></div>
+    <div v-if="!cart.items.length && !cart.saved.length" class="empty card" style="margin-bottom:16px"><div class="spinner idle" />Giỏ hàng đang trống. <router-link to="/products">Tiếp tục mua sắm →</router-link></div>
     <div v-else class="layout">
       <div>
         <div class="card">
@@ -38,6 +38,8 @@
       <div class="card summary">
         <h3>Tóm tắt</h3>
         <div class="row between"><span>Tạm tính ({{ cart.count }} sp)</span><b>{{ vnd(cart.subtotal) }}</b></div>
+        <div v-if="bundleOff" class="row between ok"><span>Combo ưu đãi</span><b>−{{ vnd(bundleOff) }}</b></div>
+        <router-link v-else to="/bundles" class="small">🎁 Xem combo mua 2 tặng 1, giá gói →</router-link>
         <div class="ship">
           <div class="road"><div class="fill" :style="{ width: Math.min(100, cart.subtotal * 100 / free) + '%' }" /><span class="car" :style="{ left: Math.min(100, cart.subtotal * 100 / free) + '%' }">🚚</span></div>
           <small v-if="cart.subtotal >= free" class="ok">Đơn hàng được miễn phí vận chuyển!</small>
@@ -45,21 +47,57 @@
         </div>
         <div class="row between muted small"><span>Phí vận chuyển</span><span>Tính theo khu vực ở bước thanh toán</span></div>
         <router-link to="/checkout" :class="['btn btn-block', { disabled: !cart.items.length }]" style="margin-top:16px">Tiến hành thanh toán →</router-link>
-        <p class="muted small" style="margin-top:10px">Có mã giảm giá? Nhập ở bước thanh toán. <router-link to="/promotions">Xem voucher</router-link></p>
+        <p class="muted small" style="margin-top:10px">Mã giảm tốt nhất được tự áp ở bước thanh toán. <router-link to="/promotions">Xem voucher</router-link></p>
       </div>
     </div>
+    <section v-if="auth.loggedIn" class="card scarts">
+      <div class="row between"><h3>Giỏ hàng đã lưu</h3>
+        <form v-if="cart.items.length" class="row sform" @submit.prevent="saveCart"><input v-model.trim="cname" class="input" maxlength="40" placeholder="Tên giỏ, VD: Quà sinh nhật" aria-label="Tên giỏ" /><button class="btn btn-sm">Lưu giỏ hiện tại</button></form></div>
+      <p v-if="!carts.length" class="muted small">Lưu nhiều giỏ để mua sau, so sánh hoặc chuẩn bị quà — khôi phục chỉ với một chạm.</p>
+      <div v-for="c in carts" :key="c.id" class="sc">
+        <div class="imgs"><img v-for="(i, n) in c.items.slice(0, 4)" :key="n" :src="i.image" alt="" /></div>
+        <div class="grow"><b>{{ c.name }}</b><div class="small muted">{{ c.items.reduce((a, i) => a + i.quantity, 0) }} sản phẩm · {{ vnd(c.items.reduce((a, i) => a + i.unitPrice * i.quantity, 0)) }} · {{ ago(c.updatedAt) }}</div></div>
+        <button class="btn btn-sm" :disabled="busy" @click="restore(c)">Khôi phục</button><button class="btn btn-sm btn-outline" :aria-label="`Xoá giỏ ${c.name}`" @click="del(c)">Xoá</button>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
+import api, { errMsg } from '../api'
 import { useCart } from '../stores/cart'
-import { vnd, catalog, loadCatalog } from '../format'
-const cart = useCart(); loadCatalog()
+import { useAuth } from '../stores/auth'
+import { toast } from '../stores/prefs'
+import { addById } from '../cartAdd'
+import { vnd, ago, catalog, loadCatalog } from '../format'
+const cart = useCart(), auth = useAuth(); loadCatalog()
+const bundleOff = ref(0), carts = ref([]), cname = ref(''), busy = ref(false)
+const quote = async () => { bundleOff.value = cart.items.length ? (await api.post('/public/bundle-quote', cart.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })))).data.discount : 0 }
+watch(() => cart.items.map(i => i.key + i.quantity).join(), () => quote().catch(() => {}), { immediate: true })
+const loadCarts = async () => { if (!auth.loggedIn) return; carts.value = (await api.get('/account/saved-carts')).data.map(c => ({ ...c, items: JSON.parse(c.itemsJson || '[]') })) }
+async function saveCart() {
+  try { await api.post('/account/saved-carts', { name: cname.value, items: cart.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, image: i.image, quantity: i.quantity, unitPrice: i.unitPrice })) }); cname.value = ''; toast('Đã lưu giỏ hàng'); loadCarts() }
+  catch (e) { toast(errMsg(e), 'error') }
+}
+async function restore(c) {
+  busy.value = true; let n = 0
+  try { for (const i of c.items) if (await addById(i.productId, i.quantity, i.variantId)) n++; toast(n === c.items.length ? `Đã khôi phục “${c.name}”` : `Đã thêm ${n}/${c.items.length} món (một số đã hết hàng)`, n ? 'success' : 'error') }
+  finally { busy.value = false }
+}
+async function del(c) { await api.delete('/account/saved-carts/' + c.id); loadCarts() }
+onMounted(() => loadCarts().catch(() => {}))
 const free = computed(() => catalog.options.freeShipFrom || 500000)
 </script>
 
 <style scoped>
+.scarts { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; } .scarts > .row { gap: 10px; flex-wrap: wrap; }
+.sform { gap: 8px; flex-wrap: nowrap; } .sform .input { min-width: 0; width: 220px; }
+.sc { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); flex-wrap: wrap; } .sc .grow { min-width: 0; flex: 1 1 180px; }
+.imgs { display: flex; } .imgs img { width: 40px; height: 32px; object-fit: cover; border: 2px solid var(--surface); margin-left: -8px; } .imgs img:first-child { margin-left: 0; }
+.ok { color: var(--success); }
+@media (max-width: 599px) { .sform { width: 100%; } .sform .input { flex: 1; width: auto; } }
+
 .layout > * { min-width: 0; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }

@@ -19,6 +19,9 @@ public class CustomerOrder {
     public Boolean giftWrap; @Column(length = 300) public String giftMessage; public Long giftFee;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     public List<OrderItem> items = new ArrayList<>();
+    /** v11: phương thức giao, ngày giao dự kiến, combo, tín dụng, hoàn tiền một phần, khách vãng lai. */
+    public String shippingMethod; public java.time.LocalDate etaFrom; public java.time.LocalDate etaTo;
+    public Long bundleDiscount; public Long creditUsed; public Long refundedAmount; public Boolean guest;
     public long subtotal;
     public long discount;
     public long pointsDiscount;

@@ -11,6 +11,9 @@
           <router-link to="/about">Về chúng tôi</router-link>
           <router-link to="/services">Liên hệ</router-link>
           <router-link to="/faq">Hỗ trợ</router-link>
+          <router-link to="/track">Tra cứu đơn hàng</router-link>
+          <router-link to="/gift-cards">Thẻ quà tặng</router-link>
+          <router-link to="/bundles">Combo ưu đãi</router-link>
           <router-link to="/about#terms">Điều khoản dịch vụ</router-link>
           <router-link to="/about#privacy">Chính sách bảo mật</router-link>
         </nav>

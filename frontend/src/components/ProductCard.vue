@@ -19,6 +19,10 @@
         <span v-if="p.reviewCount" class="rate">★ {{ p.rating }}</span>
         <span v-if="p.stock <= 0" class="out">Hết hàng</span>
       </div>
+      <div v-if="flashPrice && flash.quota" class="fstock" :aria-label="`Flash sale còn ${flash.quota - flash.sold} suất`">
+        <div class="fbar"><i :style="{ width: Math.min(100, flash.sold * 100 / flash.quota) + '%' }" /></div>
+        <small>{{ flash.quota - flash.sold <= 3 ? `🔥 Chỉ còn ${flash.quota - flash.sold} suất` : `Đã bán ${flash.sold}/${flash.quota}` }}</small>
+      </div>
       <div class="foot">
         <div>
           <div class="price"><small v-if="p.hasVariants">từ </small>{{ vnd(flashPrice || p.price) }}</div>
@@ -87,6 +91,9 @@ const add = async (e) => {
 .foot .price { font-size: 1.05rem; font-weight: 700; color: var(--text); } .price small { font-weight: 500; color: var(--muted); font-size: .75rem; }
 .foot .old-price { display: block; margin: 0; font-size: .78rem; }
 .buy { padding: 7px 18px; flex-shrink: 0; }
+.fstock { margin: 2px 0 8px; } .fbar { height: 6px; background: #f3d6d6; overflow: hidden; } .fbar i { display: block; height: 100%; background: linear-gradient(90deg, #ff7a00, #c62828); transition: width .5s ease-out; }
+.fstock small { font-size: .72rem; font-weight: 600; color: #c62828; }
+@media (prefers-reduced-motion: reduce) { .fbar i { transition: none; } }
 .foot > div { min-width: 0; }
 .body, .info { container-type: inline-size; }
 @container (max-width: 190px) { .foot { flex-wrap: wrap; } .foot .buy { width: 100%; padding: 8px 10px; } .foot .price { font-size: .95rem; } }

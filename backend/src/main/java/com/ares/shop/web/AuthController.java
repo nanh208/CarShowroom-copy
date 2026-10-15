@@ -23,7 +23,7 @@ public class AuthController {
 
     public record RegisterReq(@NotBlank @Email String email, @NotBlank @Size(min = 6, message = "tối thiểu 6 ký tự") String password,
                               @NotBlank String fullName, String phone) {}
-    public record LoginReq(@NotBlank String email, @NotBlank String password) {}
+    public record LoginReq(@NotBlank String email, @NotBlank String password, String totp) {}
 
     @PostMapping("/register")
     public Map<String, Object> register(@Valid @RequestBody RegisterReq r) {
@@ -41,6 +41,10 @@ public class AuthController {
                 .filter(x -> x.password != null && enc.matches(r.password(), x.password))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Email hoặc mật khẩu không đúng"));
         if (u.locked) throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản đã bị khoá");
+        if (Boolean.TRUE.equals(u.totpEnabled)) {
+            if (r.totp() == null || r.totp().isBlank()) return Map.of("totpRequired", true);
+            if (!com.ares.shop.service.Totp.verify(u.totpSecret, r.totp())) throw new ApiException(HttpStatus.UNAUTHORIZED, "Mã xác thực 2 bước không đúng");
+        }
         return Map.of("token", jwt.generate(u), "user", u);
     }
 

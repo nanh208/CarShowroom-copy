@@ -23,6 +23,12 @@ public class OrderService {
 
     private final ProductRepo products; private final VariantRepo variants; private final PromotionRepo promos; private final OrderRepo orders;
     private final FlashSaleRepo flash; private final UserRepo users; private final PointRepo points; private final NotifyService notify; private final StockRepo stock;
+    @org.springframework.beans.factory.annotation.Autowired private BundleRepo bundles;
+    @org.springframework.beans.factory.annotation.Autowired private MailService mail;
+    @org.springframework.beans.factory.annotation.Autowired private AbandonedCartRepo carts;
+    @org.springframework.beans.factory.annotation.Autowired private GiftCardRepo giftCards;
+    @org.springframework.beans.factory.annotation.Autowired private ReferralRepo referrals;
+    public static final long REFERRAL_DISCOUNT = 50_000; public static final int REFERRAL_REWARD = 100;
 
     public OrderService(ProductRepo products, VariantRepo variants, PromotionRepo promos, OrderRepo orders, FlashSaleRepo flash,
                         UserRepo users, PointRepo points, NotifyService notify, StockRepo stock) {
@@ -33,15 +39,27 @@ public class OrderService {
     public record ItemReq(Long productId, Long variantId, int quantity) {}
     public record CheckoutReq(String buyerName, String phone, String email, String shippingAddress, String city, String note,
                               String promoCode, Integer usePoints, Enums.PaymentMethod paymentMethod, Integer installmentMonths, List<ItemReq> items,
-                              Boolean giftWrap, String giftMessage) {}
+                              Boolean giftWrap, String giftMessage, String shippingMethod, String giftCardCode, String referralCode,
+                              Boolean guest, Boolean autoBestPromo, Boolean useCredit) {}
 
     /** Phí vận chuyển theo khu vực. */
-    public static long shippingFee(String city, long amount) {
-        if (amount >= FREE_SHIP_FROM) return 0;
-        if (city == null || city.isBlank()) return 35_000;
-        if (INNER.contains(city)) return 20_000;
-        if (NEAR.contains(city)) return 30_000;
-        return 40_000;
+    public static long shippingFee(String city, long amount) { return shippingFee(city, amount, "STANDARD"); }
+    public static long shippingFee(String city, long amount, String method) {
+        boolean express = method != null && method.equalsIgnoreCase("EXPRESS");
+        if (!express && amount >= FREE_SHIP_FROM) return 0;
+        long base;
+        if (city == null || city.isBlank()) base = 35_000;
+        else if (INNER.contains(city)) base = 20_000;
+        else if (NEAR.contains(city)) base = 30_000;
+        else base = 40_000;
+        return express ? base + 25_000 : base;
+    }
+    public static java.time.LocalDate[] eta(String city, String method) {
+        boolean express = method != null && method.equalsIgnoreCase("EXPRESS");
+        int lo = express ? 1 : (INNER.contains(city == null ? "" : city) ? 1 : NEAR.contains(city == null ? "" : city) ? 2 : 3);
+        int hi = express ? lo + 1 : lo + 2;
+        var from = java.time.LocalDate.now().plusDays(lo);
+        return new java.time.LocalDate[]{ from, from.plusDays(hi - lo) };
     }
 
     public Promotion validPromo(String code, long subtotal) {
@@ -75,10 +93,13 @@ public class OrderService {
         if (isBlank(r.buyerName()) || isBlank(r.phone()) || isBlank(r.shippingAddress()))
             throw ApiException.bad("Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ nhận hàng");
         if (r.paymentMethod() == null) throw ApiException.bad("Vui lòng chọn phương thức thanh toán");
-        User u = users.findById(user.id).orElseThrow();
+        boolean isGuest = user == null || Boolean.TRUE.equals(r.guest());
+        if (isGuest && isBlank(r.email())) throw ApiException.bad("Khách vãng lai cần nhập email để nhận hoá đơn");
+        User u = isGuest ? null : users.findById(user.id).orElseThrow();
 
         CustomerOrder o = new CustomerOrder();
-        o.user = u; o.buyerName = r.buyerName(); o.phone = r.phone(); o.email = r.email(); o.city = r.city();
+        o.user = u; o.guest = isGuest; o.buyerName = r.buyerName(); o.phone = r.phone(); o.email = r.email(); o.city = r.city();
+        o.shippingMethod = isBlank(r.shippingMethod()) ? "STANDARD" : r.shippingMethod().toUpperCase();
         o.shippingAddress = r.shippingAddress() + (isBlank(r.city()) || r.shippingAddress().contains(r.city()) ? "" : ", " + r.city());
         o.note = r.note(); o.paymentMethod = r.paymentMethod();
         for (ItemReq it : r.items()) {
@@ -106,28 +127,67 @@ public class OrderService {
                 unit = fs.get().salePrice; oi.flashSale = true; fs.get().sold += it.quantity(); flash.save(fs.get());
             }
             p.sold += it.quantity();
-            log(p, v, -it.quantity(), "Bán hàng", u.email);
+            log(p, v, -it.quantity(), "Bán hàng", u == null ? "guest:" + r.email() : u.email);
             oi.unitPrice = unit; oi.quantity = it.quantity();
             o.items.add(oi);
             o.subtotal += unit * it.quantity();
         }
+        o.bundleDiscount = bundleDiscount(o.items);
+        if (o.bundleDiscount == 0) o.bundleDiscount = null;
         boolean freeShip = false;
-        if (!isBlank(r.promoCode())) {
-            Promotion p = validPromo(r.promoCode(), o.subtotal);
+        String promoCode = r.promoCode();
+        if (Boolean.TRUE.equals(r.autoBestPromo()) && isBlank(promoCode)) {
+            long best = 0; Promotion bestP = null; boolean bestFs = false;
+            for (Promotion p : promos.findByActiveTrue()) {
+                if (!p.isValidNow() || !p.isPublic || o.subtotal < p.minOrder) continue;
+                if (p.kind == Enums.VoucherKind.FREESHIP) { if (!bestFs && best == 0) { bestP = p; bestFs = true; } continue; }
+                long d = discount(p, o.subtotal); if (d > best) { best = d; bestP = p; bestFs = false; }
+            }
+            if (bestP != null) promoCode = bestP.code;
+        }
+        if (!isBlank(promoCode)) {
+            Promotion p = validPromo(promoCode, o.subtotal);
             o.promoCode = p.code; o.discount = discount(p, o.subtotal); freeShip = p.kind == Enums.VoucherKind.FREESHIP;
             p.usedCount++; promos.save(p);
         }
-        int use = r.usePoints() == null ? 0 : Math.max(0, Math.min(r.usePoints(), u.points));
+        long bd = o.bundleDiscount == null ? 0 : o.bundleDiscount;
+        o.discount = Math.min(o.discount + bd, o.subtotal);
+        // Mã giới thiệu: giảm 50.000đ cho đơn đầu tiên của tài khoản mới; người giới thiệu nhận 100 điểm
+        if (u != null && !isBlank(r.referralCode())) {
+            Referral ref = referrals.findByCodeIgnoreCase(r.referralCode().trim()).orElseThrow(() -> ApiException.bad("Mã giới thiệu không tồn tại"));
+            if (ref.ownerUserId.equals(u.id)) throw ApiException.bad("Không thể dùng mã giới thiệu của chính bạn");
+            if (!orders.findByUserIdOrderByCreatedAtDesc(u.id).isEmpty()) throw ApiException.bad("Mã giới thiệu chỉ áp dụng cho đơn đầu tiên");
+            if (ref.uses >= ref.maxUses) throw ApiException.bad("Mã giới thiệu đã hết lượt");
+            o.discount = Math.min(o.discount + REFERRAL_DISCOUNT, o.subtotal); ref.uses++; referrals.save(ref);
+            u.referredBy = ref.ownerUserId;
+            users.findById(ref.ownerUserId).ifPresent(owner -> { owner.points += REFERRAL_REWARD; users.save(owner); pointTx(owner, REFERRAL_REWARD, "Thưởng giới thiệu bạn mới");
+                notify.send(owner, "SYSTEM", "Bạn nhận " + REFERRAL_REWARD + " điểm giới thiệu", "Một người bạn vừa đặt đơn đầu tiên bằng mã của bạn.", "/account?tab=points"); });
+            o.note = (o.note == null || o.note.isBlank() ? "" : o.note + " · ") + "Mã giới thiệu " + ref.code.toUpperCase();
+        }
+        int availPts = u == null ? 0 : u.points;
+        int use = r.usePoints() == null ? 0 : Math.max(0, Math.min(r.usePoints(), availPts));
         long maxByPoints = (o.subtotal - o.discount) / 2; // dùng điểm tối đa 50% giá trị đơn
         use = (int) Math.min(use, maxByPoints / POINT_VALUE);
-        if (use > 0) {
+        if (use > 0 && u != null) {
             o.pointsUsed = use; o.pointsDiscount = use * POINT_VALUE; u.points -= use; users.save(u);
             pointTx(u, -use, "Dùng điểm cho đơn hàng");
         }
         long afterDiscount = o.subtotal - o.discount - o.pointsDiscount;
-        o.shippingFee = freeShip ? 0 : shippingFee(r.city(), afterDiscount);
+        // store credit / gift card applied later by controller; shipping
+        o.shippingFee = freeShip && !"EXPRESS".equals(o.shippingMethod) ? 0 : shippingFee(r.city(), afterDiscount, o.shippingMethod);
+        var et = eta(r.city(), o.shippingMethod); o.etaFrom = et[0]; o.etaTo = et[1];
         if (Boolean.TRUE.equals(r.giftWrap())) { o.giftWrap = true; o.giftFee = GIFT_FEE; o.giftMessage = r.giftMessage() == null ? null : r.giftMessage().trim().substring(0, Math.min(300, r.giftMessage().trim().length())); }
         o.total = afterDiscount + o.shippingFee + (o.giftFee == null ? 0 : o.giftFee);
+        long credit = 0;
+        if (!isBlank(r.giftCardCode())) {
+            GiftCard g = giftCards.findByCodeIgnoreCase(r.giftCardCode().trim()).filter(x -> x.active && x.balance > 0 && (x.expiresAt == null || x.expiresAt.isAfter(LocalDateTime.now())))
+                    .orElseThrow(() -> ApiException.bad("Thẻ quà tặng không hợp lệ hoặc đã hết số dư"));
+            long c = Math.min(g.balance, o.total); g.balance -= c; giftCards.save(g); credit += c;
+        }
+        if (u != null && Boolean.TRUE.equals(r.useCredit()) && u.storeCredit != null && u.storeCredit > 0) {
+            long c = Math.min(u.storeCredit, o.total - credit); u.storeCredit -= c; users.save(u); credit += c;
+        }
+        if (credit > 0) { o.creditUsed = credit; o.total -= credit; }
 
         switch (r.paymentMethod()) {
             case INSTALLMENT -> {
@@ -138,6 +198,7 @@ public class OrderService {
             }
             default -> {}
         }
+        if (o.total == 0) { o.paymentStatus = Enums.PaymentStatus.PAID; o.paidAt = LocalDateTime.now(); }
         o.code = "TS" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
         o.timeline.put("PENDING", LocalDateTime.now());
         CustomerOrder saved = orders.save(o);
@@ -147,7 +208,9 @@ public class OrderService {
             case MOMO, VNPAY -> "Vui lòng hoàn tất thanh toán qua cổng " + o.paymentMethod.name() + ".";
             case INSTALLMENT -> "Trả góp 0% " + o.installmentMonths + " tháng qua thẻ tín dụng.";
         };
-        notify.send(u, "ORDER", "Đặt hàng thành công", "Đơn " + saved.code + " đã được ghi nhận. " + how, "/orders/" + saved.code);
+        try { mail.invoice(saved); } catch (Exception ignored) {}
+        if (u != null) carts.findByUserId(u.id).ifPresent(carts::delete); else if (o.email != null) carts.findByEmailIgnoreCase(o.email).ifPresent(carts::delete);
+        if (u != null) notify.send(u, "ORDER", "Đặt hàng thành công", "Đơn " + saved.code + " đã được ghi nhận. " + how, "/orders/" + saved.code);
         return saved;
     }
 
@@ -225,6 +288,30 @@ public class OrderService {
         o.code = "AU" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
         o.timeline.put("PENDING", LocalDateTime.now());
         return orders.save(o);
+    }
+
+    /** Combo: mua X tặng Y (miễn phí món rẻ nhất trong mỗi nhóm) hoặc giá gói cố định. */
+    public long bundleDiscount(List<OrderItem> items) {
+        long total = 0;
+        for (Bundle b : bundles.findByActiveTrueOrderBySortOrderAsc()) {
+            if (b.productIds.isEmpty()) continue;
+            if ("FIXED".equals(b.kind)) {
+                int sets = Integer.MAX_VALUE; long one = 0;
+                for (Long pid : new java.util.LinkedHashSet<>(b.productIds)) {
+                    var its = items.stream().filter(i -> pid.equals(i.productId)).toList();
+                    int q = its.stream().mapToInt(i -> i.quantity).sum(); sets = Math.min(sets, q);
+                    one += its.isEmpty() ? 0 : its.stream().mapToLong(i -> i.unitPrice).min().getAsLong();
+                }
+                if (sets > 0 && sets != Integer.MAX_VALUE && one > b.bundlePrice) total += (one - b.bundlePrice) * sets;
+            } else {
+                List<Long> units = new ArrayList<>();
+                for (OrderItem i : items) if (b.productIds.contains(i.productId)) for (int k = 0; k < i.quantity; k++) units.add(i.unitPrice);
+                units.sort(java.util.Comparator.reverseOrder());
+                int group = Math.max(1, b.buyQty + b.getQty);
+                for (int g = 0; g + group <= units.size(); g += group) for (int k = 0; k < b.getQty; k++) total += units.get(g + group - 1 - k);
+            }
+        }
+        return total;
     }
 
     private static boolean isBlank(String s) { return s == null || s.isBlank(); }

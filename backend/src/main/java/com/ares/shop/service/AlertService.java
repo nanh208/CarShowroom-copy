@@ -19,8 +19,17 @@ public class AlertService {
         this.alerts = alerts; this.products = products; this.users = users; this.notify = notify;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.service.MailService mail;
+    @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.repo.StockNotifyRepo stockNotify;
+
     @Scheduled(fixedDelay = 30_000, initialDelay = 20_000)
     public void scan() {
+        for (StockNotify n : stockNotify.findBySentIsNullOrSentFalse()) {
+            Product p = products.findById(n.productId).orElse(null);
+            if (p == null || !p.active || p.stock <= 0) continue;
+            mail.send(n.email, "Đã có hàng: " + p.name, "BACK_IN_STOCK", "Sản phẩm bạn quan tâm đã có hàng trở lại (còn " + p.stock + ").\nĐặt ngay: /products/" + p.id);
+            n.sent = true; stockNotify.save(n);
+        }
         for (WatchAlert w : alerts.findByFiredIsNullOrFiredFalse()) {
             Product p = products.findById(w.productId).orElse(null);
             if (p == null || !p.active) continue;
@@ -37,6 +46,8 @@ public class AlertService {
         for (Product p : low) {
             if (!lowNotified.add(p.id)) continue;
             staff.forEach(s -> notify.send(s, "SYSTEM", "Tồn kho thấp: " + p.name, "Chỉ còn " + p.stock + " sản phẩm (SKU " + p.sku + ").", "/admin/inventory"));
+            staff.stream().filter(s -> s.role == Enums.Role.ADMIN).forEach(s -> mail.send(s.email, "[Tồn kho thấp] " + p.name, "LOW_STOCK",
+                    "Sản phẩm " + p.name + " (SKU " + p.sku + ") chỉ còn " + p.stock + " sản phẩm.\nVào /admin/purchase-orders để tạo đơn nhập hàng theo gợi ý."));
         }
         // sản phẩm đã nhập thêm hàng → cho phép cảnh báo lại lần sau
         lowNotified.removeIf(id -> products.findById(id).map(p -> p.stock > LOW_STOCK).orElse(true));

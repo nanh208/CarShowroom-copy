@@ -41,7 +41,7 @@ const links = [
   { label: 'Xe mô hình', to: { path: '/products', query: { type: 'MODEL,DISPLAY' } } },
   { label: 'Xe RC', to: { path: '/products', query: { type: 'RC' } } },
   { label: 'Phụ kiện', to: { path: '/products', query: { grp: 'ACCESSORY' } } },
-  { label: 'Đấu giá', to: '/auctions' }, { label: 'Khuyến mãi', to: '/promotions' },
+  { label: 'Đấu giá', to: '/auctions' }, { label: 'Khuyến mãi', to: '/promotions' }, { label: 'Combo ưu đãi', to: '/bundles' }, { label: 'Thẻ quà tặng', to: '/gift-cards' }, { label: 'Tra cứu đơn hàng', to: '/track' },
   { label: 'Trung tâm hỗ trợ', to: '/support' }, { label: 'Câu hỏi thường gặp', to: '/faq' }, { label: 'Về chúng tôi', to: '/about' }]
 const search = () => { navOpen.value = false; router.push({ path: '/products', query: q.value.trim() ? { q: q.value.trim() } : {} }); q.value = '' }
 const logout = () => { auth.logout(); navOpen.value = false; router.push('/') }

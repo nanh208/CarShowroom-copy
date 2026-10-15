@@ -148,7 +148,8 @@ public class CatalogController {
     }
 
     @GetMapping("/banners")
-    public List<Banner> banners() { return banners.findByActiveTrueOrderBySortOrderAsc(); }
+    public List<Banner> banners() { var n = LocalDateTime.now();
+        return banners.findByActiveTrueOrderBySortOrderAsc().stream().filter(b -> (b.startAt == null || !n.isBefore(b.startAt)) && (b.endAt == null || n.isBefore(b.endAt))).toList(); }
 
     /** Tra cứu bảo hành theo mã đơn + số điện thoại. */
     @GetMapping("/warranty")

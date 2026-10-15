@@ -1,8 +1,8 @@
 <template>
   <div class="home">
     <!-- Hero carousel (banner quản lý trong admin) — menu đè lên phần trên, ảnh parallax -->
-    <HeroV2 v-if="theme === 'v2'" :products="all" />
-    <template v-else>
+    <HeroV2 v-if="theme === 'v2' && show('hero')" :products="all" />
+    <template v-else-if="show('hero')">
     <section class="hero" @mouseenter="pause = true" @mouseleave="pause = false">
       <div class="slides">
         <router-link v-for="(s, i) in hero" :key="s.id" :to="s.link || '/products'" :class="['slide', { on: i === cur }]">
@@ -43,12 +43,18 @@
       </div>
 
       <Skeleton v-if="loading" :count="6" :cols="3" />
-      <template v-else>
-        <section v-if="flash.length" v-reveal class="block">
-          <div class="bh"><h2>⚡ Flash sale <span class="cd">kết thúc sau <Countdown :to="flashEnd" /></span></h2><router-link to="/promotions">Xem tất cả →</router-link></div>
+      <div v-else class="hsections">
+        <section v-if="flash.length && show('flash')" v-reveal class="block" :style="ord('flash')">
+          <div class="bh"><h2>⚡ Flash sale <span class="cd">kết thúc sau <Countdown :to="flashEnd" /></span><span class="livedot" title="Cập nhật trực tiếp">LIVE</span></h2><router-link to="/promotions">Xem tất cả →</router-link></div>
           <div class="grid grid-4"><ProductCard v-for="(x, i) in flash" :key="x.flash.id" v-reveal :p="x.product" :flash="x.flash" /></div>
         </section>
 
+        <section v-if="bundles.length && show('bundles')" class="block" :style="ord('bundles')">
+          <div class="bh"><h2>Combo ưu đãi</h2><router-link to="/bundles">Tất cả combo →</router-link></div>
+          <div class="bgrid"><BundleCard v-for="b in bundles.slice(0, 3)" :key="b.bundle.id" :b="b" /></div>
+        </section>
+
+        <div v-if="show('featured')" :style="ord('featured')">
         <section v-for="(s, si) in sections" :key="s.title" class="block">
           <div class="bh"><h2>{{ s.title }}</h2><router-link :to="s.to">Xem tất cả →</router-link></div>
           <div class="grid grid-3">
@@ -59,8 +65,9 @@
             </router-link>
           </div>
         </section>
+        </div>
 
-        <section v-if="auctions.length" class="block">
+        <section v-if="auctions.length && show('auctions')" class="block" :style="ord('auctions')">
           <div class="bh"><h2>Đấu giá hàng hiếm</h2><router-link to="/auctions">Tất cả phiên →</router-link></div>
           <div class="grid grid-3">
             <router-link v-for="(a, i) in auctions" :key="a.id" v-reveal :to="`/auctions/${a.id}`" class="tile">
@@ -71,12 +78,12 @@
           </div>
         </section>
 
-        <section v-if="prefs.recent.length" v-reveal class="block">
+        <section v-if="prefs.recent.length && show('recent')" v-reveal class="block" :style="ord('recent')">
           <div class="bh"><h2>Bạn đã xem gần đây</h2></div>
           <div class="recent"><router-link v-for="r in prefs.recent.slice(0, 6)" :key="r.id" :to="`/products/${r.id}`" class="rc"><img loading="lazy" decoding="async" :src="r.images?.[0]" alt="" /><b>{{ r.name }}</b></router-link></div>
         </section>
 
-        <section v-if="reviews.length" class="block">
+        <section v-if="reviews.length && show('reviews')" class="block" :style="ord('reviews')">
           <div class="bh"><h2>Đánh giá của khách hàng</h2></div>
           <div class="grid grid-3">
             <router-link v-for="(r, i) in reviews" :key="r.id" v-reveal :to="`/products/${r.productId}`" class="rev">
@@ -89,7 +96,7 @@
             </router-link>
           </div>
         </section>
-      </template>
+      </div>
     </div>
   </div>
 </template>
@@ -102,11 +109,15 @@ import CountUp from '../components/CountUp.vue'
 import Skeleton from '../components/Skeleton.vue'
 import ProductCard from '../components/ProductCard.vue'
 import HeroV2 from '../components/HeroV2.vue'
+import BundleCard from '../components/BundleCard.vue'
 import { theme } from '../stores/theme'
 import { vnd, d, catalog, loadCatalog } from '../format'
 import { usePrefs } from '../stores/prefs'
 
 const prefs = usePrefs()
+const layout = ref([]), bundles = ref([])
+const show = k => { const x = layout.value.find(l => l.key === k); return !x || x.visible !== false }
+const ord = k => ({ order: Math.max(0, layout.value.findIndex(l => l.key === k)) })
 const all = ref([]), loading = ref(true), auctions = ref([]), reviews = ref([]), banners = ref([]), flash = ref([]), totalProducts = ref(0)
 const hero = computed(() => banners.value.filter(b => b.position === 'HERO'))
 const promo = computed(() => banners.value.find(b => b.position === 'PROMO'))
@@ -139,15 +150,26 @@ onMounted(async () => {
   loadCatalog()
   t = setInterval(() => { if (!pause.value && hero.value.length) cur.value = (cur.value + 1) % hero.value.length }, 5500)
   api.get('/banners').then(r => { banners.value = r.data })
+  api.get('/public/home-layout').then(r => { layout.value = r.data }).catch(() => {})
+  api.get('/public/bundles').then(r => { bundles.value = r.data }).catch(() => {})
+  // tồn kho flash sale cập nhật trực tiếp
+  ft = setInterval(async () => { if (document.hidden || !flash.value.length) return
+    const { data } = await api.get('/flash-sales'); const m = Object.fromEntries(data.map(x => [x.flash.id, x]))
+    flash.value = flash.value.map(x => m[x.flash.id] ? { ...x, flash: m[x.flash.id].flash, live: m[x.flash.id].live } : x).filter(x => x.live !== false) }, 15000)
   const [list, fl] = await Promise.all([api.get('/products', { params: { size: 60, sort: 'bestseller' } }), api.get('/flash-sales')])
   all.value = list.data.content; totalProducts.value = list.data.totalElements; flash.value = fl.data.filter(x => x.live).slice(0, 4); loading.value = false
   api.get('/auctions').then(r => { auctions.value = r.data.filter(a => a.status === 'LIVE' || a.status === 'SCHEDULED').slice(0, 3) })
   api.get('/products/reviews/latest', { params: { limit: 3 } }).then(r => { reviews.value = r.data })
 })
-onUnmounted(() => { clearInterval(t) })
+let ft
+onUnmounted(() => { clearInterval(t); clearInterval(ft) })
 </script>
 
 <style scoped>
+.hsections { display: flex; flex-direction: column; }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.livedot { margin-left: 10px; font: 700 .62rem/1 'Oswald', sans-serif; letter-spacing: .14em; color: #fff; background: #c62828; padding: 3px 6px; vertical-align: middle; }
+
 .hero { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
 .slides { position: relative; height: 420px; border-radius: 0 0 12px 12px; overflow: hidden; background: #111; }
 .slide { position: absolute; inset: 0; opacity: 0; transition: opacity .25s ease-out; color: #fff; overflow: hidden; }
