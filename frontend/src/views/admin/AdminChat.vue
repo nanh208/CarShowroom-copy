@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Live chat</h1>
+    <h1>Live chat <small :class="['rt', { on: rtConnected }]">{{ rtConnected ? '● Thời gian thực' : '○ Đang dùng polling' }}</small></h1>
     <div class="chat-layout">
       <div class="card sessions">
         <div v-if="!sessions.length" class="muted small">Chưa có cuộc trò chuyện.</div>
@@ -14,8 +14,9 @@
         <template v-else>
           <div ref="box" class="msgs">
             <div v-for="m in msgs" :key="m.id" :class="['msg', m.fromAdmin ? 'me' : 'them']">{{ m.content }}<div class="t">{{ dt(m.createdAt) }}</div></div>
+            <div v-if="typingS[cur]" class="msg them small muted">Khách đang gõ…</div>
           </div>
-          <form class="row composer" @submit.prevent="send"><CannedReplies :name="curName" :current="text" @insert="t => (text = t)" /><input v-model="text" class="input grow" placeholder="Trả lời khách..." aria-label="Trả lời" /><button class="btn">Gửi</button></form>
+          <form class="row composer" @submit.prevent="send"><CannedReplies :name="curName" :current="text" @insert="t => (text = t)" /><input v-model="text" class="input grow" @input="sendTyping" placeholder="Trả lời khách..." aria-label="Trả lời" /><button class="btn">Gửi</button></form>
         </template>
       </div>
     </div>
@@ -26,6 +27,7 @@ import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import api from '../../api'
 import { computed } from 'vue'
 import CannedReplies from '../../components/CannedReplies.vue'
+import { subscribe, publish, rtConnected } from '../../realtime'
 import { dt } from '../../format'
 const sessions = ref([]), cur = ref(''), msgs = ref([]), text = ref(''), box = ref()
 const curName = computed(() => sessions.value.find(s => s.sessionId === cur.value)?.customerName)
@@ -40,11 +42,21 @@ async function refresh() {
   }
 }
 async function open(s) { cur.value = s; msgs.value = []; await refresh() }
-async function send() { if (!text.value.trim()) return; await api.post(`/admin/chat/${cur.value}`, { content: text.value }); text.value = ''; refresh() }
-onMounted(() => { refresh(); timer = setInterval(refresh, 4000) })
-onUnmounted(() => clearInterval(timer))
+function add(m) { if (m.sessionId === cur.value && !msgs.value.some(x => x.id === m.id)) { msgs.value.push(m); scroll() } }
+async function send() { if (!text.value.trim()) return; const { data } = await api.post(`/admin/chat/${cur.value}`, { content: text.value }); text.value = ''; add(data); publish(`/app/chat/${cur.value}/typing`, { who: 'staff', on: false }) }
+// STOMP: tin mới đẩy về ngay; polling chỉ chạy khi mất kết nối
+const typingS = ref({}); let typT, unsubs = []
+function sendTyping() { if (!cur.value) return; publish(`/app/chat/${cur.value}/typing`, { who: 'staff', on: true }); clearTimeout(typT); typT = setTimeout(() => publish(`/app/chat/${cur.value}/typing`, { who: 'staff', on: false }), 2500) }
+let sT
+onMounted(() => {
+  refresh(); timer = setInterval(() => { if (!rtConnected.value) refresh() }, 4000)
+  unsubs = [subscribe('/topic/admin/chat', e => { add(e.message); if (!e.message.fromAdmin) typingS.value[e.sessionId] = false; clearTimeout(sT); sT = setTimeout(async () => { sessions.value = (await api.get('/admin/chat/sessions')).data }, 250) }),
+    subscribe('/topic/admin/chat/typing', t => { typingS.value[t.sessionId] = t.on; if (t.on) setTimeout(() => { typingS.value[t.sessionId] = false }, 6000) })]
+})
+onUnmounted(() => { clearInterval(timer); unsubs.forEach(u => u()) })
 </script>
 <style scoped>
+.rt { font-size: .75rem; font-weight: 500; color: var(--muted); margin-left: 8px; } .rt.on { color: var(--success, #2e7d32); }
 .chat-layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; height: calc(100vh - 140px); }
 .sessions { overflow-y: auto; padding: 10px; }
 .sess { display: block; width: 100%; text-align: left; background: none; border: 1px solid transparent; color: var(--text); padding: 10px; border-radius: 10px; cursor: pointer; font-family: inherit; margin-bottom: 4px; }

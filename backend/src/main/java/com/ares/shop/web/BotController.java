@@ -110,6 +110,7 @@ public class BotController {
                 m.put("image", p.images.isEmpty() ? "" : p.images.get(0)); m.put("stock", p.stock); m.put("scale", p.scale); return m; }).collect(Collectors.toList());
     }
 
+    @org.springframework.beans.factory.annotation.Autowired org.springframework.messaging.simp.SimpMessagingTemplate wsT;
     @GetMapping("/api/public/bot/{session}")
     public List<BotLog> history(@PathVariable String session) { return logs.findTop100BySessionOrderByIdAsc(session); }
 
@@ -129,6 +130,7 @@ public class BotController {
         }
         ChatMessage c = new ChatMessage(); c.sessionId = session; c.customerName = b == null ? null : b.get("name");
         c.content = "[Từ trợ lý ảo]\n" + (transcript.length() > 1900 ? transcript.substring(transcript.length() - 1900) : transcript); chats.save(c);
+        wsT.convertAndSend("/topic/admin/chat", Map.of("sessionId", c.sessionId, "message", c)); wsT.convertAndSend("/topic/chat/" + c.sessionId, c);
         return Map.of("mode", "chat");
     }
 

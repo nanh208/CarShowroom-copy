@@ -40,6 +40,8 @@
           <template v-else>
             <div v-if="!msgs.length" class="muted small hint">Nhân viên ARES sẽ trả lời ngay. Bạn có thể mô tả vấn đề bên dưới.</div>
             <div v-for="m in msgs" :key="m.id" :class="['msg', m.fromAdmin ? 'them' : 'me']">{{ m.content }}</div>
+            <div v-if="staffTyping" class="msg them typing" aria-label="Nhân viên đang gõ"><i /><i /><i /></div>
+            <small v-if="rtConnected" class="muted live">● Kết nối trực tiếp</small>
           </template>
         </div>
         <div v-if="mode === 'bot' && !typing" class="chips">
@@ -47,7 +49,7 @@
         </div>
         <div v-if="mode === 'human' && !auth.loggedIn && !msgs.length" class="namebox"><input v-model="name" class="input" placeholder="Tên của bạn" aria-label="Tên của bạn" /></div>
         <form class="send" @submit.prevent="mode === 'bot' ? ask() : send()">
-          <input v-model="text" class="input" maxlength="500" :placeholder="mode === 'bot' ? 'VD: xe RC dưới 3tr, phí ship, mã giảm giá…' : 'Nhập tin nhắn…'" aria-label="Tin nhắn" />
+          <input v-model="text" class="input" maxlength="500" @input="sendTyping" :placeholder="mode === 'bot' ? 'VD: xe RC dưới 3tr, phí ship, mã giảm giá…' : 'Nhập tin nhắn…'" aria-label="Tin nhắn" />
           <button class="btn btn-sm" :disabled="!text.trim() || typing">Gửi</button>
         </form>
         <a class="call" :href="`tel:${HOTLINE.replace(/ /g, '')}`">Gọi hotline {{ HOTLINE }}</a>
@@ -60,6 +62,7 @@
 </template>
 
 <script setup>
+import { subscribe, publish, rtConnected } from '../realtime'
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
@@ -113,26 +116,42 @@ async function handoff() {
     else { mode.value = 'human'; await poll() }
   } catch (e) { push({ text: errMsg(e) }) } finally { busy.value = false; scroll() }
 }
-function reset() { bot.value = [GREET]; quick.value = START; sid = newSid(); localStorage.setItem('chatSession', sid); msgs.value = []; save() }
+function reset() { bot.value = [GREET]; quick.value = START; sid = newSid(); localStorage.setItem('chatSession', sid); msgs.value = []; save(); live() }
 
 const lastId = () => msgs.value.length ? msgs.value[msgs.value.length - 1].id : 0
-async function poll() {
-  try {
-    const { data } = await api.get(`/chat/${sid}`, { params: { after: lastId() } })
-    if (data.length) { msgs.value.push(...data); if (data.some(m => m.fromAdmin)) { if (!open.value) unread.value = true; mode.value = 'human' } scroll() }
-  } catch { /* bỏ qua */ }
+function addMsgs(data) {
+  const fresh = data.filter(m => !msgs.value.some(x => x.id === m.id))
+  if (!fresh.length) return
+  msgs.value.push(...fresh); msgs.value.sort((a, b) => a.id - b.id)
+  if (fresh.some(m => m.fromAdmin)) { staffTyping.value = false; if (!open.value) unread.value = true; mode.value = 'human' }
+  scroll()
 }
+async function poll() {
+  try { const { data } = await api.get(`/chat/${sid}`, { params: { after: lastId() } }); addMsgs(data) } catch { /* bỏ qua */ }
+}
+// Thời gian thực qua STOMP: tin nhắn mới + "nhân viên đang gõ…"
+const staffTyping = ref(false)
+let unsubs = []
+function live() {
+  unsubs.forEach(u => u()); unsubs = [
+    subscribe('/topic/chat/' + sid, m => addMsgs([m])),
+    subscribe('/topic/chat/' + sid + '/typing', t => { if (t.who === 'staff') { staffTyping.value = t.on; scroll() } })
+  ]
+}
+let typT
+function sendTyping() { if (mode.value !== 'human') return; publish(`/app/chat/${sid}/typing`, { who: 'customer', on: true }); clearTimeout(typT); typT = setTimeout(() => publish(`/app/chat/${sid}/typing`, { who: 'customer', on: false }), 2500) }
 async function send() {
   if (!text.value.trim()) return
-  try { await api.post(`/chat/${sid}`, { content: text.value, customerName: name.value }); text.value = ''; await poll() } catch (e) { msgs.value.push({ id: Date.now(), fromAdmin: true, content: 'Không gửi được: ' + errMsg(e) }) }
+  try { const { data } = await api.post(`/chat/${sid}`, { content: text.value, customerName: name.value }); text.value = ''; addMsgs([data]); publish(`/app/chat/${sid}/typing`, { who: 'customer', on: false }); if (!rtConnected.value) await poll() } catch (e) { msgs.value.push({ id: Date.now(), fromAdmin: true, content: 'Không gửi được: ' + errMsg(e) }) }
 }
 const toggle = () => { open.value = !open.value; unread.value = false; scroll() }
 const openEv = e => { if (!open.value) toggle(); if (e?.detail === 'human') handoff() }
-onMounted(() => { poll(); timer = setInterval(() => { if (open.value || mode.value === 'human') poll() }, 5000); addEventListener('open-chat', openEv) })
-onUnmounted(() => { clearInterval(timer); removeEventListener('open-chat', openEv) })
+onMounted(() => { poll(); live(); timer = setInterval(() => { if (!rtConnected.value && (open.value || mode.value === 'human')) poll() }, 5000); addEventListener('open-chat', openEv) })
+onUnmounted(() => { clearInterval(timer); unsubs.forEach(u => u()); removeEventListener('open-chat', openEv) })
 </script>
 
 <style scoped>
+.live { align-self: center; font-size: .7rem; color: var(--success, #2e7d32); }
 .chat { position: fixed; right: 20px; bottom: 20px; z-index: 110; }
 .fab { width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--primary); color: #fff; font-size: 1.3rem; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.25); position: relative; display: grid; place-items: center; transition: transform .2s ease-out, background .2s ease-out; }
 .fab:active { transform: scale(.9); } .fab.opened { background: #111; }

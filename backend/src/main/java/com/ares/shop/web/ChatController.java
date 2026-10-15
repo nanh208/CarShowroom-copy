@@ -6,12 +6,29 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-/** Live chat đơn giản dùng polling. Khách dùng sessionId ngẫu nhiên lưu ở trình duyệt. */
+/** Live chat: REST để gửi/tải lịch sử, đẩy thời gian thực qua STOMP (/topic/chat/{session}, /topic/admin/chat). Polling vẫn hoạt động làm dự phòng. */
 @RestController
 public class ChatController {
-    private final ChatRepo chat;
+    private final ChatRepo chat; private final org.springframework.messaging.simp.SimpMessagingTemplate ws;
 
-    public ChatController(ChatRepo chat) { this.chat = chat; }
+    public ChatController(ChatRepo chat, org.springframework.messaging.simp.SimpMessagingTemplate ws) { this.chat = chat; this.ws = ws; }
+
+    /** Lưu + phát tới khách (phiên) và hộp thư nhân viên. */
+    private ChatMessage push(ChatMessage c) {
+        chat.save(c);
+        ws.convertAndSend("/topic/chat/" + c.sessionId, c);
+        ws.convertAndSend("/topic/admin/chat", Map.of("sessionId", c.sessionId, "message", c));
+        return c;
+    }
+
+    /** Chỉ báo "đang gõ…" (không lưu). who = customer|staff. */
+    @org.springframework.messaging.handler.annotation.MessageMapping("/chat/{session}/typing")
+    public void typing(@org.springframework.messaging.handler.annotation.DestinationVariable String session, Map<String, Object> body) {
+        if (session.length() > 64) return;
+        String who = "staff".equals(String.valueOf(body.get("who"))) ? "staff" : "customer";
+        ws.convertAndSend("/topic/chat/" + session + "/typing", Map.of("who", who, "on", Boolean.TRUE.equals(body.get("on"))));
+        if ("customer".equals(who)) ws.convertAndSend("/topic/admin/chat/typing", Map.of("sessionId", session, "on", Boolean.TRUE.equals(body.get("on"))));
+    }
 
     public record Msg(String content, String customerName) {}
 
@@ -28,12 +45,13 @@ public class ChatController {
         c.sessionId = session; c.content = m.content().trim(); c.fromAdmin = false;
         var u = Current.userOrNull();
         c.customerName = u != null ? u.fullName : (m.customerName() == null || m.customerName().isBlank() ? "Khách" : m.customerName());
-        chat.save(c);
+        if (c.content.length() > 2000) throw ApiException.bad("Tin nhắn quá dài");
+        push(c);
         if (first) {
             ChatMessage auto = new ChatMessage();
             auto.sessionId = session; auto.fromAdmin = true; auto.customerName = c.customerName;
             auto.content = "Xin chào " + c.customerName + "! Cảm ơn bạn đã liên hệ ARES Auto. Nhân viên tư vấn sẽ phản hồi trong giây lát. Hotline: 1900 6868.";
-            chat.save(auto);
+            push(auto);
         }
         return c;
     }
@@ -54,7 +72,8 @@ public class ChatController {
     @PostMapping("/api/admin/chat/{session}")
     public ChatMessage reply(@PathVariable String session, @RequestBody Msg m) {
         ChatMessage c = new ChatMessage();
-        c.sessionId = session; c.fromAdmin = true; c.content = m.content(); c.customerName = Current.user().fullName;
-        return chat.save(c);
+        if (m.content() == null || m.content().isBlank()) throw ApiException.bad("Tin nhắn trống");
+        c.sessionId = session; c.fromAdmin = true; c.content = m.content().trim(); c.customerName = Current.user().fullName;
+        return push(c);
     }
 }

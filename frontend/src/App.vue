@@ -46,7 +46,8 @@ loadCatalog()
 const cart = useCart(), auth = useAuth(); let syncT
 import { usePrefs } from './stores/prefs'
 const prefsStore = usePrefs()
-watch(() => auth.loggedIn && auth.user?.id, v => { if (v) prefsStore.syncFromServer() }, { immediate: true })
+import { reconnect as rtReconnect } from './realtime'
+watch(() => auth.loggedIn && auth.user?.id, (v, old) => { if (v) prefsStore.syncFromServer(); if (old !== undefined) rtReconnect() }, { immediate: true })
 watch(() => cart.items.map(i => i.key + ':' + i.quantity).join(), () => {
   if (!auth.loggedIn) return
   clearTimeout(syncT); syncT = setTimeout(() => api.put('/public/cart-sync', { items: cart.items.map(i => ({ productId: i.productId, variantId: i.variantId, name: i.name, image: i.image, quantity: i.quantity, unitPrice: i.unitPrice })), subtotal: cart.subtotal }).catch(() => {}), 4000)
