@@ -7,18 +7,27 @@
         <div class="qr"><svg viewBox="0 0 29 29" width="180" height="180"><rect width="29" height="29" fill="#fff"/><path :d="qrPath" fill="#111"/></svg><small>Quét mã bằng app {{ o.paymentMethod === 'MOMO' ? 'MoMo' : 'ngân hàng / VNPay' }}</small></div>
         <div class="info">
           <p>Nhà cung cấp<br /><b>ARES Toys</b></p><p>Mã đơn hàng<br /><b>{{ o.code }}</b></p>
-          <p>Số tiền<br /><b class="amt">{{ vnd(o.total - o.paidAmount) }}</b></p>
-          <p class="muted small">Đây là môi trường demo, không có giao dịch thật.</p>
+          <p>Số tiền<br /><b class="amt">{{ vnd(tx?.amount ?? (o.total - o.paidAmount)) }}</b></p>
+          <p v-if="tx" class="small">Mã giao dịch <b class="mono">{{ tx.txnRef }}</b><br />Hết hạn sau <b :class="{ late: left < 60 }">{{ mmss }}</b></p>
+          <p v-if="err" class="alert alert-error small">{{ err }}</p>
+          <div v-if="tx && banks.length > 1" class="banks" role="radiogroup" aria-label="Chọn ngân hàng">
+            <label v-for="b in banks" :key="b" :class="{ on: bank === b }"><input v-model="bank" type="radio" :value="b" />{{ BANKS[b] || b }}</label>
+          </div>
+          <p class="muted small">Môi trường sandbox — không có giao dịch thật. Tham số được ký HMAC-SHA512 như VNPay.</p>
           <Speedometer v-if="busy" class="spd-pay" label="Đang xử lý thanh toán…" />
-          <button v-else class="btn btn-block" @click="pay">Xác nhận thanh toán</button>
-          <router-link :to="`/orders/${o.code}`" class="cancel">Huỷ, quay lại đơn hàng</router-link>
+          <template v-else-if="tx">
+            <button class="btn btn-block" :disabled="left <= 0" @click="finish('success')">Xác nhận thanh toán</button>
+            <button class="link-btn" :disabled="left <= 0" @click="finish('insufficient')">Mô phỏng lỗi: không đủ số dư</button>
+            <button class="cancel" @click="finish('cancel')">Huỷ giao dịch, quay lại cửa hàng</button>
+          </template>
+          <router-link v-else :to="`/orders/${o.code}`" class="cancel">Quay lại đơn hàng</router-link>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
 import { vnd } from '../format'
@@ -34,14 +43,35 @@ const qrPath = computed(() => {
   for (let y = 1; y < 28; y++) for (let x = 1; x < 28; x++) { if ((x < 9 && y < 9) || (x > 19 && y < 9) || (x < 9 && y > 19)) continue; if (rnd() > .55) d += `M${x} ${y}h1v1h-1z` }
   return d
 })
-onMounted(async () => { o.value = (await api.get(`/orders/${route.params.code}`)).data.order })
-async function pay() {
+const tx = ref(null), banks = ref([]), bank = ref(''), err = ref(''), now = ref(Date.now())
+const BANKS = { NCB: 'NCB', VCB: 'Vietcombank', TCB: 'Techcombank', BIDV: 'BIDV', INTCARD: 'Thẻ quốc tế', MOMO: 'Ví MoMo' }
+const left = computed(() => tx.value ? Math.max(0, Math.floor((new Date(tx.value.expiresAt) - now.value) / 1000)) : 0)
+const mmss = computed(() => `${String(Math.floor(left.value / 60)).padStart(2, '0')}:${String(left.value % 60).padStart(2, '0')}`)
+let tick
+onMounted(async () => {
+  try {
+    o.value = (await api.get(`/orders/${route.params.code}`)).data.order
+    if (o.value.paymentStatus === 'PAID') { toast('Đơn đã được thanh toán'); return router.replace(`/orders/${o.value.code}`) }
+    // 1) shop tạo giao dịch + tham số ký → 2) "cổng" kiểm chữ ký và hiển thị
+    const { data } = await api.post(`/payments/${o.value.code}/create`, { provider: o.value.paymentMethod })
+    const info = (await api.post('/public/payments/sandbox/inspect', data.params)).data
+    tx.value = { ...data, ...info }; banks.value = info.banks; bank.value = info.banks[0]
+    tick = setInterval(() => (now.value = Date.now()), 1000)
+  } catch (e) { err.value = errMsg(e) }
+})
+onUnmounted(() => clearInterval(tick))
+async function finish(result) {
   busy.value = true
-  try { await new Promise(r => setTimeout(r, 1200)); await api.post(`/orders/${o.value.code}/pay`); toast('Thanh toán thành công'); router.push(`/orders/${o.value.code}?new=1`) }
-  catch (e) { toast(errMsg(e), 'error') } finally { busy.value = false }
+  try {
+    await new Promise(r => setTimeout(r, result === 'cancel' ? 200 : 900))
+    const { data } = await api.post(`/public/payments/sandbox/${tx.value.txnRef}/complete`, { result, bankCode: bank.value })
+    router.replace({ path: '/pay/return', query: data.returnParams })
+  } catch (e) { err.value = errMsg(e) } finally { busy.value = false }
 }
 </script>
 <style scoped>
+.banks { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; margin: 8px 0; } .banks label { border: 1px solid #ddd; border-radius: 8px; padding: 8px; font-size: .82rem; cursor: pointer; display: flex; gap: 6px; align-items: center; color: #111; } .banks label.on { border-color: #005baa; background: #eef5ff; } .MOMO .banks label.on { border-color: #a50064; background: #fdf0f7; }
+.link-btn { background: none; border: 0; color: #777; font-size: .8rem; text-decoration: underline; display: block; margin: 8px auto 0; cursor: pointer; } .cancel { background: none; border: 0; width: 100%; cursor: pointer; font-family: inherit; } .late { color: #c62828; }
 .paypage { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f2f2f2; padding: 24px; }
 .paypage.MOMO { background: linear-gradient(135deg, #fde2f1, #f7f7f7); } .paypage.VNPAY { background: linear-gradient(135deg, #dbeafe, #f7f7f7); }
 .gw { width: min(720px, 100%); background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px -20px rgba(0,0,0,.3); }

@@ -31,7 +31,12 @@ public class OrderController {
 
     /** Xác nhận thanh toán giả lập (QR chuyển khoản / MoMo / VNPay / kỳ trả góp). */
     @PostMapping("/{code}/pay")
-    public CustomerOrder pay(@PathVariable String code) { return service.pay(own(code)); }
+    public CustomerOrder pay(@PathVariable String code) {
+        CustomerOrder o = own(code);
+        if (o.paymentMethod == Enums.PaymentMethod.MOMO || o.paymentMethod == Enums.PaymentMethod.VNPAY)
+            throw ApiException.bad("Đơn " + o.paymentMethod + " được xác nhận qua cổng thanh toán — dùng /api/payments/" + code + "/create");
+        return service.pay(o);
+    }
 
     @PostMapping("/{code}/cancel")
     public CustomerOrder cancel(@PathVariable String code, @RequestBody(required = false) Map<String, String> body) {
