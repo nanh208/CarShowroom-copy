@@ -20,3 +20,29 @@ const applyA11y = () => {
 applyA11y()
 watch([mode, fontScale, contrast], () => { localStorage.setItem('mode', mode.value); localStorage.setItem('fontScale', fontScale.value); localStorage.setItem('contrast', contrast.value ? '1' : '0'); applyA11y() })
 export const FONT_STEPS = [0.9, 1, 1.125, 1.25]
+
+// Mật độ hiển thị: 'comfy' (mặc định) | 'compact' (giảm khoảng cách, thẻ nhỏ hơn)
+export const density = ref(ls('density', 'comfy'))
+const applyDensity = () => { document.documentElement.dataset.density = density.value }
+applyDensity()
+watch(density, v => { localStorage.setItem('density', v); applyDensity() })
+
+// ===== Giao diện toàn site do admin cấu hình (backend /api/public/appearance) =====
+// Giá trị localStorage chỉ là bộ nhớ đệm để tránh nháy khi tải; nguồn chuẩn là backend.
+import { reactive } from 'vue'
+export const BG_DEFAULT = { bgImage: '', bgOverlay: 0.78, bgBlur: 0, bgFit: 'cover', bgAttach: 'fixed', bgPages: 'all' }
+export const bg = reactive({ ...BG_DEFAULT, ...(() => { try { return JSON.parse(ls('bgCache', '{}')) } catch { return {} } })() })
+watch(bg, v => localStorage.setItem('bgCache', JSON.stringify(v)))
+export function applyAppearance(a) {
+  if (!a) return
+  if (a.theme) theme.value = a.theme
+  if (a.mode) mode.value = a.mode
+  if (a.fontScale) fontScale.value = +a.fontScale
+  contrast.value = !!a.contrast
+  if (a.density) density.value = a.density
+  Object.keys(BG_DEFAULT).forEach(k => { if (a[k] !== undefined) bg[k] = a[k] })
+}
+export const snapshot = () => ({ theme: theme.value, mode: mode.value, fontScale: fontScale.value, contrast: contrast.value, density: density.value, ...bg })
+export async function loadAppearance() {
+  try { const r = await fetch('/api/public/appearance'); if (r.ok) applyAppearance(await r.json()) } catch { /* giữ bộ nhớ đệm */ }
+}

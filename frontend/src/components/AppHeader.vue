@@ -10,6 +10,7 @@
           <router-link :to="{ path: '/products', query: { type: 'MODEL,DISPLAY' } }" :class="{ on: isModel }" @mouseenter="mega = 'cars'">Xe mô hình</router-link>
           <router-link :to="{ path: '/products', query: { type: 'RC' } }" :class="{ on: isRC }" @mouseenter="mega = ''">Xe RC</router-link>
           <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
+          <router-link to="/collections" active-class="on" @mouseenter="mega = ''">Bộ sưu tập</router-link>
           <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">Đấu giá</router-link>
           <router-link to="/support" active-class="on" @mouseenter="mega = ''">Hỗ trợ</router-link>
         </div>
@@ -23,11 +24,6 @@
           <router-link to="/about" active-class="on" @mouseenter="mega = ''">Về chúng tôi</router-link>
         </div>
         <div class="tools" @mouseenter="mega = ''">
-          <ThemeSwitch class="tsw" />
-          <div class="a11ywrap">
-            <button class="ib aa" type="button" title="Hiển thị & trợ năng" aria-label="Hiển thị và trợ năng" :aria-expanded="a11y" @click.stop="a11y = !a11y">Aa</button>
-            <div v-if="a11y" class="a11ypop" @click.stop><A11yPanel /></div>
-          </div>
           <div class="search" :class="{ open: sOpen }">
             <button class="ib" title="Tìm kiếm" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
             <input ref="sInput" v-model="q" placeholder="Tìm xe đồ chơi, hãng… (phím /)" aria-label="Tìm kiếm" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
@@ -50,6 +46,7 @@
               <router-link v-for="n in notes" :key="n.id" :to="n.link || '/account'" :class="['ni', { unread: !n.read }]" @click="bell = false">
                 <span :class="['kind', n.kind]">{{ n.kind === 'AUCTION' ? 'Đấu giá' : n.kind === 'ORDER' ? 'Đơn hàng' : 'Hệ thống' }}</span>
                 <b>{{ n.title }}</b><p>{{ n.body }}</p><small>{{ dt(n.createdAt) }}</small></router-link>
+              <router-link to="/notifications" class="all" @click="bell = false">Xem tất cả thông báo →</router-link>
             </div>
           </div>
           <router-link id="cart-target" to="/cart" :class="['cartpill', { bump }]" aria-haspopup="dialog" @click.prevent="openCart">
@@ -89,8 +86,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import ThemeSwitch from './ThemeSwitch.vue'
-import A11yPanel from './A11yPanel.vue'
 import { navOpen, cartOpen, isMobile } from '../stores/ui'
 import { theme } from '../stores/theme'
 import { useRouter, useRoute } from 'vue-router'
@@ -228,4 +223,5 @@ const logout = () => { auth.logout(); router.push('/') }
 }
 .cartpill.bump { animation: bump .22s ease-out; }
 @keyframes bump { 50% { transform: scale(1.08); } }
+.panel .all { display: block; text-align: center; padding: 10px; font-weight: 600; font-size: .84rem; border-top: 1px solid var(--border); }
 </style>

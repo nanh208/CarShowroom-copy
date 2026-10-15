@@ -61,6 +61,7 @@
       <div class="card pcard">
         <Gauge :value="pts.points || 0" :max="nextTier.at" :label="`${pts.points || 0} điểm`" :sub="`Hạng ${pts.tier}`" :size="220" />
         <p class="muted small" style="text-align:center">1 điểm = {{ vnd(pts.pointValue) }} khi thanh toán · tích 1 điểm mỗi {{ vnd(pts.earnPer) }} đơn hoàn tất</p>
+        <router-link to="/rewards" class="btn btn-sm" style="align-self:center;margin:6px 0">🎁 Điểm danh, vòng quay & huy hiệu →</router-link>
         <div class="tiers"><span v-for="t in TIERS" :key="t.name" :class="{ on: t.name === pts.tier }">{{ t.name }}<small>{{ t.label }}</small></span></div>
       </div>
       <div class="card table-wrap">
@@ -152,7 +153,6 @@
           <label :class="['pp', { on: !payPref }]"><input v-model="payPref" type="radio" value="" @change="savePay" />Không đặt</label>
         </div>
       </div>
-      <div class="card"><h3>Hiển thị & trợ năng</h3><A11yPanel show-theme /></div>
       <div class="card">
         <h3>Thông báo giá & hàng</h3>
         <p v-if="!myAlerts.length" class="muted small">Chưa theo dõi sản phẩm nào. Bật trong <router-link to="/wishlist">Yêu thích</router-link>.</p>
@@ -187,7 +187,6 @@ import { useRoute, useRouter } from 'vue-router'
 import api, { errMsg } from '../api'
 import Gauge from '../components/Gauge.vue'
 import AddressPicker from '../components/AddressPicker.vue'
-import A11yPanel from '../components/A11yPanel.vue'
 import { toast } from '../stores/prefs'
 const TIERS = [{ name: 'Đồng', label: 'mặc định', at: 0 }, { name: 'Bạc', label: 'chi 3 tr', at: 300 }, { name: 'Vàng', label: 'chi 10 tr', at: 1000 }, { name: 'Kim cương', label: 'chi 20 tr', at: 2000 }]
 import { useAuth } from '../stores/auth'

@@ -71,4 +71,26 @@ export function checkeredConfetti(host, n = 46) {
   }
 }
 
-export default { install(app) { app.directive('reveal', vReveal) } }
+/** v-stagger: các phần tử con hiện lần lượt (40ms/phần tử, tối đa 10 bậc) khi khối vào màn hình; cập nhật khi danh sách đổi. */
+const tagKids = el => { [...el.children].forEach((c, i) => { if (!c.style.getPropertyValue('--i')) c.style.setProperty('--i', Math.min(i, 10)) }) }
+export const vStagger = {
+  mounted(el) {
+    if (reduced()) return
+    el.classList.add('stg'); tagKids(el); observer().observe(el)
+    el._stT = setTimeout(() => { el.classList.add('in'); io?.unobserve(el) }, 700)
+  },
+  updated(el) { if (!reduced()) tagKids(el) },
+  unmounted(el) { clearTimeout(el._stT); io?.unobserve(el) }
+}
+
+/** Gợn sóng khi bấm (chỉ phản hồi thao tác bấm/chạm, không theo chuột). */
+function ripple(e) {
+  const b = e.target.closest?.('.btn, .chip, .ripple'); if (!b || reduced() || b.disabled) return
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height) * 2
+  const i = document.createElement('span'); i.className = 'rpl'
+  Object.assign(i.style, { width: s + 'px', height: s + 'px', left: e.clientX - r.left - s / 2 + 'px', top: e.clientY - r.top - s / 2 + 'px' })
+  if (getComputedStyle(b).position === 'static') b.style.position = 'relative'
+  b.style.overflow = 'hidden'; b.appendChild(i); setTimeout(() => i.remove(), 500)
+}
+
+export default { install(app) { app.directive('reveal', vReveal); app.directive('stagger', vStagger); if (typeof document !== 'undefined') document.addEventListener('pointerdown', ripple, { passive: true }) } }

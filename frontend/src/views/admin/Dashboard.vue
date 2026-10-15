@@ -77,8 +77,11 @@
 <script setup>
 import { ref, reactive, watch, computed, onMounted } from 'vue'
 const WIDGETS = { stats: 'Chỉ số tổng', chart: 'Biểu đồ hiệu quả', top: 'Top bán chạy', low: 'Tồn kho thấp', status: 'Đơn theo trạng thái', recent: 'Đơn mới nhất' }
-const show = reactive(Object.assign(Object.fromEntries(Object.keys(WIDGETS).map(k => [k, true])), JSON.parse(localStorage.getItem('dashWidgets') || '{}')))
-watch(show, v => localStorage.setItem('dashWidgets', JSON.stringify(v)))
+// Tuỳ chọn widget lưu theo tài khoản ở backend (/api/account/prefs/dashWidgets)
+const show = reactive(Object.fromEntries(Object.keys(WIDGETS).map(k => [k, true])))
+let wReady = false, wT
+api.get('/account/prefs').then(r => { if (r.data.dashWidgets) Object.assign(show, r.data.dashWidgets) }).finally(() => { wReady = true })
+watch(show, v => { if (!wReady) return; clearTimeout(wT); wT = setTimeout(() => api.put('/account/prefs/dashWidgets', { ...v }).catch(() => {}), 400) })
 import api from '../../api'
 import CountUp from '../../components/CountUp.vue'
 import { vnd, dt, ty, ORDER_STATUS } from '../../format'

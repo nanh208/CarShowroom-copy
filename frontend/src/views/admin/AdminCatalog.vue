@@ -43,6 +43,7 @@
   </div>
 </template>
 <script setup>
+import { toast } from '../../stores/prefs'
 import { ref, onMounted } from 'vue'
 import api, { errMsg, uploadImage } from '../../api'
 import { loadCatalog } from '../../format'
@@ -57,7 +58,7 @@ const save = async (kind, x) => {
 }
 const del = async (kind, x) => {
   if (!confirm(`Xoá “${x.name}”?`)) return
-  try { await api.delete(`/admin/${kind}/${x.id}`); load() } catch (e) { alert(errMsg(e)) }
+  try { await api.delete(`/admin/${kind}/${x.id}`); load() } catch (e) { toast(errMsg(e), 'error') }
 }
 onMounted(load)
 </script>

@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController @RequestMapping("/api/admin")
 public class AdminController {
+    @org.springframework.beans.factory.annotation.Autowired org.springframework.context.ApplicationEventPublisher events;
     private final ProductRepo products; private final BrandRepo brands; private final OrderRepo orders; private final UserRepo users;
     private final NotifyService notify; private final PromotionRepo promos; private final OrderService orderService;
     private final CategoryRepo categories; private final VariantRepo variants; private final FlashSaleRepo flash; private final BannerRepo banners;
@@ -186,13 +187,15 @@ public class AdminController {
         CustomerOrder o = orders.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy đơn"));
         var s = Enums.OrderStatus.valueOf(r.status());
         if (!FLOW.get(o.status).contains(s)) throw ApiException.bad("Không thể chuyển từ " + o.status + " sang " + s);
-        if (s == Enums.OrderStatus.CANCELLED) return orderService.cancel(o, r.note() == null ? "Shop huỷ" : r.note());
+        String from = o.status.name();
+        if (s == Enums.OrderStatus.CANCELLED) { var c = orderService.cancel(o, r.note() == null ? "Shop huỷ" : r.note()); events.publishEvent(new com.ares.shop.service.OrderEvents.OrderStatusChanged(c, from, "CANCELLED")); return c; }
         o.status = s;
         o.timeline.put(s.name(), LocalDateTime.now());
         String label = Map.of("CONFIRMED", "Đã xác nhận, đang đóng gói", "SHIPPING", "Đã giao cho đơn vị vận chuyển", "COMPLETED", "Giao hàng thành công").get(s.name());
         if (s == Enums.OrderStatus.COMPLETED) orderService.complete(o);
         notify.send(o.user, "ORDER", "Cập nhật đơn " + o.code, label + ".", "/orders/" + o.code);
         CustomerOrder saved = orders.save(o);
+        events.publishEvent(new com.ares.shop.service.OrderEvents.OrderStatusChanged(saved, from, s.name()));
         if (s == Enums.OrderStatus.COMPLETED && o.user != null) { User u = users.findById(o.user.id).orElseThrow(); orderService.updateTier(u); users.save(u); }
         return saved;
     }

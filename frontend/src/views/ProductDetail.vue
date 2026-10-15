@@ -1,6 +1,7 @@
 <template>
   <div class="container page pd">
-    <div v-if="!p" class="spinner" />
+    <div v-if="loadErr" class="nf"><h1>Không tìm thấy sản phẩm</h1><p class="muted">{{ loadErr }}</p><router-link to="/products" class="btn">← Xem sản phẩm khác</router-link></div>
+    <div v-else-if="!p" class="pdsk"><div class="sk" /><div><div class="sk" style="height:28px;width:70%" /><div class="sk" style="height:18px;width:40%" /><div class="sk" style="height:120px" /></div></div>
     <template v-else>
       <Breadcrumb :items="[{ label: isAcc(p) ? 'Phụ kiện' : 'Danh mục xe', to: { path: '/products', query: { grp: p.grp } } }, { label: TYPES[p.type], to: { path: '/products', query: { type: p.type } } }, { label: p.name }]" />
 
@@ -40,7 +41,11 @@
         </div>
       </div>
 
-      <div v-if="!stock" class="notify">
+      <div v-if="p.preorder" class="notify pre">
+        <b>Mẫu sắp ra mắt — mở đặt trước</b><span>Dự kiến phát hành {{ d(p.releaseDate) }}<template v-if="p.preorderDeposit"> · cọc {{ vnd(p.preorderDeposit) }} khi hàng về</template>.</span>
+        <router-link to="/upcoming" class="btn btn-sm" style="align-self:flex-start">Đặt trước ngay</router-link>
+      </div>
+      <div v-else-if="!stock" class="notify">
         <b>Tạm hết hàng</b><span>Để lại email, chúng tôi báo ngay khi có hàng.</span>
         <form class="row" @submit.prevent="notifyMe"><input v-model.trim="nEmail" type="email" class="input grow" :placeholder="auth.user?.email || 'Email của bạn'" aria-label="Email nhận thông báo" /><button class="btn btn-sm" :disabled="nDone">{{ nDone ? '✓ Đã đăng ký' : 'Báo tôi' }}</button></form>
       </div>
@@ -75,7 +80,7 @@
             <button type="button" :class="['helpful', { on: voted[r.id] }]" :aria-pressed="!!voted[r.id]" @click="helpful(r)">👍 Hữu ích<span v-if="r.helpful"> ({{ r.helpful }})</span></button>
           </div>
         </div>
-        <form v-if="auth.loggedIn && !rv.mine" class="rv-form" @submit.prevent="sendReview">
+        <form v-if="auth.loggedIn && !rv.mine" id="write-review" class="rv-form" @submit.prevent="sendReview">
           <div class="rf1"><b>Viết đánh giá</b><Stars v-model:value="mine.rating" pick size="1.4rem" /></div>
           <textarea v-model="mine.comment" class="input" rows="2" placeholder="Chia sẻ cảm nhận về sản phẩm…" />
           <div class="rf2">
@@ -141,7 +146,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { uploadImage, errMsg } from '../api'
 import { vnd, d, TYPES, catalog, loadCatalog, isAcc } from '../format'
@@ -204,12 +209,15 @@ async function ask() {
   try { await api.post(`/products/${p.value.id}/questions`, { question: question.value }); question.value = ''; toast('Đã gửi câu hỏi, shop sẽ trả lời sớm'); loadQa(p.value.id) }
   catch (e) { toast(errMsg(e), 'error') }
 }
+const loadErr = ref('')
 async function load() {
   p.value = null; qty.value = 1; view.value = 0; specsOpen.value = false; variantId.value = null; rf.value = 'all'; showAll.value = false
   loadCatalog()
-  const { data } = await api.get(`/products/${route.params.id}`)
+  loadErr.value = ''
+  let data; try { data = (await api.get(`/products/${route.params.id}`)).data } catch (e) { loadErr.value = errMsg(e); return }
   p.value = data.product; related.value = data.related; variants.value = data.variants; flashes.value = data.flash
   variantId.value = data.variants.find(v => v.stock > 0)?.id || data.variants[0]?.id || null
+  if (route.hash) nextTick(() => setTimeout(() => document.querySelector(route.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300))
   prefs.viewed(p.value); loadReviews(p.value.id); loadQa(p.value.id); nDone.value = false
   api.get('/public/bundles', { params: { productId: p.value.id } }).then(r => { pBundles.value = r.data }).catch(() => {})
   api.get('/public/shipping-options', { params: { city: etaCity.value, amount: 0 } }).then(r => { eta.value = r.data[0] }).catch(() => {})
@@ -323,4 +331,7 @@ watch(() => route.params.id, id => id && load(), { immediate: true })
   .bb-price { display: none; } .bb-in .btn { padding: 0 10px; font-size: .8rem; }
 }
 @media (max-width: 860px) { .carousel { height: 300px; } .head, .bb-in { flex-wrap: wrap; } .rv-row, .spec, .feature, .promo, .perks { grid-template-columns: 1fr; } .recent { grid-template-columns: repeat(3, 1fr); } .mode { width: 100%; } }
+.nf { text-align: center; padding: 60px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pdsk { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; } .pdsk > .sk { aspect-ratio: 4/3; } .pdsk > div:last-child { display: flex; flex-direction: column; gap: 12px; } @media (max-width: 760px) { .pdsk { grid-template-columns: 1fr; } }
+#write-review { scroll-margin-top: 100px; }
 </style>

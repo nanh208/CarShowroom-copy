@@ -1,6 +1,7 @@
 <template>
   <div class="container page">
-    <div v-if="!o" class="spinner" />
+    <div v-if="!o && err && !loaded" class="nf"><h1>Không mở được đơn hàng</h1><p class="muted">{{ err }}</p><router-link to="/account?tab=orders" class="btn">← Đơn hàng của tôi</router-link></div>
+    <div v-else-if="!o" class="spinner" />
     <template v-else>
       <Breadcrumb :items="[{ label: 'Tài khoản', to: '/account?tab=orders' }, { label: 'Đơn ' + o.code }]" />
       <div v-if="$route.query.new" class="alert alert-success">Đặt hàng thành công! Mã đơn của bạn là <b>{{ o.code }}</b>.</div>
@@ -49,6 +50,7 @@
             <div class="grow"><router-link v-if="i.productId" :to="`/products/${i.productId}`">{{ i.productName }}</router-link><span v-else>{{ i.productName }}</span> × {{ i.quantity }}
               <div class="small muted">{{ i.variantName }}<span v-if="i.flashSale"> · ⚡ Flash sale</span><span v-if="i.warrantyMonths"> · BH {{ i.warrantyMonths }} tháng</span></div></div>
             <b>{{ vnd(i.unitPrice * i.quantity) }}</b>
+            <router-link v-if="o.status === 'COMPLETED' && i.productId" :to="`/products/${i.productId}#write-review`" class="btn btn-sm btn-outline rvb">★ Đánh giá</router-link>
           </div>
           <div class="row between"><span>Tạm tính</span><span>{{ vnd(o.subtotal) }}</span></div>
           <div v-if="o.bundleDiscount" class="row between"><span>Combo ưu đãi</span><span>−{{ vnd(o.bundleDiscount) }}</span></div>
@@ -129,7 +131,8 @@ const steps = computed(() => {
 const progress = computed(() => { const i = KEYS.indexOf(o.value.status); return i < 0 ? 0 : i / 3 * 100 })
 const needPay = computed(() => o.value.status !== 'CANCELLED' && o.value.paymentMethod !== 'COD' && o.value.paidAmount < o.value.total)
 const canReturn = computed(() => o.value.status === 'COMPLETED' && !returns.value.some(r => ['PENDING', 'APPROVED'].includes(r.status)))
-const load = async () => { const { data } = await api.get(`/orders/${route.params.code}`); o.value = data.order; bank.value = data.bank; returns.value = data.returns }
+const loaded = ref(false)
+const load = async () => { try { const { data } = await api.get(`/orders/${route.params.code}`); o.value = data.order; bank.value = data.bank; returns.value = data.returns; loaded.value = true } catch (e) { err.value = errMsg(e) } }
 async function act(a) { err.value = ''; try { await api.post(`/orders/${o.value.code}/${a}`); toast('Thanh toán thành công'); await load() } catch (e) { err.value = errMsg(e) } }
 async function cancel() { err.value = ''; try { await api.post(`/orders/${o.value.code}/cancel`, { reason: cancelReason.value }); cancelOpen.value = false; toast('Đã huỷ đơn hàng'); await load() } catch (e) { err.value = errMsg(e) } }
 async function upload(e) { try { for (const f of [...e.target.files].slice(0, 4)) ret.images.push(await uploadImage(f)) } catch (x) { err.value = errMsg(x) } }
@@ -156,4 +159,6 @@ onMounted(load)
 .sub { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding: 12px; background: var(--bg-2); border-radius: 10px; }
 .check { display: flex; gap: 6px; align-items: center; font-size: .88rem; } .up { border: 1px dashed var(--bronze); color: var(--bronze); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: .85rem; } .ti { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
 .retbox { margin-top: 12px; padding: 10px; border-radius: 8px; background: var(--bg-2); }
+.rvb { flex-shrink: 0; } @media (max-width: 560px) { .item { flex-wrap: wrap; } }
+.nf { text-align: center; padding: 60px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 </style>

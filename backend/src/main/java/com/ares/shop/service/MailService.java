@@ -1,13 +1,24 @@
 package com.ares.shop.service;
 import com.ares.shop.model.*; import com.ares.shop.repo.*; import org.springframework.stereotype.Service;
-/** Gửi email mô phỏng: lưu vào hộp thư đi (EmailLog), không kết nối SMTP. */
+/**
+ * Gửi email qua Spring Mail. Mọi email luôn được lưu vào hộp thư đi (EmailLog) để admin xem.
+ * Chỉ gửi SMTP thật khi cấu hình spring.mail.host (mặc định: chế độ mô phỏng, không gửi ra ngoài).
+ */
 @Service
 public class MailService {
-    private final EmailLogRepo logs;
-    public MailService(EmailLogRepo logs) { this.logs = logs; }
+    private final EmailLogRepo logs; private final org.springframework.beans.factory.ObjectProvider<org.springframework.mail.javamail.JavaMailSender> sender;
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.host:}") String host;
+    @org.springframework.beans.factory.annotation.Value("${ares.mail.from:no-reply@ares.vn}") String from;
+    public MailService(EmailLogRepo logs, org.springframework.beans.factory.ObjectProvider<org.springframework.mail.javamail.JavaMailSender> sender) { this.logs = logs; this.sender = sender; }
     public EmailLog send(String to, String subject, String kind, String body) {
         if (to == null || to.isBlank()) return null;
-        EmailLog e = new EmailLog(); e.toAddr = to.trim(); e.subject = subject; e.kind = kind; e.body = body; return logs.save(e);
+        EmailLog e = new EmailLog(); e.toAddr = to.trim(); e.subject = subject; e.kind = kind; e.body = body; logs.save(e);
+        var s = host == null || host.isBlank() ? null : sender.getIfAvailable();
+        if (s != null) {
+            try { var m = new org.springframework.mail.SimpleMailMessage(); m.setFrom(from); m.setTo(e.toAddr); m.setSubject(subject); m.setText(body); s.send(m); }
+            catch (Exception ex) { org.slf4j.LoggerFactory.getLogger(MailService.class).warn("SMTP lỗi, chỉ lưu outbox: {}", ex.getMessage()); }
+        }
+        return e;
     }
     public static String vnd(long v) { return String.format("%,d", v).replace(',', '.') + "đ"; }
     public EmailLog invoice(CustomerOrder o) {

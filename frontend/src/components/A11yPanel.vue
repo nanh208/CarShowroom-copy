@@ -13,12 +13,13 @@
         <button v-for="(s, i) in FONT_STEPS" :key="s" type="button" role="radio" :aria-checked="fontScale === s" :class="{ on: fontScale === s }" :style="{ fontSize: (0.78 + i * 0.1) + 'rem' }" :aria-label="`Cỡ chữ ${Math.round(s * 100)}%`" @click="fontScale = s">A</button>
       </div>
     </div>
+    <label class="row-a sw"><span class="lb">Hiển thị gọn (compact)</span><input type="checkbox" role="switch" :checked="density === 'compact'" @change="density = $event.target.checked ? 'compact' : 'comfy'" /><i aria-hidden="true" /></label>
     <label class="row-a sw"><span class="lb">Tương phản cao</span><input v-model="contrast" type="checkbox" role="switch" /><i aria-hidden="true" /></label>
     <div v-if="showTheme" class="row-a"><span class="lb">Giao diện</span><ThemeSwitch /></div>
   </div>
 </template>
 <script setup>
-import { mode, fontScale, contrast, FONT_STEPS } from '../stores/theme'
+import { mode, fontScale, contrast, density, FONT_STEPS } from '../stores/theme'
 import ThemeSwitch from './ThemeSwitch.vue'
 defineProps({ showTheme: { type: Boolean, default: false } })
 </script>

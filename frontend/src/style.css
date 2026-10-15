@@ -110,8 +110,15 @@ img.cover { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
 .tile .cap small { font-family: 'Be Vietnam Pro'; font-weight: 500; font-size: .78rem; opacity: .9; }
 
 /* ===================== Chuyển động (nhẹ, nhanh, ease-out; không hiệu ứng theo chuột) ===================== */
-.page-enter-active { transition: opacity .18s ease-out; }
-.page-enter-from { opacity: 0; }
+.page-enter-active { transition: opacity .2s ease-out, transform .24s cubic-bezier(.2,.8,.2,1); }
+.page-enter-from { opacity: 0; transform: translateY(8px); }
+.stg > * { opacity: 0; transform: translateY(10px); transition: opacity .26s ease-out, transform .3s cubic-bezier(.2,.8,.2,1); transition-delay: calc(var(--i, 0) * 40ms); }
+.stg.in > * { opacity: 1; transform: none; }
+.rpl { position: absolute; border-radius: 50%; background: currentColor; opacity: .18; transform: scale(0); pointer-events: none; animation: rpl .5s ease-out forwards; }
+@keyframes rpl { to { transform: scale(1); opacity: 0; } }
+.btn { transition: transform .12s ease-out, background-color .15s ease-out, color .15s ease-out; } .btn:active:not(:disabled) { transform: scale(.97); }
+.money { text-transform: none !important; font-family: 'Be Vietnam Pro', sans-serif; letter-spacing: 0; font-feature-settings: 'tnum'; }
+
 
 /* Reveal khi cuộn: chỉ chạy 1 lần, quãng ngắn */
 .reveal { opacity: 0; transform: translateY(12px); transition: opacity .22s ease-out, transform .22s ease-out; transition-delay: var(--rv-delay, 0ms); }
@@ -133,9 +140,9 @@ img.cover { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-  .reveal { opacity: 1; transform: none; }
+  .reveal { opacity: 1; transform: none; } .stg > * { opacity: 1 !important; transform: none !important; transition: none !important; } .sk { animation: none; } .rpl { display: none; }
 }
-@media print { .reveal { opacity: 1 !important; transform: none !important; } }
+@media print { .reveal, .stg > * { opacity: 1 !important; transform: none !important; } }
 
 /* ===================== Responsive nền tảng + trợ năng ===================== */
 html { font-size: calc(100% * var(--fs, 1)); -webkit-text-size-adjust: 100%; }
@@ -181,3 +188,15 @@ html[data-mode="dark"][data-contrast="high"] { filter: invert(1) hue-rotate(180d
 @keyframes heart-ring { from { transform: scale(.4); opacity: .8; } to { transform: scale(1.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .wish.on svg, .wish.on::after, .fly-trail, .confetti { animation: none !important; } .wish.on::after { display: none; } }
 .gift-note { border-left: 4px solid var(--accent); background: var(--bronze-soft); }
+
+/* Mật độ gọn */
+html[data-density="compact"] .page { padding-bottom: 32px; }
+html[data-density="compact"] .card { padding: 12px 14px; }
+html[data-density="compact"] .grid { gap: 12px; }
+html[data-density="compact"] .table th, html[data-density="compact"] .table td { padding: 6px 8px; }
+html[data-density="compact"] h1 { font-size: clamp(1.4rem, 3.4vw, 2rem); }
+html[data-density="compact"] .btn:not(.btn-sm) { padding: 8px 14px; }
+
+/* Ảnh nền toàn site (admin cấu hình): lớp nền nằm dưới nội dung, html/body trong suốt */
+html.has-sitebg, html.has-sitebg body { background: transparent !important; }
+html.has-sitebg #app { position: relative; }

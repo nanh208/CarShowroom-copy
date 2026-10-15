@@ -23,6 +23,12 @@ const routes = [
   { path: '/gift-cards', component: () => import('./views/GiftCards.vue') },
   { path: '/wishlist/shared', component: () => import('./views/SharedWishlist.vue') },
   { path: '/bundles', component: () => import('./views/Bundles.vue') },
+  { path: '/collections', component: () => import('./views/Collections.vue') },
+  { path: '/collections/:slug', component: () => import('./views/CollectionDetail.vue') },
+  { path: '/upcoming', component: () => import('./views/Upcoming.vue') },
+  { path: '/finder', component: () => import('./views/ScaleFinder.vue') },
+  { path: '/rewards', component: () => import('./views/Rewards.vue'), meta: { auth: true } },
+  { path: '/notifications', component: () => import('./views/Notifications.vue'), meta: { auth: true } },
   { path: '/orders/:code', component: () => import('./views/OrderDetail.vue'), meta: { auth: true } },
   { path: '/admin/packing', component: () => import('./views/admin/PackingSlips.vue'), meta: { admin: true, bare: true } },
   { path: '/admin/labels', component: () => import('./views/admin/ShippingLabels.vue'), meta: { admin: true, bare: true } },
@@ -58,6 +64,13 @@ const routes = [
       { path: 'home-layout', component: () => import('./views/admin/AdminHomeLayout.vue') },
       { path: 'analytics', component: () => import('./views/admin/AdminAnalytics.vue') },
       { path: 'emails', component: () => import('./views/admin/AdminEmails.vue') },
+      { path: 'chatbot', component: () => import('./views/admin/AdminChatbot.vue') },
+      { path: 'preorders', component: () => import('./views/admin/AdminPreorders.vue') },
+      { path: 'collections', component: () => import('./views/admin/AdminCollections.vue') },
+      { path: 'warehouses', component: () => import('./views/admin/AdminWarehouses.vue') },
+      { path: 'broadcast', component: () => import('./views/admin/AdminBroadcast.vue') },
+      { path: 'jobs', component: () => import('./views/admin/AdminJobs.vue'), meta: { adminOnly: true } },
+      { path: 'appearance', component: () => import('./views/admin/AdminAppearance.vue'), meta: { adminOnly: true } },
       { path: 'permissions', component: () => import('./views/admin/AdminPermissions.vue'), meta: { adminOnly: true } }
     ]
   },
@@ -78,7 +91,7 @@ router.beforeEach(async to => {
 })
 
 // Tiêu đề trang tiếng Việt cho từng màn hình
-const TITLES = [[/^\/$/, 'Trang chủ'], [/^\/products\/\d+/, 'Chi tiết sản phẩm'], [/^\/products/, 'Sản phẩm'], [/^\/cart/, 'Giỏ hàng'], [/^\/checkout/, 'Thanh toán'],
+const TITLES = [[/^\/collections/, 'Bộ sưu tập'], [/^\/upcoming/, 'Sắp ra mắt'], [/^\/finder/, 'Tìm mẫu phù hợp'], [/^\/rewards/, 'Phần thưởng'], [/^\/notifications/, 'Thông báo'], [/^\/$/, 'Trang chủ'], [/^\/products\/\d+/, 'Chi tiết sản phẩm'], [/^\/products/, 'Sản phẩm'], [/^\/cart/, 'Giỏ hàng'], [/^\/checkout/, 'Thanh toán'],
   [/^\/track/, 'Tra cứu đơn hàng'], [/^\/gift-cards/, 'Thẻ quà tặng'], [/^\/bundles/, 'Combo ưu đãi'], [/^\/wishlist/, 'Yêu thích'], [/^\/compare/, 'So sánh'],
   [/^\/account/, 'Tài khoản'], [/^\/orders/, 'Đơn hàng'], [/^\/support/, 'Hỗ trợ'], [/^\/faq/, 'Câu hỏi thường gặp'], [/^\/auctions/, 'Đấu giá'], [/^\/promotions/, 'Khuyến mãi'],
   [/^\/login/, 'Đăng nhập'], [/^\/register/, 'Đăng ký'], [/^\/admin/, 'Quản trị'], [/^\/about/, 'Về chúng tôi']]

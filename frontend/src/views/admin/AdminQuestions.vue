@@ -3,7 +3,8 @@
     <div class="row between"><h1>Hỏi đáp sản phẩm</h1>
       <div class="row" style="gap:6px"><button v-for="t in tabs" :key="t[0]" :class="['btn btn-sm', tab === t[0] ? '' : 'btn-outline']" @click="tab = t[0]">{{ t[1] }}</button></div></div>
     <div class="list">
-      <div v-for="q in shown" :key="q.id" class="card qa" :class="{ hidden: !q.visible }">
+      <input v-model="pg.q.value" type="search" class="input" placeholder="Tìm sản phẩm, câu hỏi, khách…" aria-label="Tìm câu hỏi" style="max-width:320px;margin-bottom:12px" />
+      <div v-for="q in pg.items.value" :key="q.id" class="card qa" :class="{ hidden: !q.visible }">
         <div class="small muted">{{ q.authorName }} · {{ d(q.createdAt) }} · <router-link :to="`/products/${q.productId}`" target="_blank">{{ q.productName }}</router-link></div>
         <p class="q">❓ {{ q.question }}</p>
         <p v-if="q.answer" class="a">💬 {{ q.answer }} <span class="small muted">— {{ q.answeredBy }}</span></p>
@@ -16,17 +17,21 @@
           </div>
         </div>
       </div>
-      <div v-if="!shown.length" class="empty card">Không có câu hỏi.</div>
+      <div v-if="!pg.items.value.length" class="empty card">Không có câu hỏi.</div>
+      <Pager :p="pg" />
     </div>
   </div>
 </template>
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import Pager from '../../components/Pager.vue'
+import { usePaged } from '../../composables/usePaged'
 import api from '../../api'
 import { d } from '../../format'
 const list = ref([]), draft = ref({}), tab = ref('open')
 const tabs = [['open', 'Chưa trả lời'], ['done', 'Đã trả lời'], ['all', 'Tất cả']]
 const shown = computed(() => list.value.filter(q => tab.value === 'all' || (tab.value === 'open' ? !q.answer : !!q.answer)))
+const pg = usePaged(shown, { size: 15, fields: q => [q.productName, q.question, q.authorName, q.answer] })
 const load = async () => { list.value = (await api.get('/admin/questions')).data }
 const patch = async (q, body) => { await api.patch(`/admin/questions/${q.id}`, body); draft.value[q.id] = ''; load() }
 const remove = async q => { if (confirm('Xoá câu hỏi?')) { await api.delete(`/admin/questions/${q.id}`); load() } }

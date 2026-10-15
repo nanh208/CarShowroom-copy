@@ -111,7 +111,7 @@ public class OpsController {
     public List<AuditLog> auditLog() { return audit.findTop300ByOrderByIdDesc(); }
 
     // ===== Ma trận phân quyền nhân viên =====
-    static final List<String> SECTIONS = List.of("products", "orders", "customers", "inventory", "returns", "promotions", "flash-sales", "banners", "catalog", "auctions", "questions", "reviews", "tickets", "chat", "purchasing", "carts", "segments", "bundles", "home-layout", "emails", "analytics");
+    static final List<String> SECTIONS = List.of("products", "orders", "customers", "inventory", "returns", "promotions", "flash-sales", "banners", "catalog", "auctions", "questions", "reviews", "tickets", "chat", "purchasing", "carts", "segments", "bundles", "home-layout", "emails", "analytics", "chatbot", "preorders", "collections", "broadcast");
     @GetMapping("/api/admin/permissions")
     public Map<String, Object> perms() throws Exception {
         var s = settings.findById("staffPerms").orElse(null);

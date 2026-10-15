@@ -24,7 +24,6 @@
         </template>
         <router-link v-else to="/login" class="btn btn-block">Đăng nhập / Đăng ký</router-link>
       </div>
-      <div class="mn-sec"><b class="mn-h">Hiển thị</b><A11yPanel show-theme /></div>
     </aside>
   </transition>
 </template>
@@ -34,14 +33,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { navOpen } from '../stores/ui'
 import { useAuth } from '../stores/auth'
 import { usePrefs } from '../stores/prefs'
-import A11yPanel from './A11yPanel.vue'
 const auth = useAuth(), prefs = usePrefs(), router = useRouter(), route = useRoute()
 const q = ref(''), closeBtn = ref(null)
 const links = [
   { label: 'Xe mô hình', to: { path: '/products', query: { type: 'MODEL,DISPLAY' } } },
   { label: 'Xe RC', to: { path: '/products', query: { type: 'RC' } } },
   { label: 'Phụ kiện', to: { path: '/products', query: { grp: 'ACCESSORY' } } },
-  { label: 'Đấu giá', to: '/auctions' }, { label: 'Khuyến mãi', to: '/promotions' }, { label: 'Combo ưu đãi', to: '/bundles' }, { label: 'Thẻ quà tặng', to: '/gift-cards' }, { label: 'Tra cứu đơn hàng', to: '/track' },
+  { label: 'Đấu giá', to: '/auctions' }, { label: 'Khuyến mãi', to: '/promotions' }, { label: 'Combo ưu đãi', to: '/bundles' }, { label: 'Bộ sưu tập', to: '/collections' }, { label: 'Sắp ra mắt', to: '/upcoming' }, { label: 'Tìm mẫu phù hợp', to: '/finder' }, { label: 'Phần thưởng', to: '/rewards' }, { label: 'Thông báo', to: '/notifications' }, { label: 'Thẻ quà tặng', to: '/gift-cards' }, { label: 'Tra cứu đơn hàng', to: '/track' },
   { label: 'Trung tâm hỗ trợ', to: '/support' }, { label: 'Câu hỏi thường gặp', to: '/faq' }, { label: 'Về chúng tôi', to: '/about' }]
 const search = () => { navOpen.value = false; router.push({ path: '/products', query: q.value.trim() ? { q: q.value.trim() } : {} }); q.value = '' }
 const logout = () => { auth.logout(); navOpen.value = false; router.push('/') }

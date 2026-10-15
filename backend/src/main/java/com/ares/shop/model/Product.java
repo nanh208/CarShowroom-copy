@@ -28,6 +28,8 @@ public class Product {
     @Column(length = 3000) public String description;
     /** URL video / placeholder 360° (tuỳ chọn). */
     public String videoUrl; public String view360;
+    /** Mẫu sắp ra mắt: cho phép đặt trước, ngày phát hành dự kiến, tiền cọc. */
+    public Boolean preorder; public java.time.LocalDate releaseDate; public Long preorderDeposit;
     @ElementCollection(fetch = FetchType.EAGER) @OrderColumn
     public List<String> images = new ArrayList<>();
     @ElementCollection(fetch = FetchType.EAGER) @MapKeyColumn(name = "spec_key") @Column(name = "spec_value")

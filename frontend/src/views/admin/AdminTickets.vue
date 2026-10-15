@@ -4,11 +4,12 @@
       <div class="row" style="gap:6px"><button v-for="(v, k) in { '': 'Tất cả', ...TICKET_STATUS }" :key="k" :class="['btn btn-sm', st === k ? '' : 'btn-outline']" @click="st = k; load()">{{ v }}</button></div></div>
     <div class="split">
       <div class="card list">
-        <button v-for="t in list" :key="t.id" :class="['it', { on: cur?.id === t.id }]" @click="cur = t">
+        <input v-model="tq" type="search" class="input" placeholder="Tìm mã, tiêu đề, khách…" aria-label="Tìm phiếu" style="margin-bottom:8px" />
+        <button v-for="t in shownT" :key="t.id" :class="['it', { on: cur?.id === t.id }]" @click="cur = t">
           <div class="row between"><b>{{ t.code }}</b><span :class="['badge', 'badge-' + (t.status === 'OPEN' ? 'PENDING' : t.status === 'ANSWERED' ? 'SHIPPING' : 'COMPLETED')]">{{ TICKET_STATUS[t.status] }}</span></div>
           <div>{{ t.subject }}</div><div class="small muted">{{ t.user?.fullName }} · {{ t.category }} · {{ d(t.updatedAt) }}</div>
         </button>
-        <div v-if="!list.length" class="muted" style="padding:16px">Không có phiếu.</div>
+        <div v-if="!shownT.length" class="muted" style="padding:16px">Không có phiếu.</div>
       </div>
       <div v-if="cur" class="card thread">
         <div class="row between"><div><h3 style="margin:0">{{ cur.subject }}</h3><div class="small muted">{{ cur.user?.fullName }} · {{ cur.user?.email }}<span v-if="cur.orderCode"> · Đơn <router-link :to="`/orders/${cur.orderCode}`" target="_blank">{{ cur.orderCode }}</router-link></span></div></div>
@@ -24,6 +25,9 @@
   </div>
 </template>
 <script setup>
+import { computed as _c, ref as _r } from 'vue'
+const tq = _r('')
+const shownT = _c(() => list.value.filter(t => !tq.value || [t.code, t.subject, t.user?.fullName, t.user?.email, t.orderCode].join(' ').toLowerCase().includes(tq.value.toLowerCase())))
 import { ref, onMounted } from 'vue'
 import api from '../../api'
 import CannedReplies from '../../components/CannedReplies.vue'
