@@ -34,10 +34,10 @@
         <div class="card block">
           <h3>2. Phương thức vận chuyển</h3>
           <div class="ship-grid" role="radiogroup" aria-label="Phương thức vận chuyển">
-            <label v-for="o in shipOpts" :key="o.method" :class="['pay', { on: f.shippingMethod === o.method }]">
-              <input v-model="f.shippingMethod" type="radio" :value="o.method" />
+            <label v-for="o in shipOpts" :key="o.carrier + o.method" :class="['pay', { on: shipSel === o.carrier + '|' + o.method }]">
+              <input v-model="shipSel" type="radio" :value="o.carrier + '|' + o.method" />
               <span class="pico" :class="o.method">{{ o.method === 'EXPRESS' ? '⚡' : '🚚' }}</span>
-              <div class="grow"><b>{{ o.label }}</b><div class="small muted">Nhận {{ etaText(o) }}</div></div>
+              <div class="grow"><b>{{ o.label }}</b><div class="small muted">Nhận {{ etaText(o) }}<template v-if="o.weight"> · ~{{ (o.weight / 1000).toFixed(1) }} kg</template></div></div>
               <b class="small">{{ freeShip && o.method === 'STANDARD' ? 'Miễn phí' : o.fee ? vnd(o.fee) : 'Miễn phí' }}</b>
             </label>
           </div>
@@ -119,11 +119,13 @@ const GIFT_FEE = 20000
 const guest = computed(() => !auth.loggedIn)
 const f = reactive({ buyerName: auth.user?.fullName || '', phone: auth.user?.phone || '', email: auth.user?.email || '', shippingAddress: '', city: '', note: '', giftWrap: false, giftMessage: '',
   paymentMethod: !auth.loggedIn ? 'COD' : auth.user?.preferredPayment || localStorage.getItem('lastPay') || 'COD', installmentMonths: 6,
-  shippingMethod: localStorage.getItem('lastShip') || 'STANDARD', giftCardCode: '', referralCode: localStorage.getItem('refCode') || '', useCredit: false })
+  shippingMethod: localStorage.getItem('lastShip') || 'STANDARD', carrier: localStorage.getItem('lastCarrier') || 'GHTK', giftCardCode: '', referralCode: localStorage.getItem('refCode') || '', useCredit: false })
 watch(() => f.shippingMethod, v => localStorage.setItem('lastShip', v))
 const payOff = k => (guest.value && k !== 'COD') || (k === 'INSTALLMENT' && total.value < instMin.value)
-const shipOpts = ref([{ method: 'STANDARD', label: 'Tiêu chuẩn', fee: 0 }, { method: 'EXPRESS', label: 'Hoả tốc', fee: 0 }])
-const curShip = computed(() => shipOpts.value.find(o => o.method === f.shippingMethod))
+// Báo giá GHN/GHTK (mô phỏng) theo khối lượng giỏ hàng + tỉnh/thành — tính ở backend
+const shipOpts = ref([])
+const shipSel = computed({ get: () => (f.carrier || 'GHTK') + '|' + f.shippingMethod, set: v => { const [c, m] = v.split('|'); f.carrier = c; f.shippingMethod = m; localStorage.setItem('lastCarrier', c) } })
+const curShip = computed(() => shipOpts.value.find(o => o.method === f.shippingMethod && o.carrier === f.carrier) || shipOpts.value.find(o => o.method === f.shippingMethod))
 const DOW = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 const dshort = s => { const d = new Date(s + 'T00:00:00'); return `${DOW[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}` }
 const etaText = o => !o?.etaFrom ? '—' : o.etaFrom === o.etaTo ? dshort(o.etaFrom) : `${dshort(o.etaFrom)} – ${dshort(o.etaTo)}`
@@ -150,8 +152,8 @@ const creditOff = computed(() => { let c = 0, left = gross.value; if (gift.value
 const total = computed(() => gross.value - creditOff.value)
 const fmtAddr = a => [a.line, a.ward, a.district, a.city].filter(Boolean).join(', ')
 const useAddr = a => { f.buyerName = a.receiverName; f.phone = a.phone; f.shippingAddress = [a.line, a.ward, a.district].filter(Boolean).join(', '); f.city = toShipCity(a.city) }
-const quote = async () => { shipOpts.value = (await api.get('/public/shipping-options', { params: { city: f.city || undefined, amount: after.value - ptsDiscount.value } })).data }
-watch([() => f.city, after, ptsDiscount], quote)
+const quote = async () => { try { shipOpts.value = (await api.post('/public/shipping-quote', { city: f.city || null, amount: after.value - ptsDiscount.value, items: cart.items.map(i => ({ productId: i.productId, quantity: i.quantity })) })).data } catch { shipOpts.value = [] } }
+watch([() => f.city, after, ptsDiscount, () => cart.items.length], quote)
 const items = () => cart.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity }))
 const bundleQuote = async () => { bundleOff.value = cart.items.length ? (await api.post('/public/bundle-quote', items())).data.discount : 0 }
 watch(() => cart.items.map(i => i.key + i.quantity).join(), bundleQuote)

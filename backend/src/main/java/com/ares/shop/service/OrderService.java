@@ -40,9 +40,10 @@ public class OrderService {
     public record CheckoutReq(String buyerName, String phone, String email, String shippingAddress, String city, String note,
                               String promoCode, Integer usePoints, Enums.PaymentMethod paymentMethod, Integer installmentMonths, List<ItemReq> items,
                               Boolean giftWrap, String giftMessage, String shippingMethod, String giftCardCode, String referralCode,
-                              Boolean guest, Boolean autoBestPromo, Boolean useCredit) {}
+                              Boolean guest, Boolean autoBestPromo, Boolean useCredit, String carrier) {}
 
     /** Phí vận chuyển theo khu vực. */
+    @org.springframework.beans.factory.annotation.Autowired CarrierService carrierService;
     public static long shippingFee(String city, long amount) { return shippingFee(city, amount, "STANDARD"); }
     public static long shippingFee(String city, long amount, String method) {
         boolean express = method != null && method.equalsIgnoreCase("EXPRESS");
@@ -174,8 +175,15 @@ public class OrderService {
         }
         long afterDiscount = o.subtotal - o.discount - o.pointsDiscount;
         // store credit / gift card applied later by controller; shipping
-        o.shippingFee = freeShip && !"EXPRESS".equals(o.shippingMethod) ? 0 : shippingFee(r.city(), afterDiscount, o.shippingMethod);
         var et = eta(r.city(), o.shippingMethod); o.etaFrom = et[0]; o.etaTo = et[1];
+        if (!isBlank(r.carrier())) {
+            // Phí theo hãng (GHN/GHTK mô phỏng) dựa trên khối lượng ước tính; freeship tiêu chuẩn vẫn áp dụng
+            String c = r.carrier().toUpperCase(); if (!CarrierService.CARRIERS.contains(c)) throw ApiException.bad("Hãng vận chuyển không hợp lệ");
+            int grams = o.items.stream().mapToInt(i -> CarrierService.weightOf(i.productId == null ? null : products.findById(i.productId).orElse(null)) * i.quantity).sum() + 150;
+            var q = carrierService.quote(c, o.shippingMethod, r.city(), grams, 0);
+            o.carrier = c; o.etaFrom = q.etaFrom(); o.etaTo = q.etaTo();
+            o.shippingFee = (freeShip || afterDiscount >= FREE_SHIP_FROM) && !"EXPRESS".equals(o.shippingMethod) ? 0 : q.fee();
+        } else o.shippingFee = freeShip && !"EXPRESS".equals(o.shippingMethod) ? 0 : shippingFee(r.city(), afterDiscount, o.shippingMethod);
         if (Boolean.TRUE.equals(r.giftWrap())) { o.giftWrap = true; o.giftFee = GIFT_FEE; o.giftMessage = r.giftMessage() == null ? null : r.giftMessage().trim().substring(0, Math.min(300, r.giftMessage().trim().length())); }
         o.total = afterDiscount + o.shippingFee + (o.giftFee == null ? 0 : o.giftFee);
         long credit = 0;

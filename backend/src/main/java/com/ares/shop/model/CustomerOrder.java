@@ -20,6 +20,8 @@ public class CustomerOrder {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     public List<OrderItem> items = new ArrayList<>();
     /** v11: phương thức giao, ngày giao dự kiến, combo, tín dụng, hoàn tiền một phần, khách vãng lai. */
+    /** Hãng vận chuyển khách chọn (GHN/GHTK) + mã vận đơn sau khi bàn giao. */
+    public String carrier; public String trackingNo;
     public String shippingMethod; public java.time.LocalDate etaFrom; public java.time.LocalDate etaTo;
     public Long bundleDiscount; public Long creditUsed; public Long refundedAmount; public Boolean guest;
     public long subtotal;

@@ -286,14 +286,14 @@ public class DataSeeder implements CommandLineRunner {
         Product slash = find("traxxas-slash"); Product hw = find("hw-r34");
         var v1 = variants.findByProductIdOrderByIdAsc(slash.id).get(0); var v2 = variants.findByProductIdOrderByIdAsc(hw.id).get(0);
         var o = orderService.place(k, new OrderService.CheckoutReq(k.fullName, k.phone, k.email, "123 Nguyễn Văn Linh, Tân Phong, Quận 7", "TP. Hồ Chí Minh", null, null, 0,
-                Enums.PaymentMethod.COD, null, List.of(new OrderService.ItemReq(slash.id, v1.id, 1), new OrderService.ItemReq(hw.id, v2.id, 2)), null, null, null, null, null, null, null, null));
+                Enums.PaymentMethod.COD, null, List.of(new OrderService.ItemReq(slash.id, v1.id, 1), new OrderService.ItemReq(hw.id, v2.id, 2)), null, null, null, null, null, null, null, null, null));
         var t0 = LocalDateTime.now().minusDays(3);
         o.createdAt = t0; o.timeline.put("PENDING", t0); o.timeline.put("CONFIRMED", t0.plusHours(2)); o.timeline.put("SHIPPING", t0.plusDays(1)); o.timeline.put("COMPLETED", t0.plusDays(2));
         o.status = Enums.OrderStatus.COMPLETED; orderService.complete(o); orders.save(o);
         User k2 = users.findById(k.id).orElseThrow(); orderService.updateTier(k2); users.save(k2);
         Product lipo = find("lipo-2s");
         var o2 = orderService.place(k, new OrderService.CheckoutReq(k.fullName, k.phone, k.email, "123 Nguyễn Văn Linh, Tân Phong, Quận 7", "TP. Hồ Chí Minh", null, null, 0,
-                Enums.PaymentMethod.MOMO, null, List.of(new OrderService.ItemReq(lipo.id, null, 1)), null, null, null, null, null, null, null, null));
+                Enums.PaymentMethod.MOMO, null, List.of(new OrderService.ItemReq(lipo.id, null, 1)), null, null, null, null, null, null, null, null, null));
         orderService.pay(o2); o2.status = Enums.OrderStatus.SHIPPING; o2.timeline.put("CONFIRMED", LocalDateTime.now().minusHours(5)); o2.timeline.put("SHIPPING", LocalDateTime.now().minusHours(1)); orders.save(o2);
         Ticket t = new Ticket(); t.user = k; t.code = "HT" + String.valueOf(System.currentTimeMillis()).substring(5); t.subject = "Hỏi cách chỉnh trim tay lái Slash"; t.category = "Kỹ thuật"; t.orderCode = o.code;
         TicketMessage m = new TicketMessage(); m.ticket = t; m.author = k.fullName; m.content = "Xe hơi lệch trái khi chạy thẳng, mình chỉnh ở đâu ạ?"; t.messages.add(m);

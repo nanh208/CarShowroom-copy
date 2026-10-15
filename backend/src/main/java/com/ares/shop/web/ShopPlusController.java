@@ -28,13 +28,14 @@ public class ShopPlusController {
         this.notifyMe = notifyMe; this.mail = mail; this.settings = settings; this.promos = promos; this.emails = emails;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.CarrierService carrierService;
     // ===== Khách vãng lai: đặt hàng không cần tài khoản (COD) =====
     @PostMapping("/api/public/checkout")
     public Map<String, Object> guestCheckout(@RequestBody OrderService.CheckoutReq r) {
         if (r.paymentMethod() != Enums.PaymentMethod.COD) throw ApiException.bad("Khách vãng lai thanh toán khi nhận hàng (COD). Đăng nhập để dùng ví/thẻ.");
         if (r.email() == null || !r.email().contains("@")) throw ApiException.bad("Vui lòng nhập email hợp lệ để nhận hoá đơn");
         CustomerOrder o = orderService.place(null, new OrderService.CheckoutReq(r.buyerName(), r.phone(), r.email(), r.shippingAddress(), r.city(), r.note(),
-                r.promoCode(), 0, r.paymentMethod(), null, r.items(), r.giftWrap(), r.giftMessage(), r.shippingMethod(), r.giftCardCode(), null, true, r.autoBestPromo(), false));
+                r.promoCode(), 0, r.paymentMethod(), null, r.items(), r.giftWrap(), r.giftMessage(), r.shippingMethod(), r.giftCardCode(), null, true, r.autoBestPromo(), false, r.carrier()));
         return Map.of("code", o.code, "total", o.total, "etaFrom", o.etaFrom, "etaTo", o.etaTo, "email", o.email);
     }
 
@@ -75,6 +76,21 @@ public class ShopPlusController {
             l.add(Map.of("method", m, "label", m.equals("EXPRESS") ? "Hoả tốc" : "Tiêu chuẩn", "fee", OrderService.shippingFee(city, amount, m), "etaFrom", e[0], "etaTo", e[1]));
         }
         return l;
+    }
+
+    public record QuoteItem(Long productId, int quantity) {}
+    public record QuoteReq(String city, long amount, List<QuoteItem> items) {}
+    /** Báo giá các hãng (GHN/GHTK mô phỏng) cho giỏ hàng: theo khối lượng ước tính + vùng; freeship tiêu chuẩn từ 500k. */
+    @PostMapping("/api/public/shipping-quote")
+    public List<Map<String, Object>> shippingQuote(@RequestBody QuoteReq r) {
+        int grams = 150 + Optional.ofNullable(r.items()).orElse(List.of()).stream().limit(50)
+            .mapToInt(i -> CarrierService.weightOf(i.productId() == null ? null : products.findById(i.productId()).orElse(null)) * Math.max(1, Math.min(99, i.quantity()))).sum();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (var q : carrierService.quoteAll(r.city(), grams, 0)) {
+            long fee = "STANDARD".equals(q.service()) && r.amount() >= OrderService.FREE_SHIP_FROM ? 0 : q.fee();
+            out.add(Map.of("carrier", q.carrier(), "method", q.service(), "label", q.label(), "fee", fee, "listFee", q.fee(), "weight", q.weight(), "etaFrom", q.etaFrom(), "etaTo", q.etaTo()));
+        }
+        return out;
     }
 
     // ===== Tự áp mã giảm tốt nhất =====

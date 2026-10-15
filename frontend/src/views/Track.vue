@@ -14,6 +14,10 @@
         <li v-for="s in steps" :key="s.k" :class="{ done: o.timeline[s.k], now: cur === s.k }"><span class="dot" /><b>{{ s.l }}</b><small>{{ o.timeline[s.k] ? dt(o.timeline[s.k]) : '' }}</small></li>
       </ol>
       <div v-if="o.etaFrom && !['COMPLETED', 'CANCELLED'].includes(o.status)" class="eta">📦 Dự kiến giao <b>{{ dd(o.etaFrom) }}{{ o.etaTo !== o.etaFrom ? ' – ' + dd(o.etaTo) : '' }}</b> · {{ o.shippingMethod === 'EXPRESS' ? 'Hoả tốc' : 'Tiêu chuẩn' }}</div>
+      <div v-if="carrier" class="carrier">
+        <div class="row between"><b>{{ carrier.carrierName }} · vận đơn <span class="mono">{{ carrier.trackingNo }}</span></b><span v-if="carrier.delivered" class="badge badge-COMPLETED">Đã giao</span></div>
+        <ul v-stagger><li v-for="(e, i) in [...carrier.events].reverse()" :key="i" :class="{ last: i === 0 }"><small>{{ dt(e.at) }}</small><span>{{ e.text }}</span></li></ul>
+      </div>
       <div class="items"><div v-for="(i, n) in o.items" :key="n" class="it"><img v-if="i.image" :src="i.image" alt="" /><span>{{ i.name }} × {{ i.qty }}</span></div></div>
       <p class="small muted">Cần hỗ trợ? <router-link to="/support">Trung tâm trợ giúp</router-link> · Hotline 1900 6868</p>
     </div>
@@ -26,6 +30,7 @@ import api, { errMsg } from '../api'
 import { dt, ORDER_STATUS } from '../format'
 import Breadcrumb from '../components/Breadcrumb.vue'
 const route = useRoute(), router = useRouter()
+const carrier = ref(null)
 const code = ref(route.params.code || ''), o = ref(null), err = ref(''), loading = ref(false)
 const steps = [{ k: 'PENDING', l: 'Đã đặt hàng' }, { k: 'CONFIRMED', l: 'Đã xác nhận' }, { k: 'SHIPPING', l: 'Đang giao' }, { k: 'COMPLETED', l: 'Đã nhận hàng' }]
 const cur = computed(() => [...steps].reverse().find(s => o.value?.timeline[s.k])?.k)
@@ -34,11 +39,13 @@ const dd = s => new Date(s + 'T00:00:00').toLocaleDateString('vi-VN', { weekday:
 const go = () => { if (code.value) router.replace('/track/' + code.value.toUpperCase()) }
 async function load(c) {
   o.value = null; err.value = ''; if (!c) return; loading.value = true
-  try { o.value = (await api.get('/public/track/' + encodeURIComponent(c))).data } catch (e) { err.value = errMsg(e) } finally { loading.value = false }
+  carrier.value = null
+  try { o.value = (await api.get('/public/track/' + encodeURIComponent(c))).data; if (['SHIPPING', 'COMPLETED'].includes(o.value.status)) api.get('/public/carrier/track/' + encodeURIComponent(c)).then(r => { carrier.value = r.data }).catch(() => {}) } catch (e) { err.value = errMsg(e) } finally { loading.value = false }
 }
 watch(() => route.params.code, c => { code.value = c || ''; load(c) }, { immediate: true })
 </script>
 <style scoped>
+.carrier { border: 1px solid var(--border); padding: 12px; margin: 12px 0; } .carrier ul { list-style: none; padding: 0; margin: 8px 0 0; border-left: 2px solid var(--border); } .carrier li { padding: 4px 0 8px 14px; position: relative; display: flex; flex-direction: column; } .carrier li::before { content: ''; position: absolute; left: -6px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--border); } .carrier li.last::before { background: var(--accent); } .carrier li small { color: var(--muted); }
 .track-page { max-width: 820px; } .q { gap: 8px; margin: 16px 0; flex-wrap: nowrap; } .q .input { min-width: 0; }
 .res { display: flex; flex-direction: column; gap: 18px; } .res h2 { font-size: clamp(1.1rem, 1rem + 1vw, 1.5rem); }
 .road { position: relative; height: 10px; background: repeating-linear-gradient(90deg, #333 0 18px, #555 18px 30px); margin: 18px 18px 0; }
