@@ -1,4 +1,5 @@
 package com.ares.shop.model;
+import java.time.*;
 import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -27,4 +28,6 @@ public class User {
     /** Tín dụng cửa hàng (từ thẻ quà / hoàn tiền), mã giới thiệu, 2FA TOTP (tuỳ chọn). */
     public Long storeCredit; public Long referredBy;
     @JsonIgnore public String totpSecret; public Boolean totpEnabled;
+    /** Phần thưởng: sinh nhật, điểm danh hằng ngày, vòng quay may mắn. */
+    public LocalDate birthday; public Integer birthdayYearClaimed; public LocalDate lastCheckin; public Integer checkinStreak; public LocalDate lastSpin;
 }

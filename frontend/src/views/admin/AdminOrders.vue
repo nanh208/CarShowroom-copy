@@ -17,7 +17,7 @@
       <div v-if="!list.length" class="empty">Không có đơn hàng.</div>
       <table v-else class="table">
         <thead><tr><th class="ck"><input type="checkbox" :checked="sel.length && sel.length === list.length" :indeterminate.prop="sel.length > 0 && sel.length < list.length" aria-label="Chọn tất cả" @change="sel = $event.target.checked ? list.map(o => o.id) : []" /></th><th>Mã đơn</th><th>Khách hàng</th><th>Ngày</th><th>Tổng</th><th>Thanh toán</th><th>Trạng thái</th><th /></tr></thead>
-        <tbody><tr v-for="o in list" :key="o.id" :class="{ picked: sel.includes(o.id) }">
+        <tbody><tr v-for="o in pg.items.value" :key="o.id" :class="{ picked: sel.includes(o.id) }">
           <td class="ck"><input v-model="sel" type="checkbox" :value="o.id" :aria-label="`Chọn đơn ${o.code}`" /></td>
           <td><b>{{ o.code }}</b><div v-if="o.giftWrap" class="small gift">Gói quà</div><div class="small"><span v-if="o.guest" class="badge badge-PENDING">Khách vãng lai</span> <span v-if="o.shippingMethod === 'EXPRESS'" class="badge badge-CONFIRMED">Giao nhanh</span></div></td><td>{{ o.buyerName }}<div class="small muted">{{ o.phone }}</div></td><td class="small">{{ dt(o.createdAt) }}</td>
           <td class="price">{{ vnd(o.total) }}</td>
@@ -31,7 +31,10 @@
             <button v-if="o.paymentStatus !== 'PAID' && o.paymentStatus !== 'REFUNDED' && !['CANCELLED','RETURNED'].includes(o.status)" class="btn btn-sm btn-outline" @click="markPaid(o)">Đã thu tiền</button></div></td>
         </tr></tbody>
       </table>
+      <p v-if="!list.length" class="muted" style="padding:16px">Không có đơn hàng phù hợp.</p>
     </div>
+    <div class="row between" style="margin-top:8px;gap:8px;flex-wrap:wrap"><select v-model="pg.sort.value" class="input" style="width:auto" aria-label="Sắp xếp"><option v-for="(v, k) in pg.sorts" :key="k" :value="k">{{ v.label }}</option></select><span class="small muted">{{ list.length }} đơn</span></div>
+    <Pager :p="pg" />
     <div v-if="err" class="alert alert-error" style="margin-top:12px">{{ err }}</div>
 
     <div v-if="view" class="modal-bg" @click.self="view = null">
@@ -66,12 +69,15 @@
 </template>
 <script setup>
 import { ref, onMounted } from 'vue'
+import Pager from '../../components/Pager.vue'
+import { usePaged } from '../../composables/usePaged'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '../../stores/prefs'
 import api, { errMsg } from '../../api'
 import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS } from '../../format'
 const route = useRoute(), router = useRouter()
 const list = ref([]), status = ref(route.query.status || ''), view = ref(null), err = ref(''), q = ref(route.query.q || ''), sel = ref([]), bulkTo = ref(''), busy = ref(false)
+const pg = usePaged(list, { size: 25, sorts: { new: { label: 'Mới nhất' }, old: { label: 'Cũ nhất', fn: (a, b) => a.createdAt.localeCompare(b.createdAt) }, big: { label: 'Giá trị cao', fn: (a, b) => b.total - a.total } } })
 const labels = (ids, kind = 'labels') => { const u = router.resolve({ path: '/admin/' + kind, query: { ids: ids.join(','), auto: 1 } }).href; window.open(u, '_blank') }
 const rf = ref({ amount: 0, reason: '', toCredit: false }), notes = ref([]), noteText = ref('')
 async function open(o) { view.value = o; rf.value = { amount: o.paidAmount - (o.refundedAmount || 0), reason: '', toCredit: false }; notes.value = (await api.get(`/admin/orders/${o.id}/notes`)).data }

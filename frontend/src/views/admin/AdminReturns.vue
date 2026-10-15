@@ -1,10 +1,11 @@
 <template>
   <div>
     <h1>Đổi trả & hoàn tiền</h1>
-    <div class="card table-wrap">
-      <table class="table">
+    <div class="card">
+      <ListTools :p="pg" placeholder="Tìm mã đơn, khách, lý do…"><select v-model="st" class="input" aria-label="Trạng thái"><option value="">Mọi trạng thái</option><option v-for="(v, k) in RETURN_STATUS" :key="k" :value="k">{{ v }}</option></select></ListTools>
+      <div class="table-wrap"><table class="table">
         <thead><tr><th>Ngày</th><th>Đơn</th><th>Khách</th><th>Lý do</th><th>Ảnh</th><th>Hoàn</th><th>Trạng thái</th><th /></tr></thead>
-        <tbody><tr v-for="r in list" :key="r.id">
+        <tbody><tr v-for="r in pg.items.value" :key="r.id">
           <td class="small">{{ d(r.createdAt) }}</td>
           <td><router-link :to="`/orders/${r.orderCode}`" target="_blank">{{ r.orderCode }}</router-link><div class="small muted">{{ PAY_METHOD[r.order?.paymentMethod] }}</div></td>
           <td>{{ r.customerName }}</td><td class="small" style="max-width:260px">{{ r.reason }}<div v-if="r.adminNote" class="muted">↳ {{ r.adminNote }}</div></td>
@@ -16,17 +17,22 @@
             <button v-if="r.status === 'APPROVED'" class="btn btn-sm" @click="act(r, 'REFUNDED')">Đã nhận hàng · Hoàn tiền</button>
           </div></td>
         </tr>
-        <tr v-if="!list.length"><td colspan="8" class="muted">Chưa có yêu cầu nào.</td></tr></tbody>
-      </table>
+        <tr v-if="!pg.items.value.length"><td colspan="8" class="muted">Không có yêu cầu nào.</td></tr></tbody>
+      </table></div>
+      <Pager :p="pg" />
     </div>
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import ListTools from '../../components/ListTools.vue'
+import Pager from '../../components/Pager.vue'
+import { usePaged } from '../../composables/usePaged'
 import api, { errMsg } from '../../api'
 import { vnd, d, RETURN_STATUS, PAY_METHOD } from '../../format'
 import { toast } from '../../stores/prefs'
-const list = ref([])
+const list = ref([]), st = ref('')
+const pg = usePaged(computed(() => list.value.filter(r => !st.value || r.status === st.value)), { fields: r => [r.orderCode, r.customerName, r.reason], sorts: { new: { label: 'Mới nhất', fn: (a, b) => b.createdAt.localeCompare(a.createdAt) }, amt: { label: 'Số tiền hoàn lớn', fn: (a, b) => b.refundAmount - a.refundAmount } } })
 const load = async () => { list.value = (await api.get('/admin/returns')).data }
 const act = async (r, status, ask) => {
   const note = ask ? prompt('Lý do từ chối?') : null

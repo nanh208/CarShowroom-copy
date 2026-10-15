@@ -6,4 +6,5 @@ public class AbandonedCart {
     public Long userId; public String email; public String name;
     @Lob @Column(length = 8000) public String itemsJson;
     public long subtotal; public LocalDateTime lastSeen = LocalDateTime.now();
+    /** Lần nhắc tự động gần nhất (job nền). */ public LocalDateTime remindedAt;
 }

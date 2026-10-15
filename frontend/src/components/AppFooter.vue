@@ -14,20 +14,23 @@
           <router-link to="/track">Tra cứu đơn hàng</router-link>
           <router-link to="/gift-cards">Thẻ quà tặng</router-link>
           <router-link to="/bundles">Combo ưu đãi</router-link>
+          <router-link to="/collections">Bộ sưu tập</router-link>
+          <router-link to="/upcoming">Sắp ra mắt</router-link>
+          <router-link to="/finder">Tìm mẫu phù hợp</router-link>
+          <router-link to="/rewards">Điểm danh & phần thưởng</router-link>
           <router-link to="/about#terms">Điều khoản dịch vụ</router-link>
           <router-link to="/about#privacy">Chính sách bảo mật</router-link>
         </nav>
       </div>
       <div class="bottom">
         <span>ARES Toys — xe mô hình, xe RC & phụ kiện chính hãng · 123 Nguyễn Văn Linh, Q.7, TP.HCM · Hotline {{ HOTLINE }}</span>
-        <span class="tsw-f">Giao diện <ThemeSwitch /> · © {{ new Date().getFullYear() }} ARES Toys</span>
+        <span class="tsw-f">© {{ new Date().getFullYear() }} ARES Toys</span>
       </div>
     </div>
   </footer>
 </template>
 <script setup>
 import { ref } from 'vue'
-import ThemeSwitch from './ThemeSwitch.vue'
 import api from '../api'
 import { HOTLINE } from '../format'
 import { toast } from '../stores/prefs'

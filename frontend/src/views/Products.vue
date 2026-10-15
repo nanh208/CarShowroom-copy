@@ -30,11 +30,12 @@
       <button type="button" class="btn sh-done" @click="sheet = false">Xem {{ total }} sản phẩm</button>
     </div>
     </div>
-    <p class="muted small cnt">{{ total }} sản phẩm<span v-if="f.q"> cho “{{ f.q }}”</span> · Trang {{ page + 1 }}/{{ Math.max(pages, 1) }}</p>
+    <div v-if="loadErr" class="alert alert-error">Không tải được sản phẩm: {{ loadErr }} <button class="btn btn-sm btn-outline" @click="load">Thử lại</button></div>
+    <p class="muted small cnt">{{ total }} sản phẩm<span v-if="f.q"> cho “{{ f.q }}”</span> · Trang {{ page + 1 }}/{{ Math.max(pages, 1) }} · <router-link to="/finder">Chưa biết chọn gì? Tìm mẫu phù hợp →</router-link></p>
     <section>
       <Skeleton v-if="loading && !items.length" :count="8" />
       <div v-else-if="!items.length && !loading" class="empty card">Không tìm thấy sản phẩm phù hợp. <button class="link" @click="reset">Xoá bộ lọc</button></div>
-      <div v-else class="grid grid-4" :class="{ dim: loading }" :aria-busy="loading"><ProductCard v-for="(p, i) in items" :key="p.id" :p="p" :flash="flashOf(p.id)" /></div>
+      <div v-else v-stagger class="grid grid-4" :class="{ dim: loading }" :aria-busy="loading"><ProductCard v-for="(p, i) in items" :key="p.id" :p="p" :flash="flashOf(p.id)" /></div>
       <div v-if="pages > 1" class="row pager">
         <button class="btn btn-sm btn-outline" :disabled="page === 0" @click="go(page - 1)">← Trước</button>
         <button v-for="i in pages" :key="i" :class="['btn btn-sm', i - 1 === page ? '' : 'btn-outline']" @click="go(i - 1)">{{ i }}</button>
@@ -49,7 +50,7 @@ import Breadcrumb from '../components/Breadcrumb.vue'
 import Skeleton from '../components/Skeleton.vue'
 import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '../api'
+import api, { errMsg } from '../api'
 import { catalog, loadCatalog, AGES, TYPES } from '../format'
 import ProductCard from '../components/ProductCard.vue'
 
@@ -70,13 +71,16 @@ function fromQuery() {
   price.value = q.price || ''; page.value = Number(q.page || 0)
 }
 let reqId = 0
+const loadErr = ref('')
 async function load() {
   loading.value = true
   const [min, max] = price.value ? price.value.split('-') : []
   const params = { ...f, inStock: f.inStock || undefined, minPrice: min || undefined, maxPrice: max || undefined, page: page.value, size: 12 }
   Object.keys(params).forEach(k => (params[k] === '' || params[k] === undefined) && delete params[k])
   const id = ++reqId
-  const { data } = await api.get('/products', { params })
+  let data
+  try { data = (await api.get('/products', { params })).data; loadErr.value = '' }
+  catch (e) { if (id === reqId) { loadErr.value = errMsg(e); loading.value = false } return }
   if (id !== reqId) return // bỏ kết quả cũ khi gõ nhanh
   items.value = data.content; total.value = data.totalElements; pages.value = data.totalPages; loading.value = false
 }

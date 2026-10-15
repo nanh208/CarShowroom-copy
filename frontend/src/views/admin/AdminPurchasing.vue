@@ -6,7 +6,7 @@
     <div class="card">
       <div class="row between th"><h3>Gợi ý nhập hàng ({{ sug.length }})</h3>
         <div class="row" style="gap:8px"><input v-model.trim="supplier" class="input" placeholder="Nhà cung cấp" aria-label="Nhà cung cấp" style="width:200px" />
-          <button class="btn btn-sm" :disabled="!picked.length" @click="createPo">Tạo đơn nhập ({{ picked.length }}) · {{ vnd(pickedCost) }}</button></div></div>
+          <button class="btn btn-sm" :disabled="!picked.length" @click="createPo">Tạo đơn nhập ({{ picked.length }}) · <span class="money">{{ vnd(pickedCost) }}</span></button></div></div>
       <div class="table-wrap">
         <table class="table">
           <thead><tr><th><input type="checkbox" :checked="picked.length === sug.length && sug.length" aria-label="Chọn tất cả" @change="e => sug.forEach(s => (s.on = e.target.checked))" /></th><th>Sản phẩm</th><th>Tồn</th><th>Bán/ngày</th><th>Còn đủ</th><th>SL nhập</th><th>Giá vốn</th><th>Thành tiền</th></tr></thead>

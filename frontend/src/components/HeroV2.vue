@@ -11,12 +11,18 @@
             <router-link to="/products" class="btn v2-black">Khám phá bộ sưu tập <b aria-hidden="true">›</b></router-link>
             <router-link :to="{ path: '/products', query: { sort: 'newest' } }" class="btn btn-outline">Xem xe mới về <b aria-hidden="true">›</b></router-link>
           </div>
+          <dl class="stats">
+            <div><dt><CountUp :value="statProducts" />+</dt><dd>mẫu chính hãng</dd></div>
+            <div><dt><CountUp :value="statBrands" /></dt><dd>thương hiệu</dd></div>
+            <div><dt>{{ statRating }}★</dt><dd>đánh giá trung bình</dd></div>
+          </dl>
         </div>
         <div class="stage">
+          <i class="speed" aria-hidden="true"><b /><b /><b /><b /></i>
           <span class="tag-top" aria-hidden="true">Diecast cars<br />RC models<br />for collectors</span>
           <div class="big" aria-hidden="true">{{ hero.scale }}</div>
           <router-link :to="hero.link" class="car" :aria-label="hero.name"><img src="/images/toys/cut/hw-racer.webp" width="1600" height="990" alt="" fetchpriority="high" /></router-link>
-          <router-link :to="hero.link" class="note"><b>{{ hero.name }}</b><span>{{ hero.scale }} scale · {{ hero.brand }}</span><span class="pr">{{ vnd(hero.price) }}</span></router-link>
+          <router-link :to="hero.link" class="note"><b>{{ hero.name }}</b><span>{{ hero.scale }} scale · {{ hero.brand }}</span><span class="pr money">{{ vnd(hero.price) }}</span></router-link>
           <div class="script" aria-hidden="true">Small scale · Big passion</div>
         </div>
       </div>
@@ -38,24 +44,54 @@
         <p>Từ những huyền thoại thu nhỏ đến mẫu RC mạnh mẽ và phụ kiện cao cấp — tất cả dành cho nhà sưu tầm như bạn.</p>
         <i class="checker" aria-hidden="true" />
       </div>
-      <div class="cards">
+      <div class="cards" v-stagger>
         <router-link v-for="(c, i) in cards" :key="c.title" :to="c.to" class="ccard">
           <img :src="c.img" alt="" loading="lazy" decoding="async" />
           <b class="num">0{{ i + 1 }}</b><span class="arr" aria-hidden="true">→</span>
-          <div class="cc-bot"><h3>{{ c.title }}</h3><small class="sub">{{ c.sub }}</small><small v-if="c.name" class="nm">{{ c.name }}</small><b v-if="c.price">{{ vnd(c.price) }}</b></div>
+          <div class="cc-bot"><h3>{{ c.title }}</h3><small class="sub">{{ c.sub }}</small><small v-if="c.name" class="nm">{{ c.name }}</small><b v-if="c.price" class="money">{{ vnd(c.price) }}</b></div>
         </router-link>
         <router-link to="/promotions" class="deal">
           <b>Deal</b><strong>-{{ deal }}%</strong><small>Phụ kiện chính hãng</small><span class="arr" aria-hidden="true">→</span>
         </router-link>
       </div>
     </section>
+
+    <section v-if="collections.length" class="v2wrap cols">
+      <div class="row between ch"><div><span class="kick">Tuyển chọn theo chủ đề</span><h2><span>Bộ sưu tập</span></h2></div><router-link to="/collections" class="btn btn-outline">Tất cả <b aria-hidden="true">›</b></router-link></div>
+      <div class="crow" v-stagger>
+        <router-link v-for="c in collections" :key="c.id" :to="`/collections/${c.slug}`" class="col" :style="{ '--ac': c.accent || 'var(--v2-orange)' }">
+          <img :src="c.cover" alt="" loading="lazy" decoding="async" /><div><small>{{ c.subtitle }}</small><b>{{ c.title }}</b><em>{{ c.count }} mẫu →</em></div></router-link>
+      </div>
+    </section>
+
+    <section v-if="upcoming.length" class="v2wrap upc" v-reveal>
+      <div class="up-in">
+        <div class="up-copy"><span class="kick">Sắp ra mắt · đặt trước</span><h2><span>{{ upcoming[0].name }}</span></h2>
+          <p>Phát hành dự kiến {{ d(upcoming[0].releaseDate) }} — giữ suất ngay, chỉ cọc khi hàng về.</p>
+          <div class="cdn"><div><b>{{ daysTo }}</b><small>ngày</small></div><div><b>{{ upcoming.length }}</b><small>mẫu mở đặt trước</small></div></div>
+          <router-link to="/upcoming" class="btn v2-black">Đặt trước <b aria-hidden="true">›</b></router-link></div>
+        <img :src="upcoming[0].images?.[0]" alt="" loading="lazy" decoding="async" />
+      </div>
+    </section>
   </div>
 </template>
 <script setup>
-import { computed } from 'vue'
-import { vnd } from '../format'
+import { computed, ref, onMounted } from 'vue'
+import { vnd, d } from '../format'
+import api from '../api'
+import CountUp from './CountUp.vue'
 const props = defineProps({ products: { type: Array, default: () => [] } })
 const year = new Date().getFullYear()
+const collections = ref([]), upcoming = ref([]), total = ref(0)
+const statProducts = computed(() => Math.max(total.value, props.products.length))
+const statBrands = computed(() => new Set(props.products.map(p => p.brand?.id).filter(Boolean)).size || 12)
+const statRating = computed(() => { const r = props.products.filter(p => p.reviewCount); return r.length ? (r.reduce((a, p) => a + p.rating, 0) / r.length).toFixed(1) : '4.8' })
+const daysTo = computed(() => { const x = upcoming.value[0]?.releaseDate; return x ? Math.max(0, Math.ceil((new Date(x) - Date.now()) / 864e5)) : '—' })
+onMounted(() => {
+  api.get('/public/collections').then(r => { collections.value = r.data.slice(0, 4) }).catch(() => {})
+  api.get('/public/upcoming').then(r => { upcoming.value = r.data }).catch(() => {})
+  api.get('/products', { params: { size: 1 } }).then(r => { total.value = r.data.totalElements }).catch(() => {})
+})
 const find = re => props.products.find(p => re.test(p.images?.[0] || ''))
 const hero = computed(() => {
   const p = find(/hw-r34-0/)
@@ -77,6 +113,46 @@ const badges = [
   ['<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/>', 'Trả góp 0%']]
 </script>
 <style scoped>
+/* v12: thống kê, vệt tốc độ, bộ sưu tập, sắp ra mắt */
+.stats { display: flex; gap: clamp(16px, 3vw, 36px); margin: 30px 0 0; padding-top: 18px; border-top: 2px solid #111; flex-wrap: wrap; }
+.stats div { margin: 0; } .stats dt { font: italic 400 clamp(1.7rem, 3vw, 2.3rem)/1 'Anton', sans-serif; color: #111; } .stats dd { margin: 4px 0 0; font: 600 .7rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #555; }
+.speed { position: absolute; z-index: 1; left: 0; right: 30%; bottom: 140px; height: 120px; pointer-events: none; }
+.speed b { position: absolute; left: 0; height: 3px; background: linear-gradient(90deg, transparent, #111); opacity: 0; }
+.speed b:nth-child(1) { top: 10px; width: 46%; } .speed b:nth-child(2) { top: 44px; width: 70%; background: linear-gradient(90deg, transparent, var(--v2-orange)); } .speed b:nth-child(3) { top: 78px; width: 38%; } .speed b:nth-child(4) { top: 108px; width: 58%; }
+.cols { padding-top: 56px; } .ch { gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; } .ch h2 { margin: 6px 0 0; }
+.crow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.col { position: relative; aspect-ratio: 3/4; overflow: hidden; background: #111; color: #fff; display: block; }
+.col img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .72; }
+.col div { position: absolute; inset: auto 0 0 0; padding: 16px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.88)); border-bottom: 5px solid var(--ac); display: flex; flex-direction: column; gap: 2px; }
+.col small { font: 600 .66rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #ccc; } .col b { font: italic 400 1.6rem/1.05 'Anton', sans-serif; text-transform: uppercase; } .col em { font-style: normal; font-weight: 700; font-size: .8rem; color: var(--ac); filter: brightness(1.35); }
+.upc { padding: 56px 0 8px; }
+.up-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); background: #111; color: #fff; overflow: hidden; position: relative; }
+.up-in::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: repeating-linear-gradient(0deg, #fff 0 10px, #111 10px 20px); }
+.up-copy { padding: clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(34px, 5vw, 60px); display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.up-copy h2 { color: #fff; font-size: clamp(1.6rem, 3.4vw, 2.6rem); margin: 0; } .up-copy p { color: #ccc; margin: 0; max-width: 420px; }
+.cdn { display: flex; gap: 22px; } .cdn b { display: block; font: italic 400 2.4rem/1 'Anton', sans-serif; color: var(--v2-orange); } .cdn small { font: 600 .68rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #aaa; }
+.up-in img { width: 100%; height: 100%; min-height: 280px; object-fit: cover; }
+@media (max-width: 1000px) { .crow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .up-in { grid-template-columns: 1fr; } .up-in img { min-height: 0; aspect-ratio: 16/10; order: -1; } .col { aspect-ratio: 4/5; } .speed { display: none; } }
+
+/* Chuyển động vào trang: nhẹ, nhanh, 1 lần — tắt khi reduced-motion */
+@media (prefers-reduced-motion: no-preference) {
+  .kick, .copy p, .cta, .stats { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
+  .copy p { animation-delay: .22s; } .cta { animation-delay: .3s; } .stats { animation-delay: .38s; }
+  .copy h1 > span { display: block; animation: rise .55s cubic-bezier(.2,.8,.2,1) both; } .copy h1 > span:nth-child(1) { animation-delay: .06s; } .copy h1 > span:nth-child(2) { animation-delay: .14s; }
+  .car { animation: drive .9s cubic-bezier(.16,.84,.24,1) .15s both; }
+  .big { animation: zoomin .8s cubic-bezier(.2,.8,.2,1) both; }
+  .note, .tag-top, .script { animation: fadein .5s ease-out .8s both; }
+  .speed b { animation: streak .7s ease-out both; } .speed b:nth-child(1) { animation-delay: .2s; } .speed b:nth-child(2) { animation-delay: .28s; } .speed b:nth-child(3) { animation-delay: .34s; } .speed b:nth-child(4) { animation-delay: .4s; }
+  .hstripe { animation: wipe .7s cubic-bezier(.2,.8,.2,1) both; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes fadein { from { opacity: 0; } }
+@keyframes drive { from { opacity: 0; transform: translateX(28%) skewX(-6deg); filter: blur(3px); } 60% { filter: blur(0); } }
+@keyframes zoomin { from { opacity: 0; transform: scale(.9) translateX(6%); } }
+@keyframes streak { 0% { opacity: 0; transform: translateX(60%) scaleX(.3); } 35% { opacity: .9; } 100% { opacity: 0; transform: translateX(-20%) scaleX(1); } }
+@keyframes wipe { from { clip-path: inset(0 0 0 100%); } }
+
 .v2wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
 .kick { display: block; font: 600 .72rem/1 'Oswald', sans-serif; letter-spacing: .38em; text-transform: uppercase; color: #222; margin-bottom: 18px; }
 h1, h2 { font-family: 'Anton', 'Oswald', sans-serif; font-style: italic; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; color: #111; margin: 0; }
