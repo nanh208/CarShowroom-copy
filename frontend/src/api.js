@@ -10,7 +10,9 @@ api.interceptors.request.use(cfg => {
 })
 
 api.interceptors.response.use(r => r, err => {
-  if (err.response?.status === 401 && localStorage.getItem('token')) {
+  // Chỉ đăng xuất khi chính token hiện tại bị từ chối (tránh request cũ/không token xoá phiên mới)
+  const cur = localStorage.getItem('token'), sent = err.config?.headers?.Authorization
+  if (err.response?.status === 401 && cur && sent === `Bearer ${cur}`) {
     localStorage.removeItem('token')
     if (!location.pathname.startsWith('/login')) location.href = '/login?expired=1'
   }
