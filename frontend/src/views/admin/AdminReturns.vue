@@ -27,13 +27,13 @@
 import { ref, computed, onMounted } from 'vue'
 import ListTools from '../../components/ListTools.vue'
 import Pager from '../../components/Pager.vue'
-import { usePaged } from '../../composables/usePaged'
+import { useServerPaged } from '../../composables/usePaged'
 import api, { errMsg } from '../../api'
 import { vnd, d, RETURN_STATUS, PAY_METHOD } from '../../format'
 import { toast } from '../../stores/prefs'
 const list = ref([]), st = ref('')
-const pg = usePaged(computed(() => list.value.filter(r => !st.value || r.status === st.value)), { fields: r => [r.orderCode, r.customerName, r.reason], sorts: { new: { label: 'Mới nhất', fn: (a, b) => b.createdAt.localeCompare(a.createdAt) }, amt: { label: 'Số tiền hoàn lớn', fn: (a, b) => b.refundAmount - a.refundAmount } } })
-const load = async () => { list.value = (await api.get('/admin/returns')).data }
+const pg = useServerPaged('/admin/returns', { filters: () => ({ 'f.status': st.value }), sorts: { new: { label: 'Mới nhất', sort: 'createdAt,desc' }, amt: { label: 'Số tiền hoàn lớn', sort: 'refundAmount,desc' } } })
+const load = async () => { await pg.reload(); list.value = (await api.get('/admin/returns')).data }
 const act = async (r, status, ask) => {
   const note = ask ? prompt('Lý do từ chối?') : null
   if (ask && note === null) return

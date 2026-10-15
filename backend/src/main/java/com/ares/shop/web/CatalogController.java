@@ -67,15 +67,34 @@ public class CatalogController {
                               @RequestParam(required = false) Double minRating,
                               @RequestParam(required = false) Boolean inStock, @RequestParam(required = false) String sort,
                               @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
-        return products.findAll(filter(new Filter(q, brandId, type, grp, minPrice, maxPrice, scale, age, minRating, inStock), true),
-                PageRequest.of(page, Math.min(size, 60), sort(sort)));
+        size = Math.max(1, Math.min(size, 60)); page = Math.max(0, page);
+        if (q == null || q.isBlank())
+            return products.findAll(filter(new Filter(null, brandId, type, grp, minPrice, maxPrice, scale, age, minRating, inStock), true), PageRequest.of(page, size, sort(sort)));
+        // Tìm kiếm thông minh: đồng nghĩa + chịu lỗi gõ + trích tỉ lệ/thương hiệu/giá (SearchService), rồi áp các bộ lọc còn lại
+        List<Long> rank = searchSvc.search(q, true).stream().map(p -> p.id).toList();
+        Set<Long> allowed = new HashSet<>(rank);
+        List<Product> rows = products.findAll(filter(new Filter(null, brandId, type, grp, minPrice, maxPrice, scale, age, minRating, inStock), true), sort(sort))
+                .stream().filter(p -> allowed.contains(p.id)).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (sort == null || sort.isBlank()) rows.sort(Comparator.comparingInt(p -> rank.indexOf(p.id)));
+        int from = Math.min(page * size, rows.size());
+        return new org.springframework.data.domain.PageImpl<>(rows.subList(from, Math.min(from + size, rows.size())), PageRequest.of(page, size), rows.size());
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.SearchService searchSvc;
+
+    /** Phân tích câu tìm kiếm: thực thể trích được + gợi ý sửa lỗi gõ ("Có phải bạn muốn tìm…"). */
+    @GetMapping("/products/search-meta")
+    public Map<String, Object> searchMeta(@RequestParam String q) {
+        var ps = searchSvc.parse(q); Map<String, Object> m = new LinkedHashMap<>();
+        m.put("scale", ps.scale()); m.put("brand", ps.brand()); m.put("minPrice", ps.minPrice()); m.put("maxPrice", ps.maxPrice());
+        m.put("age", ps.age()); m.put("terms", ps.terms()); m.put("didYouMean", ps.corrected()); return m;
     }
 
     /** Gợi ý tìm kiếm (autocomplete). */
     @GetMapping("/products/suggest")
     public List<Map<String, Object>> suggest(@RequestParam String q) {
         if (q == null || q.isBlank()) return List.of();
-        return products.findAll(filter(new Filter(q, null, null, null, null, null, null, null, null, null), true), PageRequest.of(0, 6, sort("bestseller")))
+        return new org.springframework.data.domain.PageImpl<>(searchSvc.search(q, true).stream().limit(6).toList())
                 .map(p -> Map.<String, Object>of("id", p.id, "name", p.name, "price", p.price, "image", p.images.isEmpty() ? "" : p.images.get(0),
                         "brand", p.brand == null ? "" : p.brand.name)).getContent();
     }

@@ -30,6 +30,11 @@
       <button type="button" class="btn sh-done" @click="sheet = false">Xem {{ total }} sản phẩm</button>
     </div>
     </div>
+    <div v-if="meta && f.q" class="smart small">
+      <span v-if="meta.didYouMean">Có phải bạn muốn tìm <a href="#" @click.prevent="f.q = meta.didYouMean">“{{ meta.didYouMean }}”</a>? · </span>
+      <span v-if="meta.scale" class="chip">Tỉ lệ {{ meta.scale }}</span><span v-if="meta.brand" class="chip">{{ meta.brand }}</span>
+      <span v-if="meta.maxPrice" class="chip">≤ {{ meta.maxPrice.toLocaleString('vi-VN') }}đ</span><span v-if="meta.age" class="chip">{{ meta.age }}+ tuổi</span>
+    </div>
     <div v-if="loadErr" class="alert alert-error">Không tải được sản phẩm: {{ loadErr }} <button class="btn btn-sm btn-outline" @click="load">Thử lại</button></div>
     <p class="muted small cnt">{{ total }} sản phẩm<span v-if="f.q"> cho “{{ f.q }}”</span> · Trang {{ page + 1 }}/{{ Math.max(pages, 1) }} · <router-link to="/finder">Chưa biết chọn gì? Tìm mẫu phù hợp →</router-link></p>
     <section>
@@ -71,7 +76,7 @@ function fromQuery() {
   price.value = q.price || ''; page.value = Number(q.page || 0)
 }
 let reqId = 0
-const loadErr = ref('')
+const loadErr = ref(''), meta = ref(null)
 async function load() {
   loading.value = true
   const [min, max] = price.value ? price.value.split('-') : []
@@ -82,6 +87,7 @@ async function load() {
   try { data = (await api.get('/products', { params })).data; loadErr.value = '' }
   catch (e) { if (id === reqId) { loadErr.value = errMsg(e); loading.value = false } return }
   if (id !== reqId) return // bỏ kết quả cũ khi gõ nhanh
+  meta.value = null; if (f.q) api.get('/products/search-meta', { params: { q: f.q } }).then(r => { if (id === reqId) meta.value = r.data }).catch(() => {})
   items.value = data.content; total.value = data.totalElements; pages.value = data.totalPages; loading.value = false
 }
 function apply(p = 0) {
@@ -101,6 +107,7 @@ onMounted(() => { fromQuery(); load(); loadCatalog(); api.get('/flash-sales').th
 </script>
 
 <style scoped>
+.smart { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; } .smart .chip { background: var(--bronze-soft); padding: 2px 10px; border-radius: 99px; } .smart a { color: var(--accent); font-weight: 600; }
 .filters { position: sticky; top: 64px; z-index: 20; background: #fff; padding: 8px 0 2px; margin: 0 -4px; }
 .dim { opacity: .55; transition: opacity .15s ease-out; pointer-events: none; }
 .fbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 12px; background: var(--bg-2); border-radius: 10px; }

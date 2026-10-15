@@ -25,10 +25,10 @@ public class BotController {
 
     public static String norm(String s) {
         if (s == null) return "";
-        return Normalizer.normalize(s.toLowerCase(), Normalizer.Form.NFD).replaceAll("\\p{M}", "").replace('đ', 'd').replaceAll("[^a-z0-9: ]", " ").replaceAll("\\s+", " ").trim();
+        return Normalizer.normalize(s.toLowerCase(), Normalizer.Form.NFD).replaceAll("\\p{M}", "").replace('đ', 'd').replaceAll("[^a-z0-9:/ ]", " ").replaceAll("\\s+", " ").trim();
     }
     static final List<String> DEFAULT_QUICK = List.of("Tra cứu đơn hàng", "Mã giảm giá", "Phí ship", "Đổi trả", "Gợi ý quà tặng", "Gặp nhân viên");
-    static final Set<String> STOP = Set.of("cho", "toi", "minh", "ban", "shop", "co", "khong", "la", "gi", "nao", "the", "voi", "mot", "can", "muon", "tim", "mua", "xem", "ve", "cua", "va", "hay", "duoc", "nhe", "a", "oi", "em", "anh", "chi", "hoi", "o", "dau", "bao", "nhieu", "gia", "san", "pham", "loai");
+    public static final Set<String> STOP = Set.of("cho", "toi", "minh", "ban", "shop", "co", "khong", "la", "gi", "nao", "the", "voi", "mot", "can", "muon", "tim", "mua", "xem", "ve", "cua", "va", "hay", "duoc", "nhe", "a", "oi", "em", "anh", "chi", "hoi", "o", "dau", "bao", "nhieu", "gia", "san", "pham", "loai");
     static final Pattern ORDER = Pattern.compile("\\b([a-z]{2}\\d{8,})\\b");
     static final Pattern PHONE = Pattern.compile("\\b(0\\d{9})\\b");
 
@@ -64,12 +64,20 @@ public class BotController {
                 int sc = 0; for (String k : it.keywords.split(",")) { String kk = norm(k); if (!kk.isEmpty() && (" " + n + " ").contains(" " + kk + " ") || (!kk.isEmpty() && kk.contains(" ") && n.contains(kk))) sc += kk.split(" ").length; }
                 if (sc > bestScore) { bestScore = sc; best = it; }
             }
-            if (best != null) {
+            var ent = searchSvc.parse(n);
+            List<Map<String, Object>> entHits = (ent.scale() != null || ent.brand() != null) ? search(n, true) : List.of();
+            if (!entHits.isEmpty()) {
+                intent = "product-search"; r.put("products", entHits);
+                r.put("text", "Mình tìm thấy " + entHits.size() + " mẫu" + (ent.brand() != null ? " " + ent.brand() : "") + (ent.scale() != null ? " tỉ lệ " + ent.scale() : "")
+                    + (ent.terms().isEmpty() ? "" : " khớp “" + String.join(" ", ent.terms()) + "”") + ":");
+                r.put("entities", Map.of("scale", String.valueOf(ent.scale()), "brand", String.valueOf(ent.brand()), "terms", ent.terms()));
+                r.put("quick", List.of("Xem thêm sản phẩm", "Mã giảm giá", "Phí ship"));
+            } else if (best != null) {
                 intent = best.name; best.hits = Optional.ofNullable(best.hits).orElse(0) + 1; intents.save(best);
                 r.put("text", best.answer);
                 if (best.quickReplies != null && !best.quickReplies.isBlank()) r.put("quick", Arrays.stream(best.quickReplies.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
             } else {
-                var found = search(n);
+                var found = search(n, false);
                 if (!found.isEmpty()) { intent = "product-search"; r.put("text", "Mình tìm thấy " + found.size() + " sản phẩm phù hợp:"); r.put("products", found); }
                 else { r.put("text", "Xin lỗi, mình chưa hiểu câu hỏi. Bạn thử diễn đạt khác, chọn gợi ý bên dưới, hoặc chuyển sang nhân viên nhé."); r.put("handoff", true); }
             }
@@ -94,21 +102,12 @@ public class BotController {
         r.put("quick", List.of("Đổi trả", "Gặp nhân viên"));
     }
 
-    private List<Map<String, Object>> search(String n) {
-        List<String> words = Arrays.stream(n.split(" ")).filter(w -> w.length() > 1 && !STOP.contains(w)).toList();
-        if (words.isEmpty()) return List.of();
-        Long maxPrice = null; Matcher pm = Pattern.compile("(duoi|<)\\s*(\\d+)\\s*(k|tr|trieu)?").matcher(n);
-        if (pm.find()) { long v = Long.parseLong(pm.group(2)); String unit = pm.group(3); maxPrice = "k".equals(unit) ? v * 1000 : unit != null ? v * 1_000_000 : v < 1000 ? v * 1_000_000 : v; }
-        Integer age = null; Matcher am = Pattern.compile("(\\d{1,2})\\s*tuoi").matcher(n); if (am.find()) age = Integer.parseInt(am.group(1));
-        final Long mp = maxPrice; final Integer ag = age;
-        List<String> kw = words.stream().filter(w -> !w.matches("\\d+|duoi|tuoi|k|tr|trieu|re|qua|tang|be|tre")).toList();
-        return products.findAll().stream().filter(p -> p.active && (mp == null || p.price <= mp) && (ag == null || p.ageMin <= ag)).map(p -> {
-            String hay = norm(p.name + " " + (p.brand == null ? "" : p.brand.name) + " " + p.type + " " + p.scale + " " + p.grp);
-            long sc = kw.stream().filter(hay::contains).count(); if (kw.isEmpty() && (mp != null || ag != null)) sc = 1;
-            return Map.entry(p, sc); }).filter(e -> e.getValue() > 0)
-            .sorted((a, b) -> a.getValue().equals(b.getValue()) ? Integer.compare(b.getKey().sold, a.getKey().sold) : Long.compare(b.getValue(), a.getValue()))
-            .limit(4).map(e -> { Product p = e.getKey(); Map<String, Object> m = new LinkedHashMap<>(); m.put("id", p.id); m.put("name", p.name); m.put("price", p.price);
-                m.put("image", p.images.isEmpty() ? "" : p.images.get(0)); m.put("stock", p.stock); return m; }).collect(Collectors.toList());
+    @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.SearchService searchSvc;
+    private List<Map<String, Object>> search(String n, boolean strict) {
+        var ps = searchSvc.parse(n);
+        if (ps.terms().isEmpty() && ps.scale() == null && ps.brand() == null && ps.maxPrice() == null && ps.minPrice() == null && ps.age() == null) return List.of();
+        return searchSvc.search(n, true, strict).stream().limit(4).map(p -> { Map<String, Object> m = new LinkedHashMap<>(); m.put("id", p.id); m.put("name", p.name); m.put("price", p.price);
+                m.put("image", p.images.isEmpty() ? "" : p.images.get(0)); m.put("stock", p.stock); m.put("scale", p.scale); return m; }).collect(Collectors.toList());
     }
 
     @GetMapping("/api/public/bot/{session}")

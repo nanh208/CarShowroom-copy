@@ -33,7 +33,7 @@
       </table>
       <p v-if="!list.length" class="muted" style="padding:16px">Không có đơn hàng phù hợp.</p>
     </div>
-    <div class="row between" style="margin-top:8px;gap:8px;flex-wrap:wrap"><select v-model="pg.sort.value" class="input" style="width:auto" aria-label="Sắp xếp"><option v-for="(v, k) in pg.sorts" :key="k" :value="k">{{ v.label }}</option></select><span class="small muted">{{ list.length }} đơn</span></div>
+    <div class="row between" style="margin-top:8px;gap:8px;flex-wrap:wrap"><select v-model="pg.sort.value" class="input" style="width:auto" aria-label="Sắp xếp"><option v-for="(v, k) in pg.sorts" :key="k" :value="k">{{ v.label }}</option></select><span class="small muted">{{ pg.total.value }} đơn</span></div>
     <Pager :p="pg" />
     <div v-if="err" class="alert alert-error" style="margin-top:12px">{{ err }}</div>
 
@@ -68,16 +68,18 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import Pager from '../../components/Pager.vue'
-import { usePaged } from '../../composables/usePaged'
+import { useServerPaged } from '../../composables/usePaged'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '../../stores/prefs'
 import api, { errMsg } from '../../api'
 import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS } from '../../format'
 const route = useRoute(), router = useRouter()
 const list = ref([]), status = ref(route.query.status || ''), view = ref(null), err = ref(''), q = ref(route.query.q || ''), sel = ref([]), bulkTo = ref(''), busy = ref(false)
-const pg = usePaged(list, { size: 25, sorts: { new: { label: 'Mới nhất' }, old: { label: 'Cũ nhất', fn: (a, b) => a.createdAt.localeCompare(b.createdAt) }, big: { label: 'Giá trị cao', fn: (a, b) => b.total - a.total } } })
+// Phân trang + lọc + sắp xếp phía máy chủ
+const pg = useServerPaged('/admin/orders', { size: 25, filters: () => ({ 'f.status': status.value }), sorts: { new: { label: 'Mới nhất', sort: 'createdAt,desc' }, old: { label: 'Cũ nhất', sort: 'createdAt' }, big: { label: 'Giá trị cao', sort: 'total,desc' } } })
+watch(q, v => { pg.q.value = v })
 const labels = (ids, kind = 'labels') => { const u = router.resolve({ path: '/admin/' + kind, query: { ids: ids.join(','), auto: 1 } }).href; window.open(u, '_blank') }
 const rf = ref({ amount: 0, reason: '', toCredit: false }), notes = ref([]), noteText = ref('')
 async function open(o) { view.value = o; rf.value = { amount: o.paidAmount - (o.refundedAmount || 0), reason: '', toCredit: false }; notes.value = (await api.get(`/admin/orders/${o.id}/notes`)).data }
@@ -95,7 +97,8 @@ async function bulk() {
 }
 const NEXT = { PENDING: ['CONFIRMED', 'CANCELLED'], CONFIRMED: ['SHIPPING', 'CANCELLED'], SHIPPING: ['COMPLETED'] }
 const LABEL = { CONFIRMED: 'Xác nhận', SHIPPING: 'Giao hàng', COMPLETED: 'Hoàn tất', CANCELLED: 'Huỷ' }
-async function load() { list.value = (await api.get('/admin/orders', { params: { status: status.value || undefined, q: q.value || undefined } })).data; sel.value = sel.value.filter(id => list.value.some(o => o.id === id)) }
+async function load() { pg.q.value = q.value; await pg.reload(); list.value = pg.items.value; sel.value = sel.value.filter(id => list.value.some(o => o.id === id)) }
+watch(pg.items, v => { list.value = v })
 async function markPaid(o) { try { await api.post(`/admin/orders/${o.id}/mark-paid`) } catch (e) { err.value = errMsg(e) } load() }
 async function setStatus(o, s) {
   err.value = ''

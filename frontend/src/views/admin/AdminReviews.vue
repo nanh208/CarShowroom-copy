@@ -26,19 +26,20 @@ import { ref, computed, onMounted } from 'vue'
 import api, { errMsg } from '../../api'
 import ListTools from '../../components/ListTools.vue'
 import Pager from '../../components/Pager.vue'
-import { usePaged } from '../../composables/usePaged'
+import { useServerPaged } from '../../composables/usePaged'
 import Stars from '../../components/Stars.vue'
 import { d } from '../../format'
 import { toast } from '../../stores/prefs'
 const list = ref([]), f = ref('all')
 const filters = { all: 'Tất cả', on: 'Đang hiển thị', off: 'Đã ẩn', low: '≤ 3 sao' }
 const match = (r, k) => k === 'all' || (k === 'on' && r.approved) || (k === 'off' && !r.approved) || (k === 'low' && r.rating <= 3)
-const count = k => list.value.filter(r => match(r, k)).length
-const shown = computed(() => list.value.filter(r => match(r, f.value)))
-const pg = usePaged(shown, { fields: r => [r.productName, r.authorName, r.comment], sorts: { new: { label: 'Mới nhất', fn: (a, b) => b.createdAt.localeCompare(a.createdAt) }, low: { label: 'Sao thấp trước', fn: (a, b) => a.rating - b.rating }, high: { label: 'Sao cao trước', fn: (a, b) => b.rating - a.rating } } })
-const load = async () => { list.value = (await api.get('/admin/reviews')).data }
+const FP = { all: {}, on: { 'f.approved': 'true' }, off: { 'f.approved': 'false' }, low: { 'f.rating': '1,2,3' } }
+const counts = ref({}), count = k => counts.value[k] ?? '…'
+// Phân trang + tìm kiếm + sắp xếp phía máy chủ
+const pg = useServerPaged('/admin/reviews', { filters: () => FP[f.value], sorts: { new: { label: 'Mới nhất', sort: 'createdAt,desc' }, low: { label: 'Sao thấp trước', sort: 'rating' }, high: { label: 'Sao cao trước', sort: 'rating,desc' } } })
+const load = async () => { await pg.reload(); for (const k of Object.keys(FP)) api.get('/admin/reviews', { params: { page: 0, size: 1, ...FP[k] } }).then(r => { counts.value[k] = r.data.totalElements }) }
 const toggle = async r => { try { await api.patch(`/admin/reviews/${r.id}`, { approved: !r.approved }); r.approved = !r.approved; toast(r.approved ? 'Đã duyệt đánh giá' : 'Đã ẩn đánh giá') } catch (e) { toast(errMsg(e), 'error') } }
-const del = async r => { if (!confirm('Xoá đánh giá này?')) return; await api.delete(`/admin/reviews/${r.id}`); list.value = list.value.filter(x => x.id !== r.id); toast('Đã xoá đánh giá') }
+const del = async r => { if (!confirm('Xoá đánh giá này?')) return; await api.delete(`/admin/reviews/${r.id}`); await load(); toast('Đã xoá đánh giá') }
 onMounted(load)
 </script>
 <style scoped>
