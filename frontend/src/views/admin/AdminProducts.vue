@@ -35,13 +35,24 @@
     <div v-if="imp" class="modal-bg" @click.self="imp = null">
       <div class="modal">
         <h3>Nhập sản phẩm từ CSV</h3>
-        <p class="small muted">Cột: <code>sku,name,brand,type,grp,scale,price,oldPrice,stock,image,description</code> — dòng đầu là tiêu đề, bắt buộc <b>sku, name, price</b>. Trùng SKU sẽ cập nhật.</p>
-        <div class="row" style="margin:10px 0"><label class="btn btn-sm btn-outline">Chọn file .csv<input type="file" accept=".csv,text/csv" hidden @change="readCsv" /></label><button class="btn btn-sm btn-outline" @click="imp.text = SAMPLE">Dán mẫu</button></div>
-        <textarea v-model="imp.text" class="input mono" rows="8" placeholder="sku,name,brand,type,grp,scale,price,stock" />
-        <p v-if="imp.text" class="small muted">{{ imp.text.trim().split('\n').length - 1 }} dòng dữ liệu</p>
-        <div v-if="imp.result" :class="['alert', imp.result.errors.length ? 'alert-error' : 'alert-success']" style="margin-top:10px">
-          Tạo mới {{ imp.result.created }} · cập nhật {{ imp.result.updated }}<div v-for="e in imp.result.errors" :key="e" class="small">{{ e }}</div></div>
-        <div class="row" style="margin-top:12px"><button class="btn" :disabled="!imp.text.trim() || busy" @click="doImport">{{ busy ? 'Đang nhập…' : 'Nhập' }}</button><button class="btn btn-outline" @click="imp = null">Đóng</button></div>
+        <p class="small muted">Cột: <code>sku,name,brand,type,grp,scale,price,oldPrice,stock,image,description,ageMin,active</code> — bắt buộc <b>sku, name, price</b>. Trùng SKU sẽ cập nhật. Bấm <b>Kiểm tra</b> để xem báo cáo từng dòng trước khi ghi.</p>
+        <div class="row" style="margin:10px 0;gap:8px;flex-wrap:wrap"><label class="btn btn-sm btn-outline">Chọn file .csv<input type="file" accept=".csv,text/csv" hidden @change="readCsv" /></label><button class="btn btn-sm btn-outline" @click="imp.text = SAMPLE; imp.result = null">Dán mẫu</button><button class="btn btn-sm btn-outline" @click="exportCsv">Xuất CSV hiện tại</button></div>
+        <textarea v-model="imp.text" class="input mono" rows="6" placeholder="sku,name,brand,type,grp,scale,price,stock" @input="imp.result = null" />
+        <div v-if="imp.result" class="rep">
+          <div class="sum"><span class="badge badge-COMPLETED">Tạo {{ imp.result.created }}</span><span class="badge badge-SHIPPING">Cập nhật {{ imp.result.updated }}</span><span class="badge">Bỏ qua {{ imp.result.skipped }}</span><span :class="['badge', imp.result.failed ? 'badge-CANCELLED' : '']">Lỗi {{ imp.result.failed }}</span>
+            <b v-if="imp.result.applied" class="ok">✓ Đã ghi vào hệ thống</b><b v-else-if="imp.result.blockedByErrors" class="bad">Chưa ghi: còn dòng lỗi (chế độ tất cả hoặc không)</b><span v-else class="muted small">Kết quả kiểm tra — chưa ghi</span></div>
+          <p v-if="imp.result.unknownColumns?.length" class="small muted">Cột bị bỏ qua: {{ imp.result.unknownColumns.join(', ') }}</p>
+          <div class="table-wrap" style="max-height:260px;overflow:auto"><table class="table small"><thead><tr><th>Dòng</th><th>SKU</th><th>Kết quả</th><th>Chi tiết</th></tr></thead>
+            <tbody><tr v-for="r in imp.result.report" :key="r.row" :class="'a-' + r.action">
+              <td>{{ r.row }}</td><td class="mono">{{ r.sku || '—' }}</td><td><b>{{ ACT[r.action] }}</b></td>
+              <td><div v-for="e in r.errors" :key="e" class="bad">✕ {{ e }}</div><div v-for="w in r.warnings" :key="w" class="warn">! {{ w }}</div>
+                <div v-for="(v, k) in r.changes" :key="k" class="muted">{{ k }}: {{ v[0] }} → <b>{{ v[1] }}</b></div></td></tr></tbody></table></div>
+          <button v-if="imp.result.failed" class="btn btn-sm btn-outline" style="margin-top:8px" @click="errCsv">Tải danh sách lỗi (.csv)</button>
+        </div>
+        <label class="row small" style="gap:6px;margin-top:10px"><input v-model="imp.atomic" type="checkbox" /> Tất cả hoặc không (có lỗi thì không ghi dòng nào)</label>
+        <div class="row" style="margin-top:12px;gap:8px"><button class="btn btn-outline" :disabled="!imp.text.trim() || busy" @click="doImport(true)">{{ busy ? 'Đang xử lý…' : 'Kiểm tra' }}</button>
+          <button class="btn" :disabled="!imp.text.trim() || busy || !imp.result || imp.result.applied || (imp.atomic && imp.result.failed > 0) || !(imp.result.created + imp.result.updated)" @click="doImport(false)">Nhập {{ imp.result ? imp.result.created + imp.result.updated : '' }} dòng hợp lệ</button>
+          <button class="btn btn-outline" @click="imp = null">Đóng</button></div>
       </div>
     </div>
 
@@ -105,11 +116,16 @@ async function bulk(active) {
   catch (e) { toast(errMsg(e), 'error') } finally { busy.value = false }
 }
 const readCsv = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => (imp.value.text = rd.result); rd.readAsText(f, 'utf-8') }
-async function doImport() {
+const ACT = { CREATE: 'Tạo mới', UPDATE: 'Cập nhật', SKIP: 'Không đổi', ERROR: 'Lỗi' }
+async function doImport(dryRun) {
   busy.value = true
-  try { imp.value.result = (await api.post('/admin/products/import', imp.value.text, { headers: { 'Content-Type': 'text/plain' } })).data; load() }
-  catch (e) { imp.value.result = { created: 0, updated: 0, errors: [errMsg(e)] } } finally { busy.value = false }
+  try { imp.value.result = (await api.post('/admin/products/import', imp.value.text, { params: { dryRun, atomic: !!imp.value.atomic }, headers: { 'Content-Type': 'text/plain' } })).data; if (!dryRun) { load(); toast(imp.value.result.applied ? 'Đã nhập sản phẩm' : 'Chưa nhập — kiểm tra lỗi', imp.value.result.applied ? 'success' : 'error') } }
+  catch (e) { toast(errMsg(e), 'error') } finally { busy.value = false }
 }
+const download = (name, text) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000) }
+async function exportCsv() { try { download('ares-products.csv', (await api.get('/admin/products/export.csv', { responseType: 'text' })).data) } catch (e) { toast(errMsg(e), 'error') } }
+const errCsv = () => download('import-errors.csv', '\uFEFFrow,sku,errors\n' + imp.value.result.report.filter(r => r.action === 'ERROR').map(r => `${r.row},"${r.sku}","${r.errors.join('; ').replace(/"/g, '""')}"`).join('\n'))
+
 const items = ref([]), q = ref(route.query.q || ''), type = ref(''), form = ref(null), err = ref(''), vars = ref([]), imgUrl = ref(''), uploading = ref(false)
 
 async function load() {
@@ -140,6 +156,7 @@ async function restore(p) { await api.post(`/admin/products/${p.id}/restore`); l
 onMounted(() => { loadCatalog(); load(); if (route.query.new) edit() })
 </script>
 <style scoped>
+.rep { margin-top: 10px; } .sum { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; } .ok { color: var(--success, #2e7d32); } .bad { color: var(--danger); } .warn { color: #b26a00; } tr.a-ERROR { background: color-mix(in srgb, var(--danger) 7%, transparent); }
 .bulk { position: sticky; top: 64px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 12px; background: #111; color: #fff; }
 .bulk .input { width: auto; padding: 6px 10px; } .bulk .num { width: 120px; } .bulk .btn-outline { color: #fff; border-color: #fff; background: transparent; }
 .ck { width: 36px; } .ck input { width: 17px; height: 17px; accent-color: var(--accent); } tr.picked { background: var(--bronze-soft); } .mono { font-family: ui-monospace, monospace; font-size: .8rem; }

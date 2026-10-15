@@ -59,38 +59,109 @@ public class OpsController {
         return Map.of("updated", n);
     }
 
-    /** CSV: sku,name,brand,type,grp,scale,price,oldPrice,stock,image,description (dòng đầu là tiêu đề). Ghi đè theo SKU. */
+    @org.springframework.beans.factory.annotation.Autowired CategoryRepo categoriesRepo;
+    static final List<String> IMPORT_COLS = List.of("sku", "name", "brand", "type", "grp", "scale", "price", "oldprice", "stock", "image", "description", "agemin", "active");
+
+    /**
+     * Nhập CSV có báo cáo kiểm tra từng dòng.
+     * Cột: sku,name,brand,type,grp,scale,price,oldPrice,stock,image,description,ageMin,active (bắt buộc sku,name,price). Trùng SKU → cập nhật.
+     * dryRun=true: chỉ kiểm tra, không ghi. atomic=true: có lỗi thì không ghi dòng nào.
+     * Báo cáo: mỗi dòng {row, sku, action CREATE|UPDATE|ERROR|SKIP, errors[], warnings[], changes{field:[cũ,mới]}}.
+     */
     @PostMapping(value = "/api/admin/products/import", consumes = "text/plain") @Transactional
-    public Map<String, Object> importCsv(@RequestBody String csv) {
+    public Map<String, Object> importCsv(@RequestBody String csv, @RequestParam(defaultValue = "false") boolean dryRun, @RequestParam(defaultValue = "false") boolean atomic) {
+        if (csv.length() > 2_000_000) throw ApiException.bad("File quá lớn (tối đa 2MB)");
         List<List<String>> rows = parseCsv(csv);
         if (rows.size() < 2) throw ApiException.bad("File CSV trống");
-        List<String> head = rows.get(0).stream().map(s -> s.trim().toLowerCase()).toList();
-        if (!head.contains("sku") || !head.contains("name") || !head.contains("price")) throw ApiException.bad("Cần các cột: sku, name, price");
-        int created = 0, updated = 0; List<String> errors = new ArrayList<>(); String by = Current.user().email;
+        List<String> head = rows.get(0).stream().map(x -> x.trim().toLowerCase()).toList();
+        List<String> missing = new ArrayList<>(); for (String k : List.of("sku", "name", "price")) if (!head.contains(k)) missing.add(k);
+        if (!missing.isEmpty()) throw ApiException.bad("Thiếu cột bắt buộc: " + String.join(", ", missing));
+        List<String> unknown = head.stream().filter(h -> !h.isBlank() && !IMPORT_COLS.contains(h)).toList();
+        Set<String> types = new HashSet<>(); categoriesRepo.findAll().forEach(c -> types.add(c.code.toUpperCase()));
+        Map<String, Product> bySku = new HashMap<>(); products.findAll().forEach(p -> { if (p.sku != null) bySku.put(p.sku.toUpperCase(), p); });
+        Set<String> seen = new HashSet<>();
+        List<Map<String, Object>> report = new ArrayList<>(); List<Runnable> writes = new ArrayList<>();
+        int created = 0, updated = 0, failed = 0, skipped = 0; String by = Current.user().email;
         for (int i = 1; i < rows.size(); i++) {
             var row = rows.get(i); if (row.stream().allMatch(String::isBlank)) continue;
             java.util.function.Function<String, String> col = k -> { int j = head.indexOf(k); return j >= 0 && j < row.size() ? row.get(j).trim() : ""; };
-            try {
-                String sku = col.apply("sku"); if (sku.isBlank()) throw new IllegalArgumentException("thiếu SKU");
-                Product p = products.findAll().stream().filter(x -> sku.equalsIgnoreCase(x.sku)).findFirst().orElse(null);
-                boolean isNew = p == null; if (isNew) { p = new Product(); p.sku = sku; p.isNew = true; }
-                if (!col.apply("name").isBlank()) p.name = col.apply("name");
-                if (!col.apply("brand").isBlank()) { String bn = col.apply("brand"); p.brand = brands.findByName(bn).orElseGet(() -> { Brand b = new Brand(); b.name = bn; return brands.save(b); }); }
-                if (!col.apply("type").isBlank()) p.type = col.apply("type").toUpperCase();
-                if (!col.apply("grp").isBlank()) p.grp = col.apply("grp").toUpperCase();
-                if (!col.apply("scale").isBlank()) p.scale = col.apply("scale");
-                p.price = Long.parseLong(col.apply("price").replaceAll("[^0-9]", ""));
-                String op = col.apply("oldprice").replaceAll("[^0-9]", ""); p.oldPrice = op.isBlank() ? null : Long.parseLong(op);
-                String st = col.apply("stock").replaceAll("[^0-9]", "");
-                if (!st.isBlank()) { int t = Integer.parseInt(st); int d = t - p.stock; p.stock = t; if (!isNew && d != 0) orderService.log(p, null, d, "Nhập CSV", by); }
-                if (!col.apply("image").isBlank()) { p.images.clear(); p.images.add(col.apply("image")); }
+            List<String> errs = new ArrayList<>(), warns = new ArrayList<>(); Map<String, List<Object>> changes = new LinkedHashMap<>();
+            String sku = col.apply("sku");
+            if (row.size() != head.size()) warns.add("Số cột (" + row.size() + ") khác tiêu đề (" + head.size() + ")");
+            if (sku.isBlank()) errs.add("Thiếu SKU"); else if (!sku.matches("[A-Za-z0-9._-]{2,40}")) errs.add("SKU chỉ gồm chữ, số, . _ - (2–40 ký tự)");
+            if (!sku.isBlank() && !seen.add(sku.toUpperCase())) errs.add("SKU trùng trong file");
+            Product cur = bySku.get(sku.toUpperCase()); boolean isNew = cur == null;
+            String name = col.apply("name"); if (name.isBlank() && isNew) errs.add("Thiếu tên"); if (name.length() > 200) errs.add("Tên quá dài (> 200)");
+            Long price = num(col.apply("price"), "Giá", errs); if (price != null && price <= 0) errs.add("Giá phải > 0"); if (price == null && isNew && col.apply("price").isBlank()) errs.add("Thiếu giá");
+            Long old = num(col.apply("oldprice"), "Giá gốc", errs); if (old != null && price != null && old <= price) warns.add("Giá gốc ≤ giá bán — sẽ bỏ giá gốc");
+            Long stock = num(col.apply("stock"), "Tồn kho", errs); if (stock != null && stock > 100000) errs.add("Tồn kho bất thường (> 100000)");
+            Long age = num(col.apply("agemin"), "Tuổi", errs); if (age != null && age > 18) errs.add("Tuổi tối thiểu 0–18");
+            String type = col.apply("type").toUpperCase(); if (!type.isBlank() && !types.contains(type)) errs.add("Danh mục '" + type + "' không tồn tại (có: " + String.join(", ", new TreeSet<>(types)) + ")");
+            if (type.isBlank() && isNew) errs.add("Sản phẩm mới cần cột type");
+            String scale = col.apply("scale"); if (!scale.isBlank() && !scale.matches("1:\\d{1,3}")) errs.add("Tỉ lệ phải dạng 1:N (VD 1:18)");
+            String img = col.apply("image"); if (!img.isBlank() && !img.matches("(https?://|/)\\S+")) errs.add("Ảnh phải là URL http(s) hoặc đường dẫn /…");
+            if (img.isBlank() && isNew) warns.add("Không có ảnh");
+            String grp = col.apply("grp").toUpperCase(); if (!grp.isBlank() && !grp.matches("TOY|ACCESSORY")) errs.add("grp phải là TOY hoặc ACCESSORY");
+            String act = col.apply("active").toLowerCase(); if (!act.isBlank() && !act.matches("true|false|1|0|yes|no")) errs.add("active phải true/false");
+            String brand = col.apply("brand"); if (!brand.isBlank() && brands.findByName(brand).isEmpty()) warns.add("Thương hiệu mới '" + brand + "' sẽ được tạo");
+            Map<String, Object> r = new LinkedHashMap<>(); r.put("row", i + 1); r.put("sku", sku); r.put("name", name.isBlank() && cur != null ? cur.name : name);
+            if (!isNew) {
+                if (!name.isBlank() && !name.equals(cur.name)) changes.put("name", List.of(cur.name, name));
+                if (price != null && price != cur.price) changes.put("price", List.of(cur.price, price));
+                if (stock != null && stock != cur.stock) changes.put("stock", List.of(cur.stock, stock));
+                if (!scale.isBlank() && !scale.equals(cur.scale)) changes.put("scale", List.of(String.valueOf(cur.scale), scale));
+                if (!type.isBlank() && !type.equals(cur.type)) changes.put("type", List.of(String.valueOf(cur.type), type));
+                if (price != null && cur.price > 0 && Math.abs(price - cur.price) * 2 > cur.price) warns.add("Giá đổi > 50% so với hiện tại");
+                if (cur.hasVariants && stock != null) warns.add("Sản phẩm có biến thể — bỏ qua tồn kho");
+            }
+            r.put("errors", errs); r.put("warnings", warns); r.put("changes", changes);
+            if (!errs.isEmpty()) { r.put("action", "ERROR"); failed++; report.add(r); continue; }
+            if (!isNew && changes.isEmpty() && img.isBlank() && col.apply("description").isBlank() && old == null && act.isBlank() && brand.isBlank()) { r.put("action", "SKIP"); skipped++; report.add(r); continue; }
+            r.put("action", isNew ? "CREATE" : "UPDATE"); if (isNew) created++; else updated++; report.add(r);
+            final Long fPrice = price, fOld = old, fStock = stock, fAge = age;
+            writes.add(() -> {
+                Product p = isNew ? new Product() : cur; if (isNew) { p.sku = sku; p.isNew = true; }
+                if (!name.isBlank()) p.name = name;
+                if (!brand.isBlank()) p.brand = brands.findByName(brand).orElseGet(() -> { Brand b = new Brand(); b.name = brand; return brands.save(b); });
+                if (!type.isBlank()) { p.type = type; categoriesRepo.findByCode(type).ifPresent(c -> p.grp = c.grp); }
+                if (!grp.isBlank()) p.grp = grp;
+                if (!scale.isBlank()) p.scale = scale;
+                if (fPrice != null) p.price = fPrice;
+                if (fOld != null) p.oldPrice = fOld > p.price ? fOld : null;
+                if (fStock != null && !p.hasVariants) { int d = (int) (fStock - p.stock); p.stock = fStock.intValue(); if (!isNew && d != 0) orderService.log(p, null, d, "Nhập CSV", by); }
+                if (fAge != null) p.ageMin = fAge.intValue();
+                if (!img.isBlank()) { p.images.clear(); p.images.add(img); }
                 if (!col.apply("description").isBlank()) p.description = col.apply("description");
-                if (p.name == null || p.price <= 0) throw new IllegalArgumentException("thiếu tên/giá");
-                products.save(p); if (isNew) created++; else updated++;
-            } catch (Exception e) { errors.add("Dòng " + (i + 1) + ": " + e.getMessage()); }
+                if (!act.isBlank()) p.active = act.matches("true|1|yes");
+                products.save(p);
+            });
         }
-        return Map.of("created", created, "updated", updated, "errors", errors);
+        boolean blocked = atomic && failed > 0;
+        if (!dryRun && !blocked) writes.forEach(Runnable::run);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("dryRun", dryRun); out.put("applied", !dryRun && !blocked); out.put("blockedByErrors", blocked);
+        out.put("created", created); out.put("updated", updated); out.put("skipped", skipped); out.put("failed", failed);
+        out.put("unknownColumns", unknown); out.put("report", report);
+        out.put("errors", report.stream().filter(x -> "ERROR".equals(x.get("action"))).map(x -> "Dòng " + x.get("row") + ": " + String.join("; ", (List<String>) x.get("errors"))).toList());
+        return out;
     }
+    private static Long num(String v, String label, List<String> errs) {
+        if (v == null || v.isBlank()) return null;
+        String c = v.replaceAll("[\\s.,đ₫]", "");
+        if (!c.matches("\\d{1,12}")) { errs.add(label + " không phải số: '" + v + "'"); return null; }
+        return Long.parseLong(c);
+    }
+
+    /** Xuất toàn bộ sản phẩm ra CSV (cùng định dạng nhập — sửa rồi nhập lại được). */
+    @GetMapping(value = "/api/admin/products/export.csv", produces = "text/csv;charset=UTF-8")
+    public String exportCsv() {
+        StringBuilder sb = new StringBuilder("\uFEFFsku,name,brand,type,grp,scale,price,oldPrice,stock,image,description,ageMin,active\n");
+        for (Product p : products.findAll(org.springframework.data.domain.Sort.by("id")))
+            sb.append(String.join(",", Arrays.asList(q(p.sku), q(p.name), q(p.brand == null ? "" : p.brand.name), q(p.type), q(p.grp), q(p.scale), String.valueOf(p.price),
+                p.oldPrice == null ? "" : String.valueOf(p.oldPrice), String.valueOf(p.stock), q(p.images.isEmpty() ? "" : p.images.get(0)), q(p.description), String.valueOf(p.ageMin), String.valueOf(p.active)))).append('\n');
+        return sb.toString();
+    }
+    private static String q(String s) { if (s == null) return ""; return s.matches(".*[,\"\n\r].*") ? "\"" + s.replace("\"", "\"\"") + "\"" : s; }
 
     static List<List<String>> parseCsv(String s) {
         List<List<String>> out = new ArrayList<>(); List<String> row = new ArrayList<>(); StringBuilder f = new StringBuilder(); boolean q = false;
