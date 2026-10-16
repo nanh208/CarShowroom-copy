@@ -88,6 +88,7 @@ public class OrderService {
 
     public record Quote(long subtotal, long discount, long pointsDiscount, long shippingFee, long total, int pointsUsed, boolean freeShipVoucher) {}
 
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy FraudService fraud;
     @Transactional
     public CustomerOrder place(User user, CheckoutReq r) {
         if (r.items() == null || r.items().isEmpty()) throw ApiException.bad("Giỏ hàng trống");
@@ -210,6 +211,7 @@ public class OrderService {
         o.code = "TS" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + (int) (Math.random() * 90 + 10);
         o.timeline.put("PENDING", LocalDateTime.now());
         CustomerOrder saved = orders.save(o);
+        try { fraud.assess(saved); } catch (Exception e) { org.slf4j.LoggerFactory.getLogger(OrderService.class).warn("fraud scoring failed", e); }
         String how = switch (o.paymentMethod) {
             case COD -> "Thanh toán khi nhận hàng.";
             case BANK_QR -> "Vui lòng chuyển khoản theo mã QR để hoàn tất.";

@@ -2,7 +2,10 @@
   <div class="labels-page">
     <div class="bar no-print">
       <b>{{ orders.length }} nhãn vận chuyển</b> <span class="muted">· khổ A6 (105×148mm), 1 nhãn/trang</span>
-      <button class="btn btn-sm" @click="print">In nhãn</button><router-link to="/admin/orders" class="btn btn-sm btn-outline">← Đơn hàng</router-link>
+      <button class="btn btn-sm" @click="print">In nhãn</button>
+      <button class="btn btn-sm btn-outline" :disabled="!orders.length || busy" @click="pdf('GHN')">PDF nhãn GHN</button>
+      <button class="btn btn-sm btn-outline" :disabled="!orders.length || busy" @click="pdf('GHTK')">PDF nhãn GHTK</button>
+      <span v-if="err" class="err">{{ err }}</span><router-link to="/admin/orders" class="btn btn-sm btn-outline">← Đơn hàng</router-link>
     </div>
     <div v-if="!orders.length" class="muted no-print" style="padding:24px">Không có đơn nào được chọn.</div>
     <section v-for="o in orders" :key="o.id" class="label">
@@ -30,6 +33,15 @@ const route = useRoute(), orders = ref([])
 // Mã vạch minh hoạ (Code-39-like) sinh từ mã đơn
 const bars = code => { const r = []; let x = 0; for (const ch of '*' + code + '*') { let c = ch.charCodeAt(0); for (let k = 0; k < 5; k++) { const w = (c >> k) & 1 ? 3 : 1; r.push([x, w]); x += w + ((c >> (k + 2)) & 1 ? 2 : 1) } x += 2 } return { r, w: x } }
 const print = () => window.print()
+const busy = ref(false), err = ref('')
+// PDF A6 do server tạo (OpenPDF, mã vạch Code128, gán mã vận đơn nếu chưa có)
+async function pdf(carrier) {
+  busy.value = true; err.value = ''
+  try {
+    const r = await api.get('/admin/labels/pdf', { params: { ids: orders.value.map(o => o.id).join(','), carrier }, responseType: 'blob' })
+    window.open(URL.createObjectURL(r.data), '_blank')
+  } catch (e) { try { err.value = JSON.parse(await e.response.data.text()).message } catch { err.value = 'Không tạo được PDF' } } finally { busy.value = false }
+}
 onMounted(async () => {
   const ids = String(route.query.ids || '').split(',').map(Number).filter(Boolean)
   const all = (await api.get('/admin/orders')).data
@@ -48,6 +60,7 @@ header { display: flex; justify-content: space-between; gap: 4mm; border-bottom:
 .to b { font-size: 13pt; display: block; } .to span { font-weight: 700; } .to p { margin-top: 1mm; font-size: 10.5pt; }
 .meta { display: grid; grid-template-columns: 1.3fr 1fr 1fr; border: 1.5px solid #000; } .meta > div { padding: 1.5mm 2mm; } .meta > div + div { border-left: 1.5px solid #000; }
 .cod { font-size: 12pt; }
+.err { color: #b00020; font-size: 13px }
 .items { list-style: none; font-size: 8.5pt; border-top: 1px dashed #000; padding-top: 2mm; flex: 1; }
 .gift { font-weight: 700; border: 1.5px solid #000; padding: 1mm 2mm; font-size: 8.5pt; } .note { font-size: 8.5pt; }
 footer { font-size: 7pt; text-align: center; border-top: 1px solid #000; padding-top: 1.5mm; }

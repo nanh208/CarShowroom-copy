@@ -43,6 +43,8 @@ public class CustomerOrder {
     public LocalDateTime createdAt = LocalDateTime.now();
     public LocalDateTime paidAt;
     public String cancelReason;
+    /** v16 chấm điểm gian lận: 0–100; fraudStatus NONE | WATCH | REVIEW | APPROVED | REJECTED */
+    public Integer fraudScore; @Column(length = 1000) public String fraudReasons; public String fraudStatus; public String clientIp; public String fraudReviewedBy; public LocalDateTime fraudReviewedAt;
     /** Mốc thời gian từng trạng thái để hiển thị timeline theo dõi đơn. */
     @ElementCollection(fetch = FetchType.EAGER) public Map<String, LocalDateTime> timeline = new LinkedHashMap<>();
 }

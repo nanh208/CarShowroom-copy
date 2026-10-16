@@ -25,7 +25,7 @@ public class StaffPermissionInterceptor implements HandlerInterceptor {
             {"categories", "catalog"}, {"brands", "catalog"}, {"auctions", "auctions"}, {"questions", "questions"}, {"reviews", "reviews"}, {"tickets", "tickets"},
             {"chat", "chat"}, {"purchase-orders", "purchasing"}, {"restock-suggestions", "purchasing"}, {"abandoned-carts", "carts"}, {"segments", "segments"},
             {"bundles", "bundles"}, {"giftcards", "bundles"}, {"home-layout", "home-layout"}, {"emails", "emails"}, {"analytics", "analytics"},
-            {"bot", "chatbot"}, {"preorders", "preorders"}, {"collections", "collections"}, {"notifications", "broadcast"}, {"price-alerts", "promotions"}, {"fulfillment", "orders"}, {"payments", "orders"}, {"import", "products"}, {"export", "products"}, {"i18n", "home-layout"}, {"subscriptions", "orders"}, {"affiliates", "promotions"}, {"affiliate-commissions", "promotions"}, {"currency", "home-layout"}, {"push", "broadcast"}, {"posts", "banners"}, {"image-search", "products"}};
+            {"bot", "chatbot"}, {"preorders", "preorders"}, {"collections", "collections"}, {"notifications", "broadcast"}, {"price-alerts", "promotions"}, {"fulfillment", "orders"}, {"payments", "orders"}, {"import", "products"}, {"export", "products"}, {"i18n", "home-layout"}, {"subscriptions", "orders"}, {"affiliates", "promotions"}, {"affiliate-commissions", "promotions"}, {"currency", "home-layout"}, {"push", "broadcast"}, {"posts", "banners"}, {"image-search", "products"}, {"forecast", "purchasing"}, {"fraud", "orders"}, {"labels", "orders"}};
         for (String[] r : m) SECTION.put(r[0], r[1]);
     }
     private final SettingRepo settings; private final ObjectMapper json = new ObjectMapper();

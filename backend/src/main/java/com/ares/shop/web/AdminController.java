@@ -189,6 +189,7 @@ public class AdminController {
         CustomerOrder o = orders.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy đơn"));
         var s = Enums.OrderStatus.valueOf(r.status());
         if (!FLOW.get(o.status).contains(s)) throw ApiException.bad("Không thể chuyển từ " + o.status + " sang " + s);
+        com.ares.shop.service.FraudService.requireCleared(o, s);
         String from = o.status.name();
         if (s == Enums.OrderStatus.CANCELLED) { var c = orderService.cancel(o, r.note() == null ? "Shop huỷ" : r.note()); events.publishEvent(new com.ares.shop.service.OrderEvents.OrderStatusChanged(c, from, "CANCELLED")); return c; }
         o.status = s;
