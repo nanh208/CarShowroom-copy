@@ -11,7 +11,7 @@
       <div class="field"><label>Nhập lại mật khẩu</label><input v-model="confirm" class="input" type="password" required /></div>
       <button class="btn btn-block" :disabled="busy">{{ busy ? 'Đang tạo...' : 'Đăng ký' }}</button>
     </form>
-    <SocialLogin />
+    <SocialLogin @phone="$router.push('/login?phone=1')" />
     <p class="small muted" style="margin-top:18px;text-align:center">Đã có tài khoản? <router-link to="/login">Đăng nhập</router-link></p>
   </AuthShell>
 </template>

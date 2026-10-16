@@ -20,7 +20,9 @@ public class SecurityConfig {
     @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
     @Bean
-    SecurityFilterChain chain(HttpSecurity http, JwtFilter jwtFilter, @Value("${app.frontend-url}") String frontend) throws Exception {
+    SecurityFilterChain chain(HttpSecurity http, JwtFilter jwtFilter, @Value("${app.frontend-url}") String frontend, @Value("${app.jwt.secret}") String secret,
+                        com.ares.shop.service.SocialLoginService social,
+                        org.springframework.security.oauth2.client.registration.ClientRegistrationRepository regs) throws Exception {
         http.csrf(c -> c.disable())
             .headers(h -> h.frameOptions(f -> f.sameOrigin()))
             .cors(c -> c.configurationSource(cors(frontend)))
@@ -33,6 +35,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/staff/**", "/api/admin/reports/**", "/api/admin/audit").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "STAFF")
                 .anyRequest().authenticated())
+            .oauth2Login(o -> o
+                .authorizationEndpoint(e -> e.baseUri(SocialAuthConfig.AUTH_BASE).authorizationRequestRepository(new SocialAuthConfig.CookieAuthRequestRepo(secret)).authorizationRequestResolver(SocialAuthConfig.safeResolver(regs)))
+                .redirectionEndpoint(r -> r.baseUri(SocialAuthConfig.CALLBACK))
+                .authorizedClientRepository(new SocialAuthConfig.NoStoreClients())
+                .successHandler((rq, rs, auth) -> rs.sendRedirect(social.onSuccess((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) auth)))
+                .failureHandler((rq, rs, ex) -> rs.sendRedirect(social.frontend() + "/login?error=" + java.net.URLEncoder.encode("Đăng nhập mạng xã hội thất bại", java.nio.charset.StandardCharsets.UTF_8))))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
