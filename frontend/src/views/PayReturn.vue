@@ -23,7 +23,7 @@ import { useRoute } from 'vue-router'
 import api from '../api'
 import { vnd } from '../format'
 const route = useRoute(), r = ref(null)
-onMounted(async () => { try { r.value = (await api.get('/public/payments/return', { params: route.query })).data } catch { r.value = { success: false, valid: false, message: 'Không xác minh được giao dịch' } } })
+onMounted(async () => { try { r.value = (await api.get(route.params.gw ? `/public/payments/${route.params.gw === 'momo' ? 'momo' : 'vnpay'}/return` : '/public/payments/return', { params: route.query })).data } catch { r.value = { success: false, valid: false, message: 'Không xác minh được giao dịch' } } })
 </script>
 <style scoped>
 .ret { min-height: 100vh; display: grid; place-items: center; padding: 24px; }

@@ -2012,5 +2012,15 @@
  "{0} ngày {1}": "{0}d {1}",
  "Đặt {0}": "Placed {0}",
  "{0} · còn {1}": "{0} · {1} left",
- "3 tháng chính hãng": "3-month official warranty"
+ "3 tháng chính hãng": "3-month official warranty",
+ "Đối soát": "Reconcile",
+ "Giả lập": "Mock",
+ "Chưa đặt": "Not set",
+ "Đã đặt": "Set",
+ "Môi trường": "Environment",
+ "Sandbox / test": "Sandbox / test",
+ "Production": "Production",
+ "Đang chuyển sang cổng {0}…": "Redirecting to {0}…",
+ "Số tiền hoàn (VND)": "Refund amount (VND)",
+ "Đã gửi hoàn tiền": "Refund submitted"
 }

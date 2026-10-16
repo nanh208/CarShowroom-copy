@@ -1,6 +1,7 @@
 <template>
   <div class="paypage" :class="o?.paymentMethod">
     <div v-if="!o" class="spinner" />
+    <div v-else-if="redirecting" class="gw"><div class="gb"><div class="spinner" /><p>Đang chuyển sang cổng {{ o.paymentMethod === 'MOMO' ? 'MoMo' : 'VNPAY' }}…</p></div></div>
     <div v-else class="gw">
       <div class="gh"><b>{{ o.paymentMethod === 'MOMO' ? 'MoMo' : 'VNPAY' }}</b><span>Cổng thanh toán giả lập · Sandbox</span></div>
       <div class="gb">
@@ -48,12 +49,15 @@ const BANKS = { NCB: 'NCB', VCB: 'Vietcombank', TCB: 'Techcombank', BIDV: 'BIDV'
 const left = computed(() => tx.value ? Math.max(0, Math.floor((new Date(tx.value.expiresAt) - now.value) / 1000)) : 0)
 const mmss = computed(() => `${String(Math.floor(left.value / 60)).padStart(2, '0')}:${String(left.value % 60).padStart(2, '0')}`)
 let tick
+const redirecting = ref(false)
 onMounted(async () => {
   try {
     o.value = (await api.get(`/orders/${route.params.code}`)).data.order
     if (o.value.paymentStatus === 'PAID') { toast('Đơn đã được thanh toán'); return router.replace(`/orders/${o.value.code}`) }
     // 1) shop tạo giao dịch + tham số ký → 2) "cổng" kiểm chữ ký và hiển thị
-    const { data } = await api.post(`/payments/${o.value.code}/create`, { provider: o.value.paymentMethod })
+    const { data } = await api.post(`/payments/${o.value.code}/create`, { provider: o.value.paymentMethod, method: route.query.method, lang: localStorage.getItem('locale') || 'vi' })
+    // Cổng thật (VNPay/MoMo đã cấu hình khoá): chuyển khách sang trang thanh toán của cổng
+    if (data.real && data.redirectUrl) { redirecting.value = true; window.location.assign(data.redirectUrl); return }
     if (!data.sandbox) { err.value = 'Cổng thanh toán thử nghiệm đã tắt trên máy chủ này.'; return }
     const info = (await api.post('/public/payments/sandbox/inspect', data.params)).data
     tx.value = { ...data, ...info }; banks.value = info.banks; bank.value = info.banks[0]

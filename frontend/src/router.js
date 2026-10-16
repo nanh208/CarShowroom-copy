@@ -12,7 +12,7 @@ const routes = [
   { path: '/support', component: () => import('./views/Support.vue') },
   { path: '/services', redirect: '/support' },
   { path: '/support/tickets/:code', component: () => import('./views/TicketDetail.vue'), meta: { auth: true } },
-  { path: '/pay/return', component: () => import('./views/PayReturn.vue'), meta: { bare: true } },
+  { path: '/pay/return/:gw(vnpay|momo)?', component: () => import('./views/PayReturn.vue'), meta: { bare: true } },
   { path: '/pay/:code', component: () => import('./views/PayMock.vue'), meta: { auth: true, bare: true } },
   { path: '/orders/:code/invoice', component: () => import('./views/Invoice.vue'), meta: { auth: true, bare: true } },
   { path: '/wishlist', component: () => import('./views/Wishlist.vue') },
