@@ -8,8 +8,10 @@ import './stores/theme'
 
 import motion from './motion'
 import i18n from './i18n'
+import { img } from './img'
 
-createApp(App).use(createPinia()).use(router).use(motion).use(i18n).mount('#app')
+const app = createApp(App); app.config.globalProperties.$img = img
+app.use(createPinia()).use(router).use(motion).use(i18n).mount('#app')
 
 // Prefetch các trang hay dùng khi trình duyệt rảnh -> chuyển trang tức thì
 const idle = window.requestIdleCallback || (cb => setTimeout(cb, 1500))

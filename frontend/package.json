@@ -5,8 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "images": "node scripts/optimize-images.mjs",
+    "prebuild": "node scripts/optimize-images.mjs",
+    "build": "vite build && node scripts/compress.mjs",
+    "preview": "vite preview --port 4173",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@google/model-viewer": "^4.4.0",
@@ -18,7 +23,9 @@
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@vitejs/plugin-vue": "^5.1.4",
+    "sharp": "^0.35.5",
     "vite": "^5.4.10"
   }
 }
