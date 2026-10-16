@@ -4,7 +4,7 @@
       <section v-if="open" class="box" role="dialog" aria-label="Trợ lý hỗ trợ ARES">
         <header class="head">
           <span class="av" aria-hidden="true">A<i :class="{ on: mode === 'bot' || staffOnline }" /></span>
-          <div><b>{{ mode === 'human' ? 'Chat với nhân viên' : 'Trợ lý ARES' }}</b><small>{{ mode === 'human' ? 'Thường phản hồi trong vài phút' : 'Trả lời tức thì 24/7 · tìm sản phẩm, tra đơn, mã giảm giá' }}</small></div>
+          <div><b>{{ mode === 'human' ? 'Chat với nhân viên' : 'Trợ lý ARES' }}<span v-if="aiOn && mode !== 'human'" class="ai-tag">AI</span></b><small>{{ mode === 'human' ? 'Thường phản hồi trong vài phút' : 'Trả lời tức thì 24/7 · tìm sản phẩm, tra đơn, mã giảm giá' }}</small></div>
           <button v-if="mode === 'human'" class="hb" @click="mode = 'bot'">Trợ lý</button>
           <button v-else class="hb" title="Xoá lịch sử trò chuyện" @click="reset">Mới</button>
           <button class="x" aria-label="Đóng" @click="open = false">✕</button>
@@ -146,7 +146,8 @@ async function send() {
 }
 const toggle = () => { open.value = !open.value; unread.value = false; scroll() }
 const openEv = e => { if (!open.value) toggle(); if (e?.detail === 'human') handoff() }
-onMounted(() => { poll(); live(); timer = setInterval(() => { if (!rtConnected.value && (open.value || mode.value === 'human')) poll() }, 5000); addEventListener('open-chat', openEv) })
+const aiOn = ref(false)
+onMounted(() => { api.get('/public/ai/status').then(r => (aiOn.value = r.data.enabled)).catch(() => {}); poll(); live(); timer = setInterval(() => { if (!rtConnected.value && (open.value || mode.value === 'human')) poll() }, 5000); addEventListener('open-chat', openEv) })
 onUnmounted(() => { clearInterval(timer); unsubs.forEach(u => u()); removeEventListener('open-chat', openEv) })
 </script>
 
@@ -191,4 +192,5 @@ onUnmounted(() => { clearInterval(timer); unsubs.forEach(u => u()); removeEventL
 @keyframes pop { from { transform: scale(0); } }
 @media (max-width: 899px) { :global(body:has(.mbar, .buybar)) .chat { bottom: calc(140px + env(safe-area-inset-bottom)); } .chat { right: 14px; bottom: calc(72px + env(safe-area-inset-bottom)); } .fab { width: 50px; height: 50px; } .box { position: fixed; left: 8px; right: 8px; width: auto; bottom: calc(132px + env(safe-area-inset-bottom)); height: calc(100vh - 210px); max-height: 620px; } }
 @media (prefers-reduced-motion: reduce) { .cw-enter-active, .cw-leave-active, .msg-enter-active, .ic-enter-active, .ic-leave-active { transition: none; } .typing i, .dot { animation: none; } }
+.ai-tag { margin-left: 6px; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: var(--accent, #f15a24); color: #fff; vertical-align: middle }
 </style>

@@ -63,7 +63,20 @@ public class BotController {
         Map<String, Object> r = new LinkedHashMap<>(); r.put("quick", quick(lang, DEFAULT_QUICK)); r.put("lang", lang); String intent = null;
 
         Matcher om = ORDER.matcher(n);
-        if (om.find()) { intent = "order"; orderLookup(om.group(1).toUpperCase(), n, u, r, lang); }
+        boolean wantsHuman = has(n, "nhan vien", "nguoi that", "tu van vien", "gap nguoi", "khieu nai");
+        if (ai.enabled() && !wantsHuman) {
+            try {
+                List<String[]> hist = new ArrayList<>(); var past = logs.findTop100BySessionOrderByIdAsc(session);
+                for (BotLog b : past.subList(Math.max(0, past.size() - 6), past.size())) hist.add(new String[]{b.question, b.answer});
+                var rep = ai.chat(q, hist, lang, u);
+                intent = "ai"; r.put("text", rep.text()); r.put("ai", true); r.put("tools", rep.toolsUsed());
+                if (!rep.products().isEmpty()) r.put("products", rep.products());
+                if (!rep.coupons().isEmpty()) r.put("coupons", rep.coupons());
+                if (rep.order() != null) r.put("order", rep.order());
+            } catch (Exception e) { r.put("aiError", e.getClass().getSimpleName()); } // rơi về bot từ khoá
+        }
+        if ("ai".equals(intent)) { /* đã trả lời bằng AI */ }
+        else if (om.find()) { intent = "order"; orderLookup(om.group(1).toUpperCase(), n, u, r, lang); }
         else if (has(n, "ma giam", "giam gia", "coupon", "voucher", "khuyen mai", "ma uu dai", "sale")) {
             intent = "coupon";
             var list = promos.findByActiveTrue().stream().filter(p -> p.isPublic && p.isValidNow()).limit(5).map(p -> {
@@ -125,6 +138,9 @@ public class BotController {
     }
 
     @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.SearchService searchSvc;
+    @org.springframework.beans.factory.annotation.Autowired com.ares.shop.service.AiService ai;
+    @GetMapping("/api/admin/ai/status") public Map<String, Object> aiStatus() { return ai.status(); }
+    @GetMapping("/api/public/ai/status") public Map<String, Object> aiPublic() { return Map.of("enabled", ai.enabled()); }
     private List<Map<String, Object>> search(String n, boolean strict) {
         var ps = searchSvc.parse(n);
         if (ps.terms().isEmpty() && ps.scale() == null && ps.brand() == null && ps.maxPrice() == null && ps.minPrice() == null && ps.age() == null) return List.of();

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="row between hd"><div><h1>Trợ lý ảo</h1><p class="muted small">Cấu hình ý định (từ khoá → câu trả lời) và xem lại hội thoại. Tra đơn, mã giảm giá, tìm sản phẩm và chuyển nhân viên được xử lý tự động.</p></div>
+    <div class="row between hd"><div><h1>Trợ lý ảo</h1><p class="muted small">Cấu hình ý định (từ khoá → câu trả lời) và xem lại hội thoại. Tra đơn, mã giảm giá, tìm sản phẩm và chuyển nhân viên được xử lý tự động.</p><p v-if="aiSt" class="small">AI: <b>{{ aiSt.enabled ? 'Bật' : 'Tắt (bot từ khoá)' }}</b> · {{ aiSt.model }} · {{ aiSt.baseUrl }}</p></div>
       <div class="seg" role="tablist"><button v-for="(l, k) in TABS" :key="k" role="tab" :aria-selected="tab === k" :class="{ on: tab === k }" @click="tab = k">{{ l }}</button></div></div>
 
     <div v-if="stats" class="kp" v-stagger>
@@ -69,6 +69,8 @@
   </div>
 </template>
 <script setup>
+import apiAi from '../../api'
+const aiSt = ref(null); apiAi.get('/admin/ai/status').then(r => (aiSt.value = r.data)).catch(() => {})
 import { ref, computed, onMounted } from 'vue'
 import api, { errMsg } from '../../api'
 import { vnd, dt, ago } from '../../format'
