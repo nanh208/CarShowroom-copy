@@ -1,3 +1,4 @@
+import { routeSeo } from './seo'
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from './stores/auth'
 
@@ -12,6 +13,8 @@ const routes = [
   { path: '/support', component: () => import('./views/Support.vue') },
   { path: '/services', redirect: '/support' },
   { path: '/support/tickets/:code', component: () => import('./views/TicketDetail.vue'), meta: { auth: true } },
+  { path: '/blog', component: () => import('./views/Blog.vue') },
+  { path: '/blog/:slug', component: () => import('./views/BlogPost.vue') },
   { path: '/image-search', component: () => import('./views/ImageSearch.vue') },
   { path: '/pay/return/:gw(vnpay|momo)?', component: () => import('./views/PayReturn.vue'), meta: { bare: true } },
   { path: '/pay/:code', component: () => import('./views/PayMock.vue'), meta: { auth: true, bare: true } },
@@ -77,6 +80,7 @@ const routes = [
       { path: 'payments', component: () => import('./views/admin/AdminPayments.vue') },
       { path: 'fulfillment', component: () => import('./views/admin/AdminFulfillment.vue') },
       { path: 'subscriptions', component: () => import('./views/admin/AdminSubscriptions.vue') },
+      { path: 'posts', component: () => import('./views/admin/AdminPosts.vue') },
       { path: 'affiliates', component: () => import('./views/admin/AdminAffiliates.vue') },
       { path: 'currency', component: () => import('./views/admin/AdminCurrency.vue') },
       { path: 'price-alerts', component: () => import('./views/admin/AdminPriceAlerts.vue') },
@@ -105,7 +109,7 @@ router.beforeEach(async to => {
 const TITLES = [[/^\/collections/, 'Bộ sưu tập'], [/^\/upcoming/, 'Sắp ra mắt'], [/^\/finder/, 'Tìm mẫu phù hợp'], [/^\/rewards/, 'Phần thưởng'], [/^\/notifications/, 'Thông báo'], [/^\/$/, 'Trang chủ'], [/^\/products\/\d+/, 'Chi tiết sản phẩm'], [/^\/products/, 'Sản phẩm'], [/^\/cart/, 'Giỏ hàng'], [/^\/checkout/, 'Thanh toán'],
   [/^\/track/, 'Tra cứu đơn hàng'], [/^\/gift-cards/, 'Thẻ quà tặng'], [/^\/bundles/, 'Combo ưu đãi'], [/^\/wishlist/, 'Yêu thích'], [/^\/compare/, 'So sánh'],
   [/^\/account/, 'Tài khoản'], [/^\/orders/, 'Đơn hàng'], [/^\/support/, 'Hỗ trợ'], [/^\/faq/, 'Câu hỏi thường gặp'], [/^\/auctions/, 'Đấu giá'], [/^\/promotions/, 'Khuyến mãi'],
-  [/^\/login/, 'Đăng nhập'], [/^\/register/, 'Đăng ký'], [/^\/admin/, 'Quản trị'], [/^\/about/, 'Về chúng tôi']]
-router.afterEach(to => { const t = TITLES.find(([re]) => re.test(to.path)); document.title = (t ? t[1] + ' · ' : '') + 'ARES Toys — Xe mô hình & RC' })
+  [/^\/login/, 'Đăng nhập'], [/^\/register/, 'Đăng ký'], [/^\/admin/, 'Quản trị'], [/^\/about/, 'Về chúng tôi'], [/^\/blog/, 'Tin tức & Review'], [/^\/image-search/, 'Tìm bằng hình ảnh']]
+router.afterEach(to => { const t = TITLES.find(([re]) => re.test(to.path)); routeSeo(to, (t ? t[1] + ' · ' : '') + 'ARES Toys — Xe mô hình & RC') })
 
 export default router

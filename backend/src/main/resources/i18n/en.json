@@ -2022,5 +2022,19 @@
  "Production": "Production",
  "Đang chuyển sang cổng {0}…": "Redirecting to {0}…",
  "Số tiền hoàn (VND)": "Refund amount (VND)",
- "Đã gửi hoàn tiền": "Refund submitted"
+ "Đã gửi hoàn tiền": "Refund submitted",
+ "Tin tức": "News",
+ "Tin tức & Review": "News & Reviews",
+ "Tin tức & review": "News & reviews",
+ "Blog": "Blog",
+ "Video review": "Video reviews",
+ "Tìm bài viết…": "Search articles…",
+ "Tìm bài viết": "Search articles",
+ "Chưa có bài viết.": "No articles yet.",
+ "{0} phút đọc": "{0} min read",
+ "lượt xem": "views",
+ "Quay lại tin tức": "Back to news",
+ "Sản phẩm trong bài": "Products in this article",
+ "Bài viết liên quan": "Related articles",
+ "Tìm bằng hình ảnh": "Image search"
 }

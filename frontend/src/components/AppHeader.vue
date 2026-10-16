@@ -12,6 +12,7 @@
           <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">{{ $t('Phụ kiện') }}</router-link>
           <router-link to="/collections" active-class="on" @mouseenter="mega = ''">{{ $t('Bộ sưu tập') }}</router-link>
           <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">{{ $t('Đấu giá') }}</router-link>
+          <router-link to="/blog" active-class="on" @mouseenter="mega = ''">{{ $t('Tin tức') }}</router-link>
           <router-link to="/support" active-class="on" @mouseenter="mega = ''">{{ $t('Hỗ trợ') }}</router-link>
         </div>
         <div v-else class="menu">
@@ -19,6 +20,7 @@
           <router-link to="/products" :class="{ on: isCars }" @mouseenter="mega = 'cars'">{{ $t('Danh mục xe') }}</router-link>
           <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">{{ $t('Phụ kiện') }}</router-link>
           <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">{{ $t('Đấu giá') }}</router-link>
+          <router-link to="/blog" active-class="on" @mouseenter="mega = ''">{{ $t('Tin tức') }}</router-link>
           <router-link to="/support" active-class="on" @mouseenter="mega = ''">{{ $t('Dịch vụ') }}</router-link>
           <router-link to="/faq" active-class="on" @mouseenter="mega = ''">{{ $t('Hỗ trợ') }}</router-link>
           <router-link to="/about" active-class="on" @mouseenter="mega = ''">{{ $t('Về chúng tôi') }}</router-link>

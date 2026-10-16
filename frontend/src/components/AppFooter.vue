@@ -10,6 +10,7 @@
         <nav>
           <router-link to="/about">{{ $t('Về chúng tôi') }}</router-link>
           <router-link to="/services">{{ $t('Liên hệ') }}</router-link>
+          <router-link to="/blog">{{ $t('Tin tức') }}</router-link>
           <router-link to="/faq">{{ $t('Hỗ trợ') }}</router-link>
           <router-link to="/track">{{ $t('Tra cứu đơn hàng') }}</router-link>
           <router-link to="/gift-cards">{{ $t('Thẻ quà tặng') }}</router-link>
