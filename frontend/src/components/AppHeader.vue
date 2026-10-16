@@ -27,6 +27,7 @@
           <div class="search" :class="{ open: sOpen }">
             <button class="ib" :title="$t('Tìm kiếm')" @click="openSearch"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
             <input ref="sInput" v-model="q" :placeholder="$t('Tìm xe đồ chơi, hãng… (phím /)')" :aria-label="$t('Tìm kiếm')" @input="suggest" @blur="close" @keydown.enter.prevent="search" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.esc="sOpen = false" />
+            <router-link v-if="sOpen" to="/image-search" class="ib cam" :title="$t('Tìm bằng hình ảnh')" :aria-label="$t('Tìm bằng hình ảnh')" @mousedown.prevent><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></router-link>
             <div v-if="sOpen && q.trim() && (sugg.length || searched)" class="sugg">
               <router-link v-for="(x, i) in sugg" :key="x.id" :to="`/products/${x.id}`" :class="['si', { hl: i === hl }]" @mousedown.prevent="go(x)">
                 <img loading="lazy" decoding="async" :src="x.image" alt="" /><div><b v-html="mark(x.name)" /><small>{{ x.brand }} · {{ vnd(x.price) }}</small></div></router-link>

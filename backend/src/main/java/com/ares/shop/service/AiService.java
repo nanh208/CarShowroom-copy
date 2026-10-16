@@ -89,6 +89,20 @@ public class AiService {
         throw new IllegalStateException("LLM tool loop");
     }
 
+    /** Mô tả ảnh thành từ khoá tìm kiếm (model hỗ trợ ảnh, vd. gpt-4o-mini). */
+    public String describeImage(byte[] img, String mime) throws Exception {
+        String data = "data:" + (mime == null ? "image/jpeg" : mime) + ";base64," + Base64.getEncoder().encodeToString(img);
+        Map<String, Object> body = Map.of("model", model, "max_tokens", 40, "temperature", 0, "messages", List.of(Map.of("role", "user", "content", List.of(
+            Map.of("type", "text", "text", "Ảnh này là xe mô hình/đồ chơi gì? Trả về 3-6 từ khoá tìm kiếm (hãng xe, mẫu xe, loại: xe RC/mô hình/lego, màu), cách nhau bởi dấu cách, không giải thích."),
+            Map.of("type", "image_url", "image_url", Map.of("url", data))))));
+        HttpRequest rq = HttpRequest.newBuilder(URI.create(base + "/chat/completions")).timeout(Duration.ofSeconds(timeoutS)).header("Authorization", "Bearer " + key)
+            .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(om.writeValueAsString(body))).build();
+        HttpResponse<String> r = http.send(rq, HttpResponse.BodyHandlers.ofString());
+        if (r.statusCode() / 100 != 2) return null;
+        @SuppressWarnings("unchecked") Map<String, Object> msg = (Map<String, Object>) ((Map<String, Object>) ((List<?>) om.readValue(r.body(), Map.class).get("choices")).get(0)).get("message");
+        return Objects.toString(msg.get("content"), "").replaceAll("[\\r\\n,]+", " ").trim();
+    }
+
     List<Map<String, Object>> searchProducts(String q) {
         return search.search(q == null ? "" : q, true, false).stream().limit(5).map(p -> {
             Map<String, Object> m = new LinkedHashMap<>(); m.put("id", p.id); m.put("name", p.name); m.put("price", p.price); m.put("stock", p.stock); m.put("scale", p.scale);

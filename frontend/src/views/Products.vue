@@ -8,6 +8,7 @@
         <button v-for="c in shownCats" :key="c.code" :class="['chip', { on: f.type === c.code }]" @click="setType(c.code)">{{ c.name }}</button>
       </div>
       <button class="btn btn-sm btn-outline fbtn" type="button" :aria-expanded="sheet" aria-controls="fsheet" @click="sheet = true">{{ $t('Bộ lọc') }}<b v-if="activeCount" class="fcount">{{ activeCount }}</b></button>
+      <router-link to="/image-search" class="btn btn-sm btn-outline">📷 {{ $t('Tìm bằng ảnh') }}</router-link>
       <select v-model="f.sort" class="input sort" :aria-label="$t('Sắp xếp')" @change="apply()">
         <option value="featured">{{ $t('Sắp xếp: Nổi bật') }}</option><option value="newest">{{ $t('Mới nhất') }}</option><option value="bestseller">{{ $t('Bán chạy') }}</option>
         <option value="rating">{{ $t('Đánh giá cao') }}</option><option value="price_asc">{{ $t('Giá tăng dần') }}</option><option value="price_desc">{{ $t('Giá giảm dần') }}</option><option value="name">{{ $t('Tên A–Z') }}</option>
