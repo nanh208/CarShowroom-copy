@@ -10,7 +10,7 @@
         <button v-if="imgs.length > 1" class="arr l" aria-label="Ảnh trước" @click="step(-1)">‹</button>
         <button v-if="imgs.length > 1" class="arr r" aria-label="Ảnh sau" @click="step(1)">›</button>
         <span v-if="fs" class="flashtag">⚡ Flash sale · còn <Countdown :to="fs.endTime" /><template v-if="fs.quota"> · {{ fs.quota - fs.sold }} suất</template></span>
-        <div class="mediabtns"><button type="button" @click="v360 = '360'">⟳ 360°</button><button type="button" @click="v360 = 'video'">▶ Video</button></div>
+        <div class="mediabtns"><button type="button" @click="v360 = '360'">⟳ 360°</button><button v-if="model3d" type="button" @click="v360 = '3d'">◈ 3D · AR</button><button type="button" @click="v360 = 'video'">▶ Video</button></div>
         <div class="iconbtns">
           <button :class="['wish', { on: prefs.isWished(p.id) }]" :aria-pressed="prefs.isWished(p.id)" title="Yêu thích" @click="prefs.toggleWish(p)"><svg viewBox="0 0 24 24" width="18" height="18" :fill="prefs.isWished(p.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
           <button :class="{ on: prefs.inCompare(p.id) }" title="So sánh" @click="prefs.toggleCompare(p)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M8 21H3v-5M21 3l-7 7M3 21l7-7"/></svg></button>
@@ -146,7 +146,7 @@
         </div>
       </div>
       <ScaleGuide v-if="guide" :current="p.scale" @close="guide = false" />
-      <Viewer360 v-if="v360" :key="v360" :images="imgs" :name="p.name" :video="p.videoUrl" @close="v360 = ''" />
+      <Viewer360 v-if="v360" :key="v360" :images="imgs" :name="p.name" :video="p.videoUrl" :model="model3d" :color="p.baseColor" :placeholder="!p.model3d" :start="v360" @close="v360 = ''" />
     </template>
   </div>
 </template>
@@ -174,6 +174,7 @@ import Viewer360 from '../components/Viewer360.vue'
 const route = useRoute(), router = useRouter(), cart = useCart(), prefs = usePrefs(), auth = useAuth()
 const p = ref(null), related = ref([]), variants = ref([]), flashes = ref([]), suggested = ref([]), qa = ref([]), gal = ref(null)
 const rv = ref({}), mine = reactive({ rating: 5, comment: '', images: [] }), sending = ref(false), uploading = ref(false), showAll = ref(false), rf = ref('all')
+const model3d = computed(() => p.value?.model3d || (p.value?.type === 'RC' ? '/models/rc-truck.glb' : ['MODEL', 'KIT', 'DISPLAY'].includes(p.value?.type) ? '/models/car.glb' : ''))
 const guide = ref(false), v360 = ref(''), pBundles = ref([]), nEmail = ref(''), nDone = ref(false), eta = ref(null)
 const voted = reactive(JSON.parse(localStorage.getItem('helpfulVotes') || '{}'))
 const etaCity = computed(() => auth.user?.city || localStorage.getItem('etaCity') || 'TP. Hồ Chí Minh')

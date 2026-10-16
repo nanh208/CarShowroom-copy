@@ -93,6 +93,8 @@ public class AdminController {
         categories.findByCode(p.type).ifPresentOrElse(c -> p.grp = c.grp, () -> { throw ApiException.bad("Danh mục không hợp lệ"); });
         if (p.sku == null || p.sku.isBlank()) p.sku = null;
         p.images.removeIf(s -> s == null || s.isBlank());
+        if (p.model3d != null && p.model3d.isBlank()) p.model3d = null;
+        if (p.model3d != null && !(p.model3d.matches("^(/|https://)[^\\s\"'<>]+\\.(glb|gltf)(\\?.*)?$"))) throw ApiException.bad("Mô hình 3D phải là URL .glb/.gltf (bắt đầu bằng / hoặc https://)");
         Product saved = products.save(p);
         if (vs != null) {
             var keep = new HashSet<Long>();

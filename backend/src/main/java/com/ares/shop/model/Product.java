@@ -28,6 +28,8 @@ public class Product {
     @Column(length = 3000) public String description;
     /** URL video / placeholder 360° (tuỳ chọn). */
     public String videoUrl; public String view360;
+    /** Mô hình 3D (GLB/glTF) cho trình xem 3D/AR; trống → dùng mô hình minh hoạ theo loại. */
+    public String model3d;
     /** Mẫu sắp ra mắt: cho phép đặt trước, ngày phát hành dự kiến, tiền cọc. */
     public Boolean preorder; public java.time.LocalDate releaseDate; public Long preorderDeposit;
     @ElementCollection(fetch = FetchType.EAGER) @OrderColumn

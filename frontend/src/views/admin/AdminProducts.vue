@@ -74,6 +74,7 @@
           <div class="field"><label>Tồn kho {{ vars.length ? '(tính từ biến thể)' : '' }}</label><input v-model.number="form.stock" type="number" class="input" :disabled="vars.length > 0" /></div>
         </div>
         <div class="field"><label>Mô tả</label><textarea v-model="form.description" rows="3" class="input" /></div>
+        <div class="field"><label>Mô hình 3D (.glb) <span class="muted small">— trống: dùng mô hình minh hoạ</span></label><input v-model="form.model3d" class="input" placeholder="/models/car.glb hoặc https://…/xe.glb" /></div>
         <div class="field"><label>Ảnh</label>
           <div class="imgs">
             <div v-for="(u, i) in form.images" :key="u + i" class="im"><img loading="lazy" decoding="async" :src="u" /><button title="Xoá" @click="form.images.splice(i, 1)">×</button><button v-if="i" class="l" title="Đặt làm ảnh chính" @click="form.images.unshift(form.images.splice(i, 1)[0])">★</button></div>
