@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgTeeW" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <filter id="shW" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <rect width="500" height="500" fill="#1e1e24" rx="20"/>
+  <g filter="url(#shW)">
+    <!-- T-Shirt Body -->
+    <path d="M165 95 L215 110 C235 115 265 115 285 110 L335 95 L405 160 L360 205 L325 180 L325 410 C325 418 318 425 310 425 L190 425 C182 425 175 418 175 410 L175 180 L140 205 L95 160 Z" 
+          fill="url(#bgTeeW)" stroke="#cbd5e1" stroke-width="2"/>
+    <!-- Collar -->
+    <path d="M215 110 C235 130 265 130 285 110 C265 118 235 118 215 110 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+    <!-- Graphic Print on Chest -->
+    <rect x="205" y="190" width="90" height="90" rx="8" fill="#18181b" stroke="#f05a1a" stroke-width="2"/>
+    <path d="M225 245 L250 205 L275 245 Z" fill="#f05a1a"/>
+    <text x="250" y="270" text-anchor="middle" font-family="'Oswald', sans-serif" font-weight="700" font-size="12" fill="#fff" letter-spacing="2">ARES RACING</text>
+    <text x="250" y="325" text-anchor="middle" font-family="'Oswald', sans-serif" font-weight="600" font-size="10" fill="#f05a1a" letter-spacing="3">PITLANE CREW</text>
+  </g>
+  <text x="250" y="465" text-anchor="middle" font-family="'Oswald', sans-serif" font-weight="700" font-size="15" fill="#f8fafc" letter-spacing="1">ÁO THUN GRAPHIC ARES (VINTAGE WHITE)</text>
+</svg>

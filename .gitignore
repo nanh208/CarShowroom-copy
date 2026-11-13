@@ -37,3 +37,10 @@ dist/
 data/
 backend/uploads/
 uploads/
+playwright-report/
+test-results/
+frontend/playwright-report/
+frontend/test-results/
+*.log
+scratch/
+

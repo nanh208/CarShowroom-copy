@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgJ" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </radialGradient>
+    <filter id="shadowJ" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="400" height="400" fill="url(#bgJ)"/>
+  <g filter="url(#shadowJ)">
+    <!-- Sleeves -->
+    <path d="M60 115 L125 80 L160 180 L80 230 Z" fill="#121316" stroke="#1e293b" stroke-width="2"/>
+    <path d="M340 115 L275 80 L240 180 L320 230 Z" fill="#121316" stroke="#1e293b" stroke-width="2"/>
+    <!-- Ribbed Cuffs -->
+    <path d="M60 115 L80 230 L70 238 L50 125 Z" fill="#1e222a"/>
+    <path d="M340 115 L320 230 L330 238 L350 125 Z" fill="#1e222a"/>
+    <!-- Body -->
+    <path d="M120 80 L280 80 L300 320 L100 320 Z" fill="#121316" stroke="#0f172a" stroke-width="3"/>
+    <!-- Ribbed Hem -->
+    <rect x="100" y="320" width="200" height="24" fill="#1e222a" rx="3"/>
+    <!-- Ribbed Collar -->
+    <path d="M150 80 Q200 65 250 80 L250 95 Q200 80 150 95 Z" fill="#1e222a" stroke="#111" stroke-width="2"/>
+    <!-- Zipper -->
+    <line x1="200" y1="82" x2="200" y2="340" stroke="#f05a1a" stroke-width="4"/>
+    <rect x="196" y="110" width="8" height="14" fill="#e2e8f0" rx="2"/>
+    <!-- Zipper Pockets -->
+    <line x1="130" y1="240" x2="165" y2="280" stroke="#f05a1a" stroke-width="3"/>
+    <line x1="270" y1="240" x2="235" y2="280" stroke="#f05a1a" stroke-width="3"/>
+    <!-- Motorsport Sleeve Stripe -->
+    <path d="M90 140 L140 100 L145 110 L95 150 Z" fill="#f05a1a"/>
+    <!-- Chest Shield Badge -->
+    <circle cx="155" cy="140" r="16" fill="#f05a1a" stroke="#fff" stroke-width="2"/>
+    <text x="155" y="145" fill="#fff" font-family="'Oswald', sans-serif" font-size="10" font-weight="800" text-anchor="middle">ARES</text>
+  </g>
+</svg>

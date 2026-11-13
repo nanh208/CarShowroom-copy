@@ -19,7 +19,7 @@
 import { ref, onMounted } from 'vue'
 import api, { errMsg } from '../../api'
 import { toast } from '../../stores/prefs'
-const LABEL = { products: 'Sản phẩm', orders: 'Đơn hàng', customers: 'Khách hàng', inventory: 'Kho hàng', returns: 'Đổi trả / hoàn tiền', promotions: 'Voucher', 'flash-sales': 'Flash sale', banners: 'Banner', catalog: 'Danh mục & hãng', auctions: 'Đấu giá', questions: 'Hỏi đáp', reviews: 'Đánh giá', tickets: 'Phiếu hỗ trợ', chat: 'Live chat' }
+const LABEL = { pos: 'Bán tại quầy (POS)', analytics: 'Sản lượng On & Off', products: 'Sản phẩm', orders: 'Đơn hàng', customers: 'Khách hàng', inventory: 'Kho hàng', returns: 'Đổi trả / hoàn tiền', promotions: 'Voucher', 'flash-sales': 'Flash sale', banners: 'Banner', catalog: 'Danh mục & hãng', auctions: 'Đấu giá', questions: 'Hỏi đáp', reviews: 'Đánh giá', tickets: 'Phiếu hỗ trợ', chat: 'Live chat', purchasing: 'Nhập hàng & gợi ý', preorders: 'Đặt trước', 'staff-debts': 'Công nợ nhân viên', segments: 'Phân khúc khách', carts: 'Giỏ bị bỏ quên', bundles: 'Combo & thẻ quà', collections: 'Bộ sưu tập', broadcast: 'Gửi thông báo', 'home-layout': 'Bố cục trang chủ', chatbot: 'Trợ lý ảo (chatbot)', emails: 'Hộp thư đi' }
 const ADMIN_ONLY = ['Báo cáo CSV', 'Nhật ký thao tác', 'Phân quyền nhân viên']
 const sections = ref([]), staff = ref([]), busy = ref(false)
 onMounted(async () => { const { data } = await api.get('/admin/permissions'); sections.value = data.sections; staff.value = data.staff })

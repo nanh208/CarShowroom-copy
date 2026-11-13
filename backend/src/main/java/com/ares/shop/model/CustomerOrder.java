@@ -21,6 +21,7 @@ public class CustomerOrder {
     public List<OrderItem> items = new ArrayList<>();
     /** v11: phương thức giao, ngày giao dự kiến, combo, tín dụng, hoàn tiền một phần, khách vãng lai. */
     public String shippingMethod; public java.time.LocalDate etaFrom; public java.time.LocalDate etaTo;
+    public Double shippingDistanceKm; public String carrierName;
     public Long bundleDiscount; public Long creditUsed; public Long refundedAmount; public Boolean guest;
     public long subtotal;
     public long discount;
@@ -41,6 +42,42 @@ public class CustomerOrder {
     public LocalDateTime createdAt = LocalDateTime.now();
     public LocalDateTime paidAt;
     public String cancelReason;
+    /** Phụ phí an toàn vận chuyển cho hàng cháy nổ / Pin LiPo (mặc định 25.000đ). */
+    public Long hazardousFee;
+    public Boolean hasHazardous;
+    @Column(length = 500) public String hazardousNote;
+
+    /** Kênh bán hàng: ONLINE (website/app) hoặc POS (bán trực tiếp tại showroom quầy). */
+    public String channel = "ONLINE";
+
+    /** Nhân viên bán hàng / tư vấn phụ trách đơn. */
+    public Long staffId;
+    public String staffName;
+
+    /** Thưởng hoa hồng nhân viên cho đơn này. */
+    public Long commissionAmount = 0L;
+    public Double commissionRate = 0.0;
+    public String commissionStatus = "PENDING"; // PENDING, APPROVED, PAID
+
+    /** Nghiệp vụ POS bán tại quầy. */
+    public String posPaymentMethod;
+    public Long cashGiven = 0L;
+    public Long cashChange = 0L;
+    public Long shiftId;
+
+    /** Xuất hóa đơn VAT điện tử cho khách hàng / doanh nghiệp tại quầy. */
+    public Boolean requireVatInvoice = false;
+    public String companyName;
+    public String companyTaxCode;
+    public String companyAddress;
+    public String companyEmail;
+    public Long vatAmount = 0L;
+
+    /** Thẩm quyền quản lý: Phê duyệt chiết khấu đặc quyền & Ghi chú quản lý. */
+    public Long managerDiscountAmount = 0L;
+    public String managerDiscountReason;
+    public String managerApprovedBy;
+
     /** Mốc thời gian từng trạng thái để hiển thị timeline theo dõi đơn. */
     @ElementCollection(fetch = FetchType.EAGER) public Map<String, LocalDateTime> timeline = new LinkedHashMap<>();
 }

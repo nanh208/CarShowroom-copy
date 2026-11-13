@@ -20,12 +20,12 @@ import java.util.*;
 public class StaffPermissionInterceptor implements HandlerInterceptor {
     static final Map<String, String> SECTION = new HashMap<>();
     static {
-        String[][] m = {{"products", "products"}, {"orders", "orders"}, {"customers", "customers"}, {"customer-tags", "customers"}, {"inventory", "inventory"},
+        String[][] m = {{"pos", "pos"}, {"products", "products"}, {"orders", "orders"}, {"customers", "customers"}, {"customer-tags", "customers"}, {"inventory", "inventory"},
             {"warehouses", "inventory"}, {"returns", "returns"}, {"promotions", "promotions"}, {"flash-sales", "flash-sales"}, {"banners", "banners"},
             {"categories", "catalog"}, {"brands", "catalog"}, {"auctions", "auctions"}, {"questions", "questions"}, {"reviews", "reviews"}, {"tickets", "tickets"},
             {"chat", "chat"}, {"purchase-orders", "purchasing"}, {"restock-suggestions", "purchasing"}, {"abandoned-carts", "carts"}, {"segments", "segments"},
             {"bundles", "bundles"}, {"giftcards", "bundles"}, {"home-layout", "home-layout"}, {"emails", "emails"}, {"analytics", "analytics"},
-            {"bot", "chatbot"}, {"preorders", "preorders"}, {"collections", "collections"}, {"notifications", "broadcast"}};
+            {"bot", "chatbot"}, {"preorders", "preorders"}, {"collections", "collections"}, {"notifications", "broadcast"}, {"staff-debts", "staff-debts"}};
         for (String[] r : m) SECTION.put(r[0], r[1]);
     }
     private final SettingRepo settings; private final ObjectMapper json = new ObjectMapper();

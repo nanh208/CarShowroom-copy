@@ -9,7 +9,7 @@
         <transition name="fade" mode="out-in"><img fetchpriority="high" :key="curImg" :src="curImg" :alt="p.name" class="photo" /></transition>
         <button v-if="imgs.length > 1" class="arr l" aria-label="Ảnh trước" @click="step(-1)">‹</button>
         <button v-if="imgs.length > 1" class="arr r" aria-label="Ảnh sau" @click="step(1)">›</button>
-        <span v-if="fs" class="flashtag">⚡ Flash sale · còn <Countdown :to="fs.endTime" /><template v-if="fs.quota"> · {{ fs.quota - fs.sold }} suất</template></span>
+        <span v-if="fs" class="flashtag">Flash sale · còn <Countdown :to="fs.endTime" /><template v-if="fs.quota"> · {{ fs.quota - fs.sold }} suất</template></span>
         <div class="mediabtns"><button type="button" @click="v360 = '360'">⟳ 360°</button><button type="button" @click="v360 = 'video'">▶ Video</button></div>
         <div class="iconbtns">
           <button :class="['wish', { on: prefs.isWished(p.id) }]" :aria-pressed="prefs.isWished(p.id)" title="Yêu thích" @click="prefs.toggleWish(p)"><svg viewBox="0 0 24 24" width="18" height="18" :fill="prefs.isWished(p.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
@@ -17,7 +17,7 @@
           <button title="Chia sẻ" @click="share"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
         </div>
       </div>
-      <div class="thumbs"><button v-for="(im, i) in imgs" :key="im + i" :class="{ on: im === curImg }" @click="view = i"><img loading="lazy" decoding="async" :src="im" alt="" /></button></div>
+      <div class="thumbs"><button v-for="(im, i) in imgs" :key="im + i" :class="{ on: im === curImg }" @click="selectThumb(im, i)"><img loading="lazy" decoding="async" :src="im" alt="" /></button></div>
 
       <div class="head">
         <div>
@@ -36,7 +36,7 @@
         <span class="vl">{{ variants.some(v => v.color) ? 'Màu sắc' : 'Phiên bản' }}: <b>{{ variant?.name || 'Chọn' }}</b></span>
         <div class="vlist">
           <button v-for="v in variants" :key="v.id" :class="['vbtn', { on: variant?.id === v.id, out: v.stock <= 0 }]" :disabled="v.stock <= 0" @click="pickVariant(v)">
-            <i v-if="v.color" :style="{ background: v.color }" /><span>{{ v.name }}</span><small>{{ vnd(v.price) }} · {{ v.stock > 0 ? `còn ${v.stock}` : 'hết' }}</small>
+            <i v-if="v.color" :style="{ background: v.color }" /><img v-else-if="v.image" :src="v.image" class="vbtn-mini-thumb" alt="" /><span>{{ v.name }}</span><small><template v-if="variantFlash(v)"><b>{{ vnd(variantFlash(v).salePrice) }}</b> <s class="muted" style="margin-right:2px">{{ vnd(v.price) }}</s></template><template v-else>{{ vnd(v.price) }}</template> · {{ v.stock > 0 ? `còn ${v.stock}` : 'hết' }}</small>
           </button>
         </div>
       </div>
@@ -51,11 +51,11 @@
       </div>
 
       <div class="perks">
-        <div><b>🚚 Giao dự kiến {{ etaLabel }}</b><span>{{ etaCity }} · hoả tốc nhận sớm hơn 1 ngày</span></div>
-        <div><b>↩ Đổi trả 7 ngày</b><span>Lỗi do nhà sản xuất đổi mới miễn phí</span></div>
-        <div><b>🛡 Bảo hành</b><span>{{ p.warrantyMonths ? p.warrantyMonths + ' tháng chính hãng' : 'Đổi mới 7 ngày nếu lỗi' }}</span></div>
-        <div v-if="unitPrice >= catalog.options.installmentMin"><b>💳 Trả góp 0%</b><span>3–12 tháng qua thẻ tín dụng · từ {{ vnd(Math.ceil(unitPrice / 12)) }}/tháng</span></div>
-        <div v-else><b>⭐ Tích điểm</b><span>+{{ Math.floor(unitPrice / catalog.options.earnPer) }} điểm khi mua sản phẩm này</span></div>
+        <div><b><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Giao dự kiến {{ etaLabel }}</b><span>{{ etaCity }} · hoả tốc nhận sớm hơn 1 ngày</span></div>
+        <div><b><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>Đổi trả 7 ngày</b><span>Lỗi do nhà sản xuất đổi mới miễn phí</span></div>
+        <div><b><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Bảo hành</b><span>{{ p.warrantyMonths ? p.warrantyMonths + ' tháng chính hãng' : 'Đổi mới 7 ngày nếu lỗi' }}</span></div>
+        <div v-if="unitPrice >= catalog.options.installmentMin"><b><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Trả góp 0%</b><span>3–12 tháng qua thẻ tín dụng · từ {{ vnd(Math.ceil(unitPrice / 12)) }}/tháng</span></div>
+        <div v-else><b><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Tích điểm</b><span>+{{ Math.floor(unitPrice / catalog.options.earnPer) }} điểm khi mua sản phẩm này</span></div>
       </div>
 
       <p class="desc">{{ p.description }}</p>
@@ -77,14 +77,14 @@
             <div class="rv-h"><span class="av">{{ r.authorName?.split(' ').pop()[0] }}</span><div><b>{{ r.authorName }}</b><div class="muted small">{{ d(r.createdAt) }}<span v-if="r.verified" class="vb"> · ✓ Đã mua hàng</span><span v-if="r.variantName"> · {{ r.variantName }}</span></div></div><span class="rate-pill sm">★ {{ r.rating }}</span></div>
             <p>{{ r.comment }}</p>
             <div v-if="r.images?.length" class="rimgs"><a v-for="im in r.images" :key="im" :href="im" target="_blank"><img loading="lazy" decoding="async" :src="im" alt="" /></a></div>
-            <button type="button" :class="['helpful', { on: voted[r.id] }]" :aria-pressed="!!voted[r.id]" @click="helpful(r)">👍 Hữu ích<span v-if="r.helpful"> ({{ r.helpful }})</span></button>
+            <button type="button" :class="['helpful', { on: voted[r.id] }]" :aria-pressed="!!voted[r.id]" @click="helpful(r)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:3px"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>Hữu ích<span v-if="r.helpful"> ({{ r.helpful }})</span></button>
           </div>
         </div>
         <form v-if="auth.loggedIn && !rv.mine" id="write-review" class="rv-form" @submit.prevent="sendReview">
           <div class="rf1"><b>Viết đánh giá</b><Stars v-model:value="mine.rating" pick size="1.4rem" /></div>
           <textarea v-model="mine.comment" class="input" rows="2" placeholder="Chia sẻ cảm nhận về sản phẩm…" />
           <div class="rf2">
-            <label class="up">📷 Thêm ảnh<input type="file" accept="image/*" multiple hidden @change="upload" /></label>
+            <label class="up"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Thêm ảnh<input type="file" accept="image/*" multiple hidden @change="upload" /></label>
             <img loading="lazy" decoding="async" v-for="(im, i) in mine.images" :key="im" :src="im" class="thumb-up" :title="'Xoá ảnh'" @click="mine.images.splice(i, 1)" />
             <span v-if="uploading" class="muted small">Đang tải ảnh…</span>
             <button class="btn btn-sm" :disabled="sending">Gửi đánh giá</button>
@@ -168,7 +168,7 @@ const p = ref(null), related = ref([]), variants = ref([]), flashes = ref([]), s
 const rv = ref({}), mine = reactive({ rating: 5, comment: '', images: [] }), sending = ref(false), uploading = ref(false), showAll = ref(false), rf = ref('all')
 const guide = ref(false), v360 = ref(''), pBundles = ref([]), nEmail = ref(''), nDone = ref(false), eta = ref(null)
 const voted = reactive(JSON.parse(localStorage.getItem('helpfulVotes') || '{}'))
-const etaCity = computed(() => auth.user?.city || localStorage.getItem('etaCity') || 'TP. Hồ Chí Minh')
+const etaCity = computed(() => auth.user?.city || localStorage.getItem('etaCity') || 'Hải Phòng')
 const etaLabel = computed(() => { if (!eta.value) return ''; const f = x => new Date(x + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' }); return eta.value.etaFrom === eta.value.etaTo ? f(eta.value.etaFrom) : `${f(eta.value.etaFrom)} – ${f(eta.value.etaTo)}` })
 async function notifyMe() {
   try { const { data } = await api.post('/public/notify-me', { productId: p.value.id, email: nEmail.value }); nDone.value = true; toast(`Sẽ báo về ${data.email} khi có hàng`) } catch (e) { toast(errMsg(e), 'error') }
@@ -177,20 +177,53 @@ async function helpful(r) {
   if (!auth.loggedIn) return router.push({ path: '/login', query: { redirect: route.fullPath } })
   try { const { data } = await api.post(`/reviews/${r.id}/helpful`); r.helpful = data.helpful; voted[r.id] = data.voted; if (!data.voted) delete voted[r.id]; localStorage.setItem('helpfulVotes', JSON.stringify(voted)) } catch (e) { toast(errMsg(e), 'error') }
 }
-const qty = ref(1), view = ref(0), specsOpen = ref(false), variantId = ref(null), question = ref('')
+const qty = ref(1), view = ref(0), specsOpen = ref(false), variantId = ref(null), question = ref(''), userSelectedImg = ref('')
 const variant = computed(() => variants.value.find(v => v.id === variantId.value))
 const imgs = computed(() => { const l = [...(p.value?.images || [])]; variants.value.forEach(v => v.image && !l.includes(v.image) && l.push(v.image)); return l })
-const curImg = computed(() => imgs.value[view.value] || imgs.value[0])
-const fs = computed(() => flashes.value.find(f => !f.variantId || f.variantId === variantId.value))
+const curImg = computed(() => {
+  if (userSelectedImg.value) return userSelectedImg.value
+  if (variant.value?.image) return variant.value.image
+  return imgs.value[view.value] || imgs.value[0] || ''
+})
+const variantFlash = v => {
+  if (!flashes.value?.length || !v) return null
+  const vf = flashes.value.find(f => f.variantId === v.id)
+  if (vf) return vf
+  const pf = flashes.value.find(f => !f.variantId)
+  if (pf && v.price === p.value?.price) return pf
+  return null
+}
+const fs = computed(() => variant.value ? variantFlash(variant.value) : (flashes.value?.find(f => !f.variantId) || null))
 const stock = computed(() => variant.value ? variant.value.stock : p.value?.stock || 0)
-const basePrice = computed(() => variant.value ? variant.value.price : p.value.price)
+const basePrice = computed(() => variant.value ? variant.value.price : (p.value?.price || 0))
 const unitPrice = computed(() => fs.value ? fs.value.salePrice : basePrice.value)
-const oldPrice = computed(() => fs.value ? basePrice.value : (variant.value ? variant.value.oldPrice : p.value.oldPrice))
+const oldPrice = computed(() => fs.value ? basePrice.value : (variant.value ? variant.value.oldPrice : p.value?.oldPrice))
 const filtered = computed(() => (rv.value.items || []).filter(r => rf.value === 'all' || (rf.value === 'photo' ? r.images?.length : r.rating === rf.value)))
 const likes = computed(() => [...suggested.value, ...related.value].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i).slice(0, 4))
 const recent = computed(() => prefs.recent.filter(r => r.id !== p.value?.id).slice(0, 6))
 const step = k => { view.value = (view.value + k + imgs.value.length) % imgs.value.length }
-const pickVariant = v => { variantId.value = v.id; qty.value = 1; if (v.image) view.value = imgs.value.indexOf(v.image) }
+const pickVariant = v => {
+  variantId.value = v.id
+  qty.value = 1
+  if (v.image) {
+    userSelectedImg.value = v.image
+    const idx = imgs.value.indexOf(v.image)
+    if (idx !== -1) view.value = idx
+  }
+}
+const selectThumb = (im, idx) => {
+  view.value = idx
+  userSelectedImg.value = im
+  const matched = variants.value.find(v => v.image === im)
+  if (matched) variantId.value = matched.id
+}
+watch(variant, nv => {
+  if (nv?.image) {
+    userSelectedImg.value = nv.image
+    const idx = imgs.value.indexOf(nv.image)
+    if (idx !== -1) view.value = idx
+  }
+})
 const share = async () => { const url = location.origin + route.fullPath; if (navigator.share) { try { await navigator.share({ title: p.value.name, url }) } catch {} } else { navigator.clipboard?.writeText(url); toast('Đã sao chép liên kết') } }
 const loadReviews = async id => { rv.value = (await api.get(`/products/${id}/reviews`)).data }
 const loadQa = async id => { qa.value = (await api.get(`/products/${id}/questions`)).data }
@@ -211,7 +244,7 @@ async function ask() {
 }
 const loadErr = ref('')
 async function load() {
-  p.value = null; qty.value = 1; view.value = 0; specsOpen.value = false; variantId.value = null; rf.value = 'all'; showAll.value = false
+  p.value = null; qty.value = 1; view.value = 0; specsOpen.value = false; variantId.value = null; userSelectedImg.value = ''; rf.value = 'all'; showAll.value = false
   loadCatalog()
   loadErr.value = ''
   let data; try { data = (await api.get(`/products/${route.params.id}`)).data } catch (e) { loadErr.value = errMsg(e); return }
@@ -334,4 +367,14 @@ watch(() => route.params.id, id => id && load(), { immediate: true })
 .nf { text-align: center; padding: 60px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .pdsk { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; } .pdsk > .sk { aspect-ratio: 4/3; } .pdsk > div:last-child { display: flex; flex-direction: column; gap: 12px; } @media (max-width: 760px) { .pdsk { grid-template-columns: 1fr; } }
 #write-review { scroll-margin-top: 100px; }
+.vbtn-mini-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  object-fit: cover;
+  display: inline-block;
+  vertical-align: middle;
+  border: 1px solid rgba(0,0,0,0.12);
+  margin-right: 4px;
+}
 </style>

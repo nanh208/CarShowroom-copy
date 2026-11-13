@@ -31,11 +31,11 @@ public class EngageController {
     static final List<Object[]> SPIN = List.of(new Object[]{"5 điểm", 5, 30}, new Object[]{"10 điểm", 10, 25}, new Object[]{"20 điểm", 20, 15}, new Object[]{"50 điểm", 50, 5},
             new Object[]{"Mã giảm 5%", -5, 10}, new Object[]{"Freeship 30k", -30, 10}, new Object[]{"Chúc may mắn lần sau", 0, 5});
     static final List<Object[]> TIERS = List.of(new Object[]{"Đồng", 0L, "Tích 1 điểm / 10.000đ"}, new Object[]{"Bạc", 3_000_000L, "+5% điểm, quà sinh nhật x1.5"},
-            new Object[]{"Vàng", 10_000_000L, "+10% điểm, freeship mọi đơn ≥ 300k"}, new Object[]{"Kim cương", 20_000_000L, "+20% điểm, hỗ trợ ưu tiên, mời sự kiện ra mắt"});
+            new Object[]{"Vàng", 10_000_000L, "+10% điểm, freeship mọi đơn ≥ 300k"}, new Object[]{"Titan", 20_000_000L, "+20% điểm, hỗ trợ ưu tiên, đặc quyền tối cao"});
 
     private User me() { return users.findById(Current.user().id).orElseThrow(); }
     private void addPoints(User u, int d, String reason) { u.points += d; users.save(u); PointTx t = new PointTx(); t.user = u; t.delta = d; t.reason = reason; points.save(t); }
-    private long spent(User u) { return orders.findByUserIdOrderByCreatedAtDesc(u.id).stream().filter(o -> o.status == Enums.OrderStatus.COMPLETED).mapToLong(o -> o.total).sum(); }
+    private long spent(User u) { return orders.findByUserIdOrderByCreatedAtDesc(u.id).stream().filter(o -> (o.status == Enums.OrderStatus.COMPLETED || o.paymentStatus == Enums.PaymentStatus.PAID) && o.status != Enums.OrderStatus.CANCELLED && o.status != Enums.OrderStatus.RETURNED).mapToLong(o -> o.total).sum(); }
 
     @GetMapping("/api/account/rewards")
     public Map<String, Object> rewards() {
@@ -45,8 +45,26 @@ public class EngageController {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("points", u.points); m.put("tier", u.tier); m.put("spent", spent);
         m.put("tiers", TIERS.stream().map(t -> Map.of("name", t[0], "min", t[1], "perk", t[2])).toList());
-        Object[] next = TIERS.stream().filter(t -> (Long) t[1] > spent).findFirst().orElse(null);
-        m.put("nextTier", next == null ? null : Map.of("name", next[0], "need", (Long) next[1] - spent));
+        String curTier = u.tier == null ? "Đồng" : u.tier;
+        if (curTier.equalsIgnoreCase("Kim cương") || curTier.equalsIgnoreCase("Bạch kim")) curTier = "Titan";
+        int currentRank = 0;
+        for (int i = 0; i < TIERS.size(); i++) {
+            if (TIERS.get(i)[0].toString().equalsIgnoreCase(curTier)) {
+                currentRank = i;
+                break;
+            }
+        }
+        Object[] next = null;
+        if (currentRank < TIERS.size() - 1) {
+            for (int i = currentRank + 1; i < TIERS.size(); i++) {
+                Object[] t = TIERS.get(i);
+                if ((Long) t[1] > spent) {
+                    next = t;
+                    break;
+                }
+            }
+        }
+        m.put("nextTier", next == null ? null : Map.of("name", next[0], "need", Math.max(0L, (Long) next[1] - spent)));
         m.put("checkedToday", today.equals(u.lastCheckin)); m.put("streak", streak); m.put("checkinRewards", CHECKIN);
         m.put("spunToday", today.equals(u.lastSpin)); m.put("spinPrizes", SPIN.stream().map(s -> s[0]).toList());
         m.put("birthday", u.birthday);
@@ -141,6 +159,7 @@ public class EngageController {
     @PostMapping("/api/public/preorders") @Transactional
     public Map<String, Object> preorder(@RequestBody PreReq r) {
         Product p = products.findById(Optional.ofNullable(r.productId()).orElse(-1L)).filter(x -> Boolean.TRUE.equals(x.preorder)).orElseThrow(() -> ApiException.bad("Sản phẩm không mở đặt trước"));
+        if (!p.active) throw ApiException.bad("Sản phẩm \"" + p.name + "\" hiện đã tạm ẩn, tạm thời không nhận đặt trước.");
         User u = Current.userOrNull();
         String email = u != null ? u.email : r.email(); if (email == null || !email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) throw ApiException.bad("Email không hợp lệ");
         int q = Math.max(1, Math.min(5, Optional.ofNullable(r.qty()).orElse(1)));

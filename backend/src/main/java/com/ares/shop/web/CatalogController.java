@@ -30,9 +30,18 @@ public class CatalogController {
             List<Predicate> p = new ArrayList<>();
             if (onlyActive) p.add(cb.isTrue(root.get("active")));
             if (f.q() != null && !f.q().isBlank()) {
-                String like = "%" + f.q().trim().toLowerCase() + "%";
-                p.add(cb.or(cb.like(cb.lower(root.get("name")), like), cb.like(cb.lower(root.join("brand", jakarta.persistence.criteria.JoinType.LEFT).get("name")), like),
-                        cb.like(cb.lower(root.get("sku")), like)));
+                String term = f.q().trim().toLowerCase();
+                String like = "%" + term + "%";
+                List<Predicate> qPreds = new ArrayList<>();
+                qPreds.add(cb.like(cb.lower(root.get("name")), like));
+                qPreds.add(cb.like(cb.lower(root.join("brand", jakarta.persistence.criteria.JoinType.LEFT).get("name")), like));
+                qPreds.add(cb.like(cb.lower(root.get("sku")), like));
+                qPreds.add(cb.like(cb.lower(root.get("description")), like));
+                qPreds.add(cb.like(cb.lower(root.get("type")), like));
+                if (term.contains("quan ao") || term.contains("trang phuc") || term.contains("ao") || term.contains("do") || term.contains("quan") || term.contains("fashion") || term.contains("apparel") || term.contains("polo") || term.contains("hoodie") || term.contains("mu") || term.contains("non")) {
+                    qPreds.add(cb.equal(root.get("type"), "APPAREL"));
+                }
+                p.add(cb.or(qPreds.toArray(new Predicate[0])));
             }
             if (f.brandId() != null) p.add(cb.equal(root.get("brand").get("id"), f.brandId()));
             if (f.type() != null && !f.type().isBlank()) p.add(root.get("type").in(Arrays.asList(f.type().split(","))));
@@ -168,4 +177,17 @@ public class CatalogController {
         }).toList();
         return Map.of("code", o.code, "status", o.status, "deliveredAt", from == null ? "" : from.toString(), "items", items);
     }
+
+    @PostMapping("/products/clear-test-items")
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> clearTestProductsPublic() {
+        var testList = products.findAll().stream()
+                .filter(p -> p.sku != null && p.sku.startsWith("TEST-")).toList();
+        for (var p : testList) {
+            variants.deleteAll(variants.findByProductIdOrderByIdAsc(p.id));
+            products.delete(p);
+        }
+        return java.util.Map.of("success", true, "deletedCount", testList.size(), "message", "Đã xoá sạch " + testList.size() + " sản phẩm test!");
+    }
+
 }

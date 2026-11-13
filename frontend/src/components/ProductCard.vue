@@ -17,7 +17,8 @@
         <span v-if="p.scale" class="meta">{{ p.scale }}</span>
         <span class="meta">{{ p.ageMin }}+</span>
         <span v-if="p.reviewCount" class="rate">★ {{ p.rating }}</span>
-        <span v-if="p.stock <= 0" class="out">Hết hàng</span>
+        <span v-if="p.active === false" class="badge" style="background:#64748b;color:#fff">Tạm ẩn</span>
+        <span v-else-if="p.stock <= 0" class="out">Hết hàng</span>
       </div>
       <div v-if="flashPrice && flash.quota" class="fstock" :aria-label="`Flash sale còn ${flash.quota - flash.sold} suất`">
         <div class="fbar"><i :style="{ width: Math.min(100, flash.sold * 100 / flash.quota) + '%' }" /></div>
@@ -28,7 +29,34 @@
           <div class="price"><small v-if="p.hasVariants">từ </small>{{ vnd(flashPrice || p.price) }}</div>
           <span v-if="flashPrice || p.oldPrice" class="old-price">{{ vnd(flashPrice ? p.price : p.oldPrice) }}</span>
         </div>
-        <button class="btn btn-red btn-sm buy" :disabled="p.stock <= 0 || busy" :aria-label="`Thêm ${p.name} vào giỏ`" @click="add">{{ busy ? '…' : '+ Giỏ' }}</button>
+        <button
+          v-if="p.active !== false && p.stock > 0"
+          type="button"
+          class="btn btn-sm buy btn-red"
+          :disabled="busy"
+          :aria-label="`Thêm ${p.name} vào giỏ`"
+          @click="add"
+        >
+          {{ busy ? '…' : '+ Giỏ' }}
+        </button>
+        <button
+          v-else-if="p.stock <= 0"
+          type="button"
+          class="btn btn-sm buy buy-out"
+          title="Sản phẩm tạm hết hàng — Bấm để xem chi tiết & nhận thông báo"
+          @click="handleOutClick"
+        >
+          Hết hàng
+        </button>
+        <button
+          v-else
+          type="button"
+          class="btn btn-sm buy buy-out"
+          disabled
+          title="Sản phẩm tạm ẩn"
+        >
+          Tạm ẩn
+        </button>
       </div>
     </div>
   </div>
@@ -62,8 +90,12 @@ const add = async (e) => {
       const { data } = await api.get(`/products/${p.id}`)
       const v = (data.variants || []).filter(x => x.active !== false && x.stock > 0).sort((a, b) => a.price - b.price)[0]
       if (!v) return router.push(`/products/${p.id}`)
-      cart.add({ productId: p.id, variantId: v.id, variantName: v.name, name: p.name, image: v.image || p.images?.[0], unitPrice: v.price, oldPrice: v.oldPrice,
-        quantity: 1, stock: v.stock })
+      const fsList = Array.isArray(data.flash) ? data.flash : (data.flash ? [data.flash] : [])
+      const vf = fsList.find(f => f.variantId === v.id) || (v.price === p.price ? fsList.find(f => !f.variantId) : (flashPrice.value && v.price === p.price ? { salePrice: flashPrice.value } : null))
+      const uPrice = vf ? vf.salePrice : v.price
+      const oPrice = vf ? v.price : v.oldPrice
+      cart.add({ productId: p.id, variantId: v.id, variantName: v.name, name: p.name, image: v.image || p.images?.[0], unitPrice: uPrice, oldPrice: oPrice,
+        quantity: 1, stock: v.stock, flash: !!vf })
       flyToCart(v.image || p.images?.[0], thumb.value?.$el || el)
       toast(`Đã thêm “${p.name} – ${v.name}” vào giỏ`)
     } catch { router.push(`/products/${p.id}`) } finally { busy.value = false }
@@ -73,6 +105,11 @@ const add = async (e) => {
     quantity: 1, stock: p.stock, flash: !!flashPrice.value })
   flyToCart(p.images?.[0], thumb.value?.$el || el)
   toast(`Đã thêm “${p.name}” vào giỏ hàng`)
+}
+
+const handleOutClick = () => {
+  router.push(`/products/${props.p.id}`)
+  toast('Sản phẩm tạm hết hàng. Bạn có thể xem chi tiết và đăng ký nhận thông báo khi có hàng lại.', 'info')
 }
 </script>
 
@@ -91,6 +128,25 @@ const add = async (e) => {
 .foot .price { font-size: 1.05rem; font-weight: 700; color: var(--text); } .price small { font-weight: 500; color: var(--muted); font-size: .75rem; }
 .foot .old-price { display: block; margin: 0; font-size: .78rem; }
 .buy { padding: 7px 18px; flex-shrink: 0; }
+.buy.buy-out,
+.buy:disabled {
+  background: #e6dfd1 !important;
+  color: #6d6455 !important;
+  border: 1.5px solid #cbbfab !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+}
+.buy.buy-out:hover {
+  background: #dbd2c2 !important;
+  color: #4a4336 !important;
+  border-color: #b5a993 !important;
+}
+.buy:disabled:not(.buy-out) {
+  cursor: not-allowed !important;
+  opacity: .6 !important;
+}
 .fstock { margin: 2px 0 8px; } .fbar { height: 6px; background: #f3d6d6; overflow: hidden; } .fbar i { display: block; height: 100%; background: linear-gradient(90deg, #ff7a00, #c62828); transition: width .5s ease-out; }
 .fstock small { font-size: .72rem; font-weight: 600; color: #c62828; }
 @media (prefers-reduced-motion: reduce) { .fbar i { transition: none; } }

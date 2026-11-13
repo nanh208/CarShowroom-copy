@@ -123,6 +123,7 @@ const hero = computed(() => banners.value.filter(b => b.position === 'HERO'))
 const promo = computed(() => banners.value.find(b => b.position === 'PROMO'))
 const cur = ref(0), pause = ref(false); let t
 const I = {
+  APPAREL: '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
   MODEL: '<path d="M3 15h18l-1.5-4.5A2 2 0 0 0 17.6 9H9l-3 3H4a1 1 0 0 0-1 1z"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/>',
   RC: '<path d="M4 15h16l-2-5H7z"/><circle cx="7" cy="16" r="2.4"/><circle cx="17" cy="16" r="2.4"/><path d="M15 10V4m0 0 3 1"/>',
   DISPLAY: '<rect x="3" y="4" width="18" height="15" rx="2"/><path d="M6 14h12l-1-3H8z"/><path d="M3 19h18"/>',
@@ -138,6 +139,7 @@ const sections = computed(() => {
   const used = best.map(p => p.id)
   return [
     { title: 'Bán chạy', to: { path: '/products', query: { sort: 'bestseller' } }, items: best },
+    { title: 'Quần áo & Trang phục đua xe ARES', to: { path: '/products', query: { type: 'APPAREL' } }, items: all.value.filter(p => p.type === 'APPAREL').slice(0, 4) },
     { title: 'Xe RC nổi bật', to: { path: '/products', query: { type: 'RC' } }, items: pick(['RC'], 3, used) },
     { title: 'Xe Model & Trưng Bày', to: { path: '/products', query: { type: 'MODEL,DISPLAY' } }, items: pick(['DISPLAY', 'MODEL'], 3, used) },
     { title: 'Lắp ráp LEGO & Tamiya', to: { path: '/products', query: { type: 'KIT' } }, items: pick(['KIT'], 3, used) },

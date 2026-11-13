@@ -10,7 +10,11 @@
           <td>{{ c.user.id }}</td><td><b>{{ c.user.fullName }}</b><div class="tags"><span v-for="t in tags[c.user.id] || []" :key="t" class="tg">{{ t }}</span><button class="lnk" @click="openCrm(c.user)">{{ (tags[c.user.id] || []).length ? 'Sửa' : '+ Nhãn / ghi chú' }}</button></div></td><td>{{ c.user.email }}</td><td>{{ c.user.phone }}</td>
           <td class="small">{{ c.user.provider }}</td>
           <td><select v-if="auth.isAdmin" class="input sel" :value="c.user.role" @change="setRole(c.user, $event.target.value)"><option>USER</option><option>STAFF</option><option>ADMIN</option></select><span v-else class="badge">{{ c.user.role }}</span></td>
-          <td><b>{{ c.user.tier }}</b><div class="small">{{ c.user.points }} điểm <a href="#" @click.prevent="points(c.user)">± điều chỉnh</a></div></td>
+          <td>
+            <b>{{ c.user.tier }}</b>
+            <div class="small">{{ c.user.points }} điểm</div>
+            <button class="btn btn-xs btn-outline" style="margin-top:4px" @click="openVipModal(c.user)">Cấp thẻ &amp; Đổi hạng</button>
+          </td>
           <td>{{ c.orderCount }}</td><td class="price">{{ vnd(c.totalSpent) }}</td><td class="small">{{ d(c.user.createdAt) }}</td>
           <td><button :class="['btn btn-sm', c.user.locked ? '' : 'btn-danger']" @click="patch(c.user, { locked: !c.user.locked })">{{ c.user.locked ? 'Mở khoá' : 'Khoá' }}</button></td>
         </tr></tbody>
@@ -37,6 +41,79 @@
       </div>
     </div>
   </div>
+    <!-- Modal Admin cấp thẻ, nâng hạng và tặng điểm/credit -->
+    <div v-if="vipModal" class="modal-bg" @click.self="vipModal = null">
+      <div class="modal vip-admin-modal" style="max-width:520px">
+        <div class="row between" style="align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px">
+          <div>
+            <h3 style="margin:0">CẤP THẺ &amp; NÂNG HẠNG VIP</h3>
+            <p class="small muted" style="margin:2px 0 0">{{ vipModal.user.fullName }} &bull; {{ vipModal.user.email }}</p>
+          </div>
+          <button class="btn btn-sm btn-outline" @click="vipModal = null">&times;</button>
+        </div>
+
+        <div class="field">
+          <label><b>Hạng thành viên VIP</b></label>
+          <select v-model="vipModal.tier" class="input">
+            <option value="Đồng">Hạng Đồng (Mặc định)</option>
+            <option value="Bạc">Hạng Bạc (Chi từ 3 tr)</option>
+            <option value="Vàng">Hạng Vàng (Chi từ 10 tr)</option>
+            <option value="Titan">Hạng Titan VIP (Chi từ 20 tr - Thẻ đen Titan nguyên khối tối cao)</option>
+            <option value="Bạch kim">Hạng Bạch Kim (Cũ - Tự động đồng bộ Titan)</option>
+            <option value="Kim cương">Hạng Kim Cương</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label><b>Mã số thẻ VIP tùy biến</b></label>
+          <input
+            v-model="vipModal.vipCardNumber"
+            class="input"
+            placeholder="VD: 8899 • 2026 • 0001 • 9999"
+          />
+          <small class="muted">Để trống nếu dùng mã dập nổi tự động của hệ thống</small>
+        </div>
+
+        <div class="grid grid-2" style="gap:12px">
+          <div class="field">
+            <label><b>Biến động điểm thưởng (+/-)</b></label>
+            <input
+              v-model.number="vipModal.pointsDelta"
+              type="number"
+              class="input"
+              placeholder="+500 hoặc -100"
+            />
+            <small class="muted">Hiện có: {{ vipModal.user.points || 0 }} pts</small>
+          </div>
+
+          <div class="field">
+            <label><b>Tặng tiền vào Ví (VNĐ)</b></label>
+            <input
+              v-model.number="vipModal.creditDelta"
+              type="number"
+              class="input"
+              placeholder="+200000"
+            />
+            <small class="muted">Cộng số dư mua hàng trực tiếp</small>
+          </div>
+        </div>
+
+        <div class="field">
+          <label><b>Lý do cấp thẻ / điều chỉnh</b></label>
+          <input
+            v-model="vipModal.reason"
+            class="input"
+            placeholder="VD: Tri ân khách hàng thân thiết / Nâng hạng danh dự"
+          />
+        </div>
+
+        <div class="row" style="margin-top:18px;justify-content:flex-end;gap:8px">
+          <button class="btn btn-outline" @click="vipModal = null">Huỷ</button>
+          <button class="btn" @click="saveVip">Xác nhận &amp; Cấp thẻ</button>
+        </div>
+      </div>
+    </div>
+
 </template>
 <script setup>
 import { ref, computed, onMounted } from 'vue'
@@ -64,6 +141,39 @@ function points(u) {
   const reason = prompt('Lý do:', +v > 0 ? 'Tặng điểm tri ân' : 'Điều chỉnh điểm') || undefined
   patch(u, { pointsDelta: +v, reason })
 }
+const vipModal = ref(null)
+function openVipModal(u) {
+  vipModal.value = {
+    user: u,
+    tier: u.tier || 'Đồng',
+    pointsDelta: 0,
+    reason: '',
+    creditDelta: 0,
+    vipCardNumber: u.vipCardNumber || ''
+  }
+}
+async function saveVip() {
+  if (!vipModal.value) return
+  err.value = ''
+  try {
+    const vm = vipModal.value
+    const body = {
+      tier: vm.tier,
+      pointsDelta: vm.pointsDelta ? +vm.pointsDelta : undefined,
+      reason: vm.reason || (vm.pointsDelta > 0 ? 'Admin cấp điểm thưởng VIP' : 'Admin điều chỉnh điểm'),
+      creditDelta: vm.creditDelta ? +vm.creditDelta : undefined,
+      vipCardNumber: vm.vipCardNumber?.trim() || undefined
+    }
+    await api.patch(`/admin/customers/${vm.user.id}`, body)
+    toast(`Đã cập nhật đặc quyền & hạng VIP cho ${vm.user.fullName}`)
+    vipModal.value = null
+    await load()
+  } catch (e) {
+    err.value = errMsg(e)
+    toast(errMsg(e), 'error')
+  }
+}
+
 onMounted(load)
 </script>
 <style scoped>

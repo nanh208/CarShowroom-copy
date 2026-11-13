@@ -6,15 +6,23 @@
         <aside ref="panel" class="mc" role="dialog" aria-modal="true" aria-label="Giỏ hàng nhanh" tabindex="-1">
           <header><h3>Giỏ hàng <small>({{ cart.count }})</small></h3><button class="x" aria-label="Đóng" @click="cartOpen = false">×</button></header>
           <div v-if="remain > 0 && cart.items.length" class="fs"><span>Mua thêm <b>{{ vnd(remain) }}</b> để được miễn phí vận chuyển</span><div class="bar"><i :style="{ width: pct + '%' }" /></div></div>
-          <div v-else-if="cart.items.length" class="fs ok">🎉 Đơn của bạn được <b>miễn phí vận chuyển</b></div>
+          <div v-else-if="cart.items.length" class="fs ok">Đơn của bạn được <b>miễn phí vận chuyển</b></div>
           <div v-if="!cart.items.length" class="empty"><p>Giỏ hàng đang trống.</p><router-link to="/products" class="btn btn-sm" @click="cartOpen = false">Khám phá sản phẩm</router-link></div>
           <ul v-else class="lines">
-            <li v-for="i in cart.items" :key="i.key">
+            <li v-for="i in cart.items" :key="i.key" :class="{ 'li-bundle': i.isBundle }">
               <img :src="i.image" alt="" />
-              <div class="info"><router-link :to="`/products/${i.productId}`" class="nm" @click="cartOpen = false">{{ i.name }}</router-link>
-                <small v-if="i.variantName" class="muted">{{ i.variantName }}</small>
-                <div class="qrow"><div class="qty"><button :aria-label="`Giảm ${i.name}`" @click="cart.setQty(i.key, i.quantity - 1)">−</button><span>{{ i.quantity }}</span><button :aria-label="`Tăng ${i.name}`" @click="cart.setQty(i.key, i.quantity + 1)">+</button></div>
-                  <b>{{ vnd(i.unitPrice * i.quantity) }}</b></div></div>
+              <div class="info">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span v-if="i.isBundle" class="bundle-pill">Gói Combo</span>
+                  <router-link :to="i.isBundle ? '/cart' : `/products/${i.productId}`" class="nm" @click="cartOpen = false">{{ i.name }}</router-link>
+                </div>
+                <small v-if="i.isBundle" class="muted">Gồm {{ i.bundleProducts?.length || 3 }} sản phẩm</small>
+                <small v-else-if="i.variantName" class="muted">{{ i.variantName }}</small>
+                <div class="qrow">
+                  <div class="qty"><button :aria-label="`Giảm ${i.name}`" @click="cart.setQty(i.key, i.quantity - 1)">−</button><span>{{ i.quantity }}</span><button :aria-label="`Tăng ${i.name}`" @click="cart.setQty(i.key, i.quantity + 1)">+</button></div>
+                  <b>{{ vnd(i.unitPrice * i.quantity) }}</b>
+                </div>
+              </div>
               <button class="rm" :aria-label="`Xoá ${i.name}`" @click="cart.remove(i.key)">×</button>
             </li>
           </ul>
@@ -41,7 +49,10 @@ const pct = computed(() => Math.min(100, cart.subtotal * 100 / (catalog.options.
 watch(cartOpen, async v => { document.documentElement.style.overflow = v ? 'hidden' : ''; if (v) { await nextTick(); panel.value?.focus(); quote() } })
 watch(() => route.fullPath, () => { cartOpen.value = false })
 watch(() => cart.items.map(i => i.key + i.quantity).join(), () => cartOpen.value && quote())
-async function quote() { bundleOff.value = cart.items.length ? (await api.post('/public/bundle-quote', cart.items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity }))).catch(() => ({ data: { discount: 0 } }))).data.discount : 0 }
+async function quote() {
+  const loose = cart.items.filter(i => !i.isBundle)
+  bundleOff.value = loose.length ? (await api.post('/public/bundle-quote', loose.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity }))).catch(() => ({ data: { discount: 0 } }))).data.discount : 0
+}
 </script>
 <style scoped>
 .mc-wrap { position: fixed; inset: 0; z-index: 200; }
@@ -65,4 +76,8 @@ footer { border-top: 1px solid var(--border); padding: 14px 18px calc(14px + env
 .mc-enter-active, .mc-leave-active { transition: opacity .2s ease-out; } .mc-enter-active .mc, .mc-leave-active .mc { transition: transform .22s ease-out; }
 .mc-enter-from, .mc-leave-to { opacity: 0; } .mc-enter-from .mc, .mc-leave-to .mc { transform: translateX(100%); }
 @media (prefers-reduced-motion: reduce) { .mc-enter-active, .mc-leave-active, .mc-enter-active .mc, .mc-leave-active .mc { transition: none; } }
+
+.bundle-pill { background: var(--accent); color: #fff; font-size: .65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; flex-shrink: 0; }
+.li-bundle { border-left: 3px solid var(--accent); padding-left: 8px !important; background: rgba(249, 115, 22, 0.03); }
+
 </style>

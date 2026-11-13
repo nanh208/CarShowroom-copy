@@ -111,7 +111,7 @@ public class OpsController {
     public List<AuditLog> auditLog() { return audit.findTop300ByOrderByIdDesc(); }
 
     // ===== Ma trận phân quyền nhân viên =====
-    static final List<String> SECTIONS = List.of("products", "orders", "customers", "inventory", "returns", "promotions", "flash-sales", "banners", "catalog", "auctions", "questions", "reviews", "tickets", "chat", "purchasing", "carts", "segments", "bundles", "home-layout", "emails", "analytics", "chatbot", "preorders", "collections", "broadcast");
+    static final List<String> SECTIONS = List.of("pos", "products", "orders", "customers", "inventory", "returns", "promotions", "flash-sales", "banners", "catalog", "auctions", "questions", "reviews", "tickets", "chat", "purchasing", "carts", "segments", "bundles", "home-layout", "emails", "analytics", "chatbot", "preorders", "collections", "broadcast", "staff-debts");
     @GetMapping("/api/admin/permissions")
     public Map<String, Object> perms() throws Exception {
         var s = settings.findById("staffPerms").orElse(null);
@@ -158,9 +158,43 @@ public class OpsController {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("current", summary(cur, a, b)); m.put("previous", summary(prev, a.minusDays(days), a));
         Map<String, Long> daily = new LinkedHashMap<>();
-        for (LocalDate d = a.toLocalDate(); d.isBefore(b.toLocalDate()); d = d.plusDays(1)) daily.put(d.toString(), 0L);
+        List<Map<String, Object>> dailyDetails = new ArrayList<>();
+        for (LocalDate d = a.toLocalDate(); d.isBefore(b.toLocalDate()); d = d.plusDays(1)) {
+            String ds = d.toString();
+            LocalDate curD = d;
+            daily.put(ds, 0L);
+            var dayOrders = cur.stream().filter(o -> o.createdAt != null && o.createdAt.toLocalDate().equals(curD)).toList();
+            var okOrders = dayOrders.stream().filter(AdminController::counts).toList();
+            long dayRev = okOrders.stream().mapToLong(o -> o.total).sum();
+            long itemsSold = okOrders.stream().flatMap(o -> o.items.stream()).mapToLong(i -> i.quantity).sum();
+            long cancelled = dayOrders.stream().filter(o -> o.status == Enums.OrderStatus.CANCELLED).count();
+            
+            var orderSummaries = dayOrders.stream().map(o -> {
+                Map<String, Object> om = new LinkedHashMap<>();
+                om.put("id", o.id);
+                om.put("code", o.code);
+                om.put("buyerName", o.buyerName == null ? "" : o.buyerName);
+                om.put("phone", o.phone == null ? "" : o.phone);
+                om.put("total", o.total);
+                om.put("status", o.status.name());
+                om.put("createdAt", o.createdAt.toString());
+                om.put("itemsSummary", o.items.stream().map(it -> it.productName + " (x" + it.quantity + ")").reduce((x, y) -> x + ", " + y).orElse(""));
+                return om;
+            }).toList();
+
+            Map<String, Object> dm = new LinkedHashMap<>();
+            dm.put("date", ds);
+            dm.put("revenue", dayRev);
+            dm.put("orderCount", dayOrders.size());
+            dm.put("okCount", okOrders.size());
+            dm.put("cancelledCount", cancelled);
+            dm.put("itemsSold", itemsSold);
+            dm.put("orders", orderSummaries);
+            dailyDetails.add(dm);
+        }
         cur.stream().filter(AdminController::counts).forEach(o -> daily.merge(o.createdAt.toLocalDate().toString(), o.total, Long::sum));
         m.put("daily", daily);
+        m.put("dailyDetails", dailyDetails);
         return m;
     }
     private Map<String, Object> summary(List<CustomerOrder> list, LocalDateTime a, LocalDateTime b) {

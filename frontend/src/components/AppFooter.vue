@@ -23,7 +23,7 @@
         </nav>
       </div>
       <div class="bottom">
-        <span>ARES Toys — xe mô hình, xe RC & phụ kiện chính hãng · 123 Nguyễn Văn Linh, Q.7, TP.HCM · Hotline {{ HOTLINE }}</span>
+        <span>ARES Toys — xe mô hình, xe RC & phụ kiện chính hãng · Chung cư Hoàng Huy Commerce, Q. Lê Chân, TP. Hải Phòng · Hotline {{ HOTLINE }}</span>
         <span class="tsw-f">© {{ new Date().getFullYear() }} ARES Toys</span>
       </div>
     </div>

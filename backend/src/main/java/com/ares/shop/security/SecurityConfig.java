@@ -21,16 +21,20 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain chain(HttpSecurity http, JwtFilter jwtFilter, @Value("${app.frontend-url}") String frontend) throws Exception {
+        // API stateless (JWT trong header) => tắt CSRF toàn cục; webhook/IPN cũng không dùng cookie.
         http.csrf(c -> c.disable())
             .headers(h -> h.frameOptions(f -> f.sameOrigin()))
             .cors(c -> c.configurationSource(cors(frontend)))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(a -> a
+                // Webhook / IPN / return URL của cổng thanh toán: công khai, tự xác thực bằng chữ ký / API key
+                .requestMatchers("/api/payment/webhook/**", "/api/payment/momo/ipn", "/api/payment/vnpay/ipn",
+                                 "/api/payment/momo/return", "/api/payment/vnpay/return", "/api/payment/status/**", "/api/payment/config").permitAll()
                 .requestMatchers("/api/auth/**", "/api/public/**", "/api/chat/**", "/api/newsletter", "/h2-console/**", "/error", "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/auctions/**", "/api/brands/**", "/api/promotions/**", "/api/options", "/api/categories", "/api/flash-sales", "/api/banners", "/api/shipping/**", "/api/warranty").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/promotions/check").permitAll()
-                .requestMatchers("/api/admin/staff/**", "/api/admin/reports/**", "/api/admin/audit").hasRole("ADMIN")
+                .requestMatchers("/api/admin/staff", "/api/admin/staff/**", "/api/admin/reports/**", "/api/admin/audit").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "STAFF")
                 .anyRequest().authenticated())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

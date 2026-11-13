@@ -115,7 +115,7 @@ const badges = [
 <style scoped>
 /* v12: thống kê, vệt tốc độ, bộ sưu tập, sắp ra mắt */
 .stats { display: flex; gap: clamp(16px, 3vw, 36px); margin: 30px 0 0; padding-top: 18px; border-top: 2px solid #111; flex-wrap: wrap; }
-.stats div { margin: 0; } .stats dt { font: italic 400 clamp(1.7rem, 3vw, 2.3rem)/1 'Anton', sans-serif; color: #111; } .stats dd { margin: 4px 0 0; font: 600 .7rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #555; }
+.stats div { margin: 0; } .stats dt { font: italic 700 clamp(1.7rem, 3vw, 2.3rem)/1 'Oswald', 'Be Vietnam Pro', sans-serif; color: #111; } .stats dd { margin: 4px 0 0; font: 600 .7rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #555; }
 .speed { position: absolute; z-index: 1; left: 0; right: 30%; bottom: 140px; height: 120px; pointer-events: none; }
 .speed b { position: absolute; left: 0; height: 3px; background: linear-gradient(90deg, transparent, #111); opacity: 0; }
 .speed b:nth-child(1) { top: 10px; width: 46%; } .speed b:nth-child(2) { top: 44px; width: 70%; background: linear-gradient(90deg, transparent, var(--v2-orange)); } .speed b:nth-child(3) { top: 78px; width: 38%; } .speed b:nth-child(4) { top: 108px; width: 58%; }
@@ -124,13 +124,13 @@ const badges = [
 .col { position: relative; aspect-ratio: 3/4; overflow: hidden; background: #111; color: #fff; display: block; }
 .col img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .72; }
 .col div { position: absolute; inset: auto 0 0 0; padding: 16px; background: linear-gradient(180deg, transparent, rgba(0,0,0,.88)); border-bottom: 5px solid var(--ac); display: flex; flex-direction: column; gap: 2px; }
-.col small { font: 600 .66rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #ccc; } .col b { font: italic 400 1.6rem/1.05 'Anton', sans-serif; text-transform: uppercase; } .col em { font-style: normal; font-weight: 700; font-size: .8rem; color: var(--ac); filter: brightness(1.35); }
+.col small { font: 600 .66rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #ccc; } .col b { font: italic 700 1.6rem/1.05 'Oswald', 'Be Vietnam Pro', sans-serif; text-transform: uppercase; } .col em { font-style: normal; font-weight: 700; font-size: .8rem; color: var(--ac); filter: brightness(1.35); }
 .upc { padding: 56px 0 8px; }
 .up-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); background: #111; color: #fff; overflow: hidden; position: relative; }
 .up-in::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: repeating-linear-gradient(0deg, #fff 0 10px, #111 10px 20px); }
 .up-copy { padding: clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(34px, 5vw, 60px); display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 .up-copy h2 { color: #fff; font-size: clamp(1.6rem, 3.4vw, 2.6rem); margin: 0; } .up-copy p { color: #ccc; margin: 0; max-width: 420px; }
-.cdn { display: flex; gap: 22px; } .cdn b { display: block; font: italic 400 2.4rem/1 'Anton', sans-serif; color: var(--v2-orange); } .cdn small { font: 600 .68rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #aaa; }
+.cdn { display: flex; gap: 22px; } .cdn b { display: block; font: italic 700 2.4rem/1 'Oswald', 'Be Vietnam Pro', sans-serif; color: var(--v2-orange); } .cdn small { font: 600 .68rem 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #aaa; }
 .up-in img { width: 100%; height: 100%; min-height: 280px; object-fit: cover; }
 @media (max-width: 1000px) { .crow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .up-in { grid-template-columns: 1fr; } .up-in img { min-height: 0; aspect-ratio: 16/10; order: -1; } .col { aspect-ratio: 4/5; } .speed { display: none; } }
@@ -155,7 +155,7 @@ const badges = [
 
 .v2wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
 .kick { display: block; font: 600 .72rem/1 'Oswald', sans-serif; letter-spacing: .38em; text-transform: uppercase; color: #222; margin-bottom: 18px; }
-h1, h2 { font-family: 'Anton', 'Oswald', sans-serif; font-style: italic; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; color: #111; margin: 0; }
+h1, h2 { font-family: 'Oswald', 'Be Vietnam Pro', sans-serif; font-style: italic; font-weight: 700; text-transform: uppercase; letter-spacing: .01em; color: #111; margin: 0; }
 h1 span, h2 span { display: block; line-height: 1.04; padding-top: .1em; } /* chừa chỗ cho dấu tiếng Việt chồng (Ỏ, Ệ, Ố) */
 h1 { font-size: clamp(3.4rem, 6vw, 5.4rem); } h2 { font-size: clamp(2.6rem, 3.8vw, 3.6rem); }
 .or { color: var(--v2-orange); }
@@ -166,20 +166,20 @@ h1 { font-size: clamp(3.4rem, 6vw, 5.4rem); } h2 { font-size: clamp(2.6rem, 3.8v
 .hpanel { position: absolute; z-index: 0; top: 64px; bottom: 0; right: 0; width: max(38%, calc(50% - 620px + 470px)); background: var(--v2-orange); clip-path: polygon(34% 0, 100% 0, 100% 100%, 0 100%); }
 .hstripe { position: absolute; top: 0; bottom: 0; left: 21%; width: 30px; background: #111; transform: skewX(-21deg); }
 .series { position: absolute; right: 32px; top: 26px; color: #fff; font: 600 .66rem/1.4 'Oswald', sans-serif; letter-spacing: .26em; text-transform: uppercase; text-align: right; }
-.series b { display: block; font: italic 400 2rem/1.1 'Anton', sans-serif; letter-spacing: .02em; }
-.ghost { position: absolute; right: 30px; top: 104px; font: italic 400 2.2rem/1 'Anton', sans-serif; color: transparent; -webkit-text-stroke: 1.2px rgba(255,255,255,.7); letter-spacing: .04em; white-space: nowrap; }
+.series b { display: block; font: italic 700 2rem/1.1 'Oswald', 'Be Vietnam Pro', sans-serif; letter-spacing: .02em; }
+.ghost { position: absolute; right: 30px; top: 104px; font: italic 700 2.2rem/1 'Oswald', 'Be Vietnam Pro', sans-serif; color: transparent; -webkit-text-stroke: 1.2px rgba(255,255,255,.7); letter-spacing: .04em; white-space: nowrap; }
 .grid { position: relative; z-index: 1; display: grid; grid-template-columns: 5fr 7fr; align-items: center; min-height: 540px; }
 .copy { position: relative; z-index: 3; padding: 48px 0 56px; }
 .cta { display: flex; gap: 14px; flex-wrap: wrap; } .cta .btn { height: 48px; padding: 0 22px; } .cta .btn b { margin-left: 10px; font-size: 1.1rem; }
 .stage { position: relative; height: 540px; }
 .tag-top { position: absolute; left: 0; top: 40px; z-index: 1; font: 600 .62rem/1.6 'Oswald', sans-serif; letter-spacing: .24em; text-transform: uppercase; color: #333; }
-.big { position: absolute; left: 21%; top: 6px; z-index: 0; font: italic 400 clamp(8.5rem, 12.5vw, 13.5rem)/1 'Anton', sans-serif; color: transparent; -webkit-text-stroke: 2px rgba(17,17,17,.85); letter-spacing: -.01em; white-space: nowrap; pointer-events: none; }
+.big { position: absolute; left: 21%; top: 6px; z-index: 0; font: italic 700 clamp(8.5rem, 12.5vw, 13.5rem)/1 'Oswald', 'Be Vietnam Pro', sans-serif; color: transparent; -webkit-text-stroke: 2px rgba(17,17,17,.85); letter-spacing: -.01em; white-space: nowrap; pointer-events: none; }
 .car { position: absolute; z-index: 2; left: 12%; right: -2%; bottom: 92px; }
 .car img { display: block; width: 100%; height: auto; filter: drop-shadow(0 18px 14px rgba(0,0,0,.30)) drop-shadow(0 4px 4px rgba(0,0,0,.25)); }
 .car::after { content: ''; position: absolute; z-index: -1; left: 8%; right: 6%; bottom: -14px; height: 40px; background: radial-gradient(closest-side, rgba(0,0,0,.42), transparent); }
 .note { position: absolute; z-index: 3; left: 0; bottom: 24px; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px 8px 14px; background: #fff; border-left: 4px solid var(--v2-orange); color: #111; max-width: 250px; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
 .note b { font: 600 .82rem/1.3 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .04em; }
-.note span { font-size: .72rem; color: #555; letter-spacing: .06em; text-transform: uppercase; } .note .pr { font: italic 400 1.2rem/1.1 'Anton', sans-serif; color: var(--v2-orange); letter-spacing: 0; text-transform: none; }
+.note span { font-size: .72rem; color: #555; letter-spacing: .06em; text-transform: uppercase; } .note .pr { font: italic 700 1.2rem/1.1 'Oswald', 'Be Vietnam Pro', sans-serif; color: var(--v2-orange); letter-spacing: 0; text-transform: none; }
 .note:hover { color: #111; } .note:hover b { color: var(--v2-orange); }
 .script { position: absolute; z-index: 3; right: 0; bottom: 30px; font: italic 600 1.15rem/1 Georgia, 'Times New Roman', serif; color: #fff; white-space: nowrap; }
 .checker { display: block; width: 52px; height: 18px; background: conic-gradient(#111 25%, transparent 0 50%, #111 0 75%, transparent 0) 0 0/9px 9px; transform: skewX(-20deg); }
@@ -203,20 +203,20 @@ h1 { font-size: clamp(3.4rem, 6vw, 5.4rem); } h2 { font-size: clamp(2.6rem, 3.8v
 .ccard img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .25s ease-out; }
 .ccard::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, transparent 42%, rgba(0,0,0,.55) 64%, rgba(0,0,0,.9) 100%); }
 .num, .arr, .cc-bot { position: relative; z-index: 1; }
-.num { position: absolute; top: 18px; left: 40px; font: italic 400 1.5rem/1 'Anton', sans-serif; color: #fff; background: var(--v2-orange); padding: 6px 10px 4px; transform: skewX(-12deg); }
+.num { position: absolute; top: 18px; left: 40px; font: italic 700 1.5rem/1 'Oswald', 'Be Vietnam Pro', sans-serif; color: #fff; background: var(--v2-orange); padding: 6px 10px 4px; transform: skewX(-12deg); }
 .ccard > .arr { position: absolute; top: 18px; right: 40px; width: 34px; height: 34px; display: grid; place-items: center; background: #111; color: #fff; font-size: 1.1rem; }
 .ccard:hover > .arr { background: var(--v2-orange); }
 .cc-bot { margin-top: auto; padding: 0 44px 24px 26px; }
 .cc-bot h3 { font: italic 600 1.5rem/1.2 'Oswald', sans-serif; color: #fff; margin: 0; white-space: nowrap; }
 .cc-bot .sub { display: block; font: 500 .66rem/1.5 'Oswald', sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #ddd; margin: 4px 0 12px; }
 .cc-bot .nm { display: block; font: 500 .78rem/1.35 'Be Vietnam Pro', sans-serif; color: #f2f2f2; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cc-bot b { font: italic 400 1.8rem/1.05 'Anton', sans-serif; color: var(--v2-orange); }
+.cc-bot b { font: italic 700 1.8rem/1.05 'Oswald', 'Be Vietnam Pro', sans-serif; color: var(--v2-orange); }
 .ccard:hover, .deal:hover { color: #fff; }
 .deal { position: relative; background: var(--v2-orange); color: #fff; display: flex; flex-direction: column; gap: 6px; padding: 26px 18px 22px 30px;
   clip-path: polygon(26px 0, 100% 0, 100% 100%, 0 100%); transition: background-color .15s ease-out; }
 .deal:hover { background: #d94a0e; }
-.deal b { font: italic 400 2.2rem/1 'Anton', sans-serif; text-transform: uppercase; padding-top: .05em; }
-.deal strong { font: italic 400 2.6rem/1 'Anton', sans-serif; }
+.deal b { font: italic 700 2.2rem/1 'Oswald', 'Be Vietnam Pro', sans-serif; text-transform: uppercase; padding-top: .05em; }
+.deal strong { font: italic 700 2.6rem/1 'Oswald', 'Be Vietnam Pro', sans-serif; }
 .deal small { font: 600 .7rem/1.5 'Oswald', sans-serif; letter-spacing: .14em; text-transform: uppercase; }
 .deal .arr { margin: auto 0 0; }
 @media (max-width: 1365px) { .script { display: none; } }
@@ -234,4 +234,5 @@ h1 { font-size: clamp(3.4rem, 6vw, 5.4rem); } h2 { font-size: clamp(2.6rem, 3.8v
   .flow { white-space: normal; letter-spacing: .24em; min-width: 0; }
   .cards { grid-template-columns: 1fr; } .ccard { min-height: 220px; } .deal { min-height: 140px; }
 }
+
 </style>

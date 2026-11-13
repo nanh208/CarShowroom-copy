@@ -6,6 +6,7 @@ import com.ares.shop.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.*;
 import java.util.*;
@@ -18,14 +19,17 @@ public class AdminPlusController {
     private final AbandonedCartRepo abandoned; private final SettingRepo settings; private final PurchaseOrderRepo pos; private final OrderNoteRepo notes;
     private final EmailLogRepo emails; private final MailService mail; private final OrderService orderService; private final NotifyService notify;
     private final BundleRepo bundles; private final GiftCardRepo giftCards; private final CategoryRepo categories; private final StockMovementSink sink;
+    private final StaffDebtRepository staffDebts;
+    @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.repo.StaffCommissionTxRepo commissionTxRepo;
+    private final PasswordEncoder enc;
     private final ObjectMapper json = new ObjectMapper();
 
     public AdminPlusController(OrderRepo orders, ProductRepo products, UserRepo users, PromotionRepo promos, AbandonedCartRepo abandoned, SettingRepo settings,
                                PurchaseOrderRepo pos, OrderNoteRepo notes, EmailLogRepo emails, MailService mail, OrderService orderService, NotifyService notify,
-                               BundleRepo bundles, GiftCardRepo giftCards, CategoryRepo categories) {
+                               BundleRepo bundles, GiftCardRepo giftCards, CategoryRepo categories, StaffDebtRepository staffDebts, PasswordEncoder enc) {
         this.orders = orders; this.products = products; this.users = users; this.promos = promos; this.abandoned = abandoned; this.settings = settings;
         this.pos = pos; this.notes = notes; this.emails = emails; this.mail = mail; this.orderService = orderService; this.notify = notify;
-        this.bundles = bundles; this.giftCards = giftCards; this.categories = categories; this.sink = orderService::log;
+        this.bundles = bundles; this.giftCards = giftCards; this.categories = categories; this.staffDebts = staffDebts; this.enc = enc; this.sink = orderService::log;
     }
     interface StockMovementSink { void log(Product p, ProductVariant v, int delta, String reason, String by); }
 
@@ -222,5 +226,424 @@ public class AdminPlusController {
         giftCards.save(g);
         Object to = b.get("email"); if (to != null && !to.toString().isBlank()) mail.send(to.toString(), "Thẻ quà ARES Toys " + MailService.vnd(amt), "GIFT_CARD", "Mã thẻ: " + g.code + "\nGiá trị: " + MailService.vnd(amt));
         return g;
+    }
+
+    // ===== Công nợ nhân viên =====
+    @GetMapping("/staff-debts")
+    public Map<String, Object> listStaffDebts(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long staffId,
+            @RequestParam(required = false) String q) {
+        List<StaffDebt> all = staffDebts.findAllByOrderByCreatedAtDesc();
+        List<StaffDebt> filtered = all.stream().filter(d -> {
+            if (status != null && !status.isBlank() && !status.equalsIgnoreCase("ALL") && !d.status.equalsIgnoreCase(status)) return false;
+            if (staffId != null && (d.staffId == null || !d.staffId.equals(staffId))) return false;
+            if (q != null && !q.isBlank()) {
+                String lq = q.toLowerCase();
+                boolean mName = d.staffName != null && d.staffName.toLowerCase().contains(lq);
+                boolean mEmail = d.staffEmail != null && d.staffEmail.toLowerCase().contains(lq);
+                boolean mReason = d.reason != null && d.reason.toLowerCase().contains(lq);
+                if (!mName && !mEmail && !mReason) return false;
+            }
+            return true;
+        }).toList();
+
+        long totalDebt = all.stream().mapToLong(d -> d.amount).sum();
+        long totalPaid = all.stream().mapToLong(d -> d.paidAmount).sum();
+        long totalRemaining = all.stream().mapToLong(d -> d.remainingAmount).sum();
+        long activeStaffCount = all.stream().filter(d -> d.remainingAmount > 0).map(d -> d.staffId).filter(Objects::nonNull).distinct().count();
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("totalDebt", totalDebt);
+        stats.put("totalPaid", totalPaid);
+        stats.put("totalRemaining", totalRemaining);
+        stats.put("activeStaffCount", activeStaffCount);
+        stats.put("totalRecords", all.size());
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("items", filtered);
+        res.put("stats", stats);
+        return res;
+    }
+
+    @GetMapping("/staff-debts/staff-list")
+    public List<Map<String, Object>> staffList() {
+        return users.findAll().stream()
+                .filter(u -> u.role == Enums.Role.STAFF || u.role == Enums.Role.ADMIN)
+                .map(u -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", u.id);
+                    m.put("fullName", u.fullName);
+                    m.put("email", u.email);
+                    m.put("phone", u.phone);
+                    m.put("role", u.role);
+                    m.put("avatarUrl", u.avatarUrl);
+                    return m;
+                }).toList();
+    }
+
+    @PostMapping("/staff-debts")
+    public StaffDebt createStaffDebt(@RequestBody Map<String, Object> body) {
+        Long staffId = ((Number) body.get("staffId")).longValue();
+        User staff = users.findById(staffId).orElseThrow(() -> ApiException.bad("Không tìm thấy nhân viên"));
+        long amount = ((Number) body.get("amount")).longValue();
+        if (amount <= 0) throw ApiException.bad("Số tiền nợ phải lớn hơn 0");
+
+        StaffDebt d = new StaffDebt();
+        d.staffId = staff.id;
+        d.staffName = staff.fullName;
+        d.staffEmail = staff.email;
+        d.debtType = (String) body.getOrDefault("debtType", "TAM_UNG");
+        d.amount = amount;
+        d.paidAmount = 0;
+        d.remainingAmount = amount;
+        d.status = "UNPAID";
+        d.reason = (String) body.get("reason");
+        String dueStr = (String) body.get("dueDate");
+        if (dueStr != null && !dueStr.isBlank()) {
+            try { d.dueDate = LocalDate.parse(dueStr); } catch (Exception ignored) {}
+        }
+        User me = Current.user();
+        d.createdBy = me != null ? me.fullName : "Admin";
+        return staffDebts.save(d);
+    }
+
+    @PostMapping("/staff-debts/{id}/repay")
+    public StaffDebt repayStaffDebt(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        StaffDebt d = staffDebts.findById(id).orElseThrow(() -> ApiException.bad("Không tìm thấy bản ghi công nợ"));
+        long payAmount = ((Number) body.get("payAmount")).longValue();
+        if (payAmount <= 0) throw ApiException.bad("Số tiền trả phải lớn hơn 0");
+        if (payAmount > d.remainingAmount) throw ApiException.bad("Số tiền trả vượt quá số dư nợ còn lại (" + d.remainingAmount + "đ)");
+
+        d.paidAmount += payAmount;
+        d.remainingAmount = d.amount - d.paidAmount;
+        d.status = d.remainingAmount <= 0 ? "PAID" : "PARTIAL";
+        d.updatedAt = LocalDateTime.now();
+
+        String method = (String) body.getOrDefault("method", "CHUYEN_KHOAN");
+        String note = (String) body.getOrDefault("note", "");
+
+        List<Map<String, Object>> hist = new ArrayList<>();
+        if (d.paymentHistoryJson != null && !d.paymentHistoryJson.isBlank()) {
+            try {
+                hist = json.readValue(d.paymentHistoryJson, List.class);
+            } catch (Exception ignored) {}
+        }
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("paidAt", LocalDateTime.now().toString());
+        entry.put("amount", payAmount);
+        entry.put("method", method);
+        entry.put("note", note);
+        User me = Current.user();
+        entry.put("recordedBy", me != null ? me.fullName : "Admin");
+        hist.add(entry);
+        try {
+            d.paymentHistoryJson = json.writeValueAsString(hist);
+        } catch (Exception ignored) {}
+
+        return staffDebts.save(d);
+    }
+
+    @DeleteMapping("/staff-debts/{id}")
+    public void deleteStaffDebt(@PathVariable Long id) {
+        if (Current.user().role != Enums.Role.ADMIN) throw ApiException.bad("Chỉ quản trị viên được xoá công nợ");
+        staffDebts.deleteById(id);
+    }
+
+    // ===== Quản lý nhân viên (Staff Management) =====
+    @GetMapping("/staff")
+    public List<Map<String, Object>> listStaff() {
+        var allDebts = staffDebts.findAll();
+        var allOrders = orders.findAll();
+        return users.findAll().stream()
+                .filter(u -> u.role == Enums.Role.STAFF || u.role == Enums.Role.ADMIN)
+                .sorted(Comparator.comparing(u -> u.id))
+                .map(u -> {
+                    long remainingDebt = allDebts.stream()
+                            .filter(d -> d.staffId != null && d.staffId.equals(u.id))
+                            .mapToLong(d -> d.remainingAmount).sum();
+                    long totalDebt = allDebts.stream()
+                            .filter(d -> d.staffId != null && d.staffId.equals(u.id))
+                            .mapToLong(d -> d.amount).sum();
+                    long debtCount = allDebts.stream()
+                            .filter(d -> d.staffId != null && d.staffId.equals(u.id) && d.remainingAmount > 0).count();
+
+                    var staffOrders = allOrders.stream()
+                            .filter(o -> o.staffId != null && o.staffId.equals(u.id) && o.status != Enums.OrderStatus.CANCELLED)
+                            .toList();
+                    long posSales = staffOrders.stream().filter(o -> "POS".equalsIgnoreCase(o.channel)).mapToLong(o -> o.total).sum();
+                    long onlineSales = staffOrders.stream().filter(o -> !"POS".equalsIgnoreCase(o.channel)).mapToLong(o -> o.total).sum();
+                    long totalSales = posSales + onlineSales;
+
+                    var commTxs = commissionTxRepo != null ? commissionTxRepo.findByStaffIdOrderByCreatedAtDesc(u.id) : List.<com.ares.shop.model.StaffCommissionTx>of();
+                    long earnedCommission = commTxs.stream().filter(t -> "EARN".equalsIgnoreCase(t.txType)).mapToLong(t -> t.amount).sum();
+                    long paidCommissionTxs = commTxs.stream().filter(t -> "PAYOUT".equalsIgnoreCase(t.txType)).mapToLong(t -> t.amount).sum();
+                    long paidCommission = (u.totalCommissionPaid != null ? u.totalCommissionPaid : 0L) + paidCommissionTxs;
+                    long remainingCommission = Math.max(0, earnedCommission - paidCommission);
+
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", u.id);
+                    m.put("fullName", u.fullName);
+                    m.put("email", u.email);
+                    m.put("phone", u.phone);
+                    m.put("role", u.role);
+                    m.put("locked", u.locked);
+                    m.put("avatarUrl", u.avatarUrl);
+                    m.put("createdAt", u.createdAt);
+                    m.put("staffNote", u.staffNote);
+                    m.put("staffCode", u.staffCode != null ? u.staffCode : ("NV-" + u.id));
+                    m.put("department", u.department != null ? u.department : "Tư vấn bán hàng");
+                    m.put("commissionRate", u.commissionRate != null ? u.commissionRate : 2.0);
+                    m.put("monthlySalesTarget", u.monthlySalesTarget != null ? u.monthlySalesTarget : 50_000_000L);
+                    m.put("remainingDebt", remainingDebt);
+                    m.put("totalDebt", totalDebt);
+                    m.put("debtCount", debtCount);
+                    m.put("posSales", posSales);
+                    m.put("onlineSales", onlineSales);
+                    m.put("totalSales", totalSales);
+                    m.put("orderCount", staffOrders.size());
+                    m.put("earnedCommission", earnedCommission);
+                    m.put("paidCommission", paidCommission);
+                    m.put("remainingCommission", remainingCommission);
+                    return m;
+                }).toList();
+    }
+
+    @PostMapping("/staff/commission/payout")
+    @Transactional
+    public Map<String, Object> payoutCommission(@RequestBody Map<String, Object> body) {
+        Long staffId = Long.valueOf(body.get("staffId").toString());
+        long amount = Long.parseLong(body.get("amount").toString());
+        String note = body.get("note") != null ? body.get("note").toString() : "Chi trả hoa hồng";
+
+        User u = users.findById(staffId).orElseThrow(() -> ApiException.notFound("Không tìm thấy nhân viên"));
+
+        com.ares.shop.model.StaffCommissionTx tx = new com.ares.shop.model.StaffCommissionTx();
+        tx.staffId = u.id;
+        tx.staffName = u.fullName;
+        tx.txType = "PAYOUT";
+        tx.amount = amount;
+        tx.note = note;
+        tx.createdBy = Current.user() != null ? Current.user().fullName : "ADMIN";
+        tx.createdAt = LocalDateTime.now();
+        if (commissionTxRepo != null) commissionTxRepo.save(tx);
+
+        u.totalCommissionPaid = (u.totalCommissionPaid != null ? u.totalCommissionPaid : 0L) + amount;
+        users.save(u);
+
+        return Map.of("success", true, "message", "Đã quyết toán " + amount + "đ cho nhân viên " + u.fullName);
+    }
+
+    @PostMapping("/staff")
+    public User createStaff(@RequestBody Map<String, Object> body) {
+        String email = (String) body.get("email");
+        if (email == null || email.isBlank()) throw ApiException.bad("Email nhân viên bắt buộc");
+        email = email.trim().toLowerCase();
+        if (users.existsByEmailIgnoreCase(email)) throw ApiException.bad("Email [" + email + "] đã tồn tại");
+
+        String fullName = (String) body.get("fullName");
+        if (fullName == null || fullName.isBlank()) throw ApiException.bad("Họ tên nhân viên bắt buộc");
+
+        String rawPassword = (String) body.get("password");
+        if (rawPassword == null || rawPassword.length() < 6) throw ApiException.bad("Mật khẩu phải từ 6 ký tự");
+
+        String roleStr = (String) body.getOrDefault("role", "STAFF");
+        Enums.Role role = Enums.Role.STAFF;
+        try {
+            role = Enums.Role.valueOf(roleStr.toUpperCase());
+        } catch (Exception ignored) {}
+
+        User u = new User();
+        u.email = email;
+        u.fullName = fullName.trim();
+        u.phone = (String) body.get("phone");
+        u.password = enc.encode(rawPassword);
+        u.role = role;
+        u.provider = "LOCAL";
+        u.locked = false;
+        u.createdAt = LocalDateTime.now();
+        u.staffNote = (String) body.get("staffNote");
+        if (body.get("staffCode") != null) u.staffCode = body.get("staffCode").toString().trim();
+        if (body.get("department") != null) u.department = body.get("department").toString().trim();
+        if (body.get("commissionRate") != null) u.commissionRate = Double.parseDouble(body.get("commissionRate").toString());
+        if (body.get("monthlySalesTarget") != null) u.monthlySalesTarget = Long.parseLong(body.get("monthlySalesTarget").toString());
+        if (body.get("employmentStatus") != null) u.employmentStatus = body.get("employmentStatus").toString().trim();
+        if (body.get("hireDate") != null && !body.get("hireDate").toString().isBlank()) {
+            try { u.hireDate = java.time.LocalDate.parse(body.get("hireDate").toString()); } catch (Exception ignored) {}
+        }
+        return users.save(u);
+    }
+
+    @PutMapping("/staff/{id}")
+    public User updateStaff(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        User u = users.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy nhân viên"));
+        if (body.containsKey("fullName")) {
+            String name = (String) body.get("fullName");
+            if (name != null && !name.isBlank()) u.fullName = name.trim();
+        }
+        if (body.containsKey("phone")) {
+            u.phone = (String) body.get("phone");
+        }
+        if (body.containsKey("staffNote")) {
+            u.staffNote = (String) body.get("staffNote");
+        }
+        if (body.containsKey("role")) {
+            String roleStr = (String) body.get("role");
+            if (roleStr != null && !roleStr.isBlank()) {
+                if (u.id.equals(Current.user().id) && !u.role.name().equalsIgnoreCase(roleStr)) {
+                    throw ApiException.bad("Không thể tự đổi vai trò của chính mình");
+                }
+                try {
+                    u.role = Enums.Role.valueOf(roleStr.toUpperCase());
+                } catch (Exception ignored) {}
+            }
+        }
+        if (body.containsKey("password")) {
+            String newPass = (String) body.get("password");
+            if (newPass != null && !newPass.isBlank()) {
+                if (newPass.length() < 6) throw ApiException.bad("Mật khẩu mới phải từ 6 ký tự");
+                u.password = enc.encode(newPass);
+            }
+        }
+        return users.save(u);
+    }
+
+    @PatchMapping("/staff/{id}/toggle-lock")
+    public User toggleLockStaff(@PathVariable Long id) {
+        User u = users.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy nhân viên"));
+        if (u.id.equals(Current.user().id)) {
+            throw ApiException.bad("Không thể tự khoá tài khoản của chính mình");
+        }
+        u.locked = !u.locked;
+        return users.save(u);
+    }
+
+    @DeleteMapping("/staff/{id}")
+    public void deleteStaff(@PathVariable Long id) {
+        User u = users.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy nhân viên"));
+        if (u.id.equals(Current.user().id)) {
+            throw ApiException.bad("Không thể tự xoá tài khoản của chính mình");
+        }
+        boolean hasDebt = staffDebts.findAll().stream().anyMatch(d -> d.staffId != null && d.staffId.equals(u.id) && d.remainingAmount > 0);
+        if (hasDebt) {
+            throw ApiException.bad("Nhân viên này vẫn còn dư nợ công nợ chưa quyết toán");
+        }
+        users.delete(u);
+    }
+
+    // ===== Quyết toán hoa hồng nhân viên =====
+    @PostMapping("/staff/{id}/payout-commission")
+    @org.springframework.transaction.annotation.Transactional
+    public Map<String, Object> payoutCommission(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        User u = users.findById(id).orElseThrow(() -> ApiException.notFound("Không tìm thấy nhân viên"));
+        long amount = body.get("amount") != null ? Long.parseLong(body.get("amount").toString()) : 0L;
+        if (amount <= 0) throw ApiException.bad("Số tiền quyết toán hoa hồng phải lớn hơn 0");
+
+        String note = body.get("note") != null ? body.get("note").toString() : "Chi trả hoa hồng bán hàng";
+        User cur = Current.user();
+
+        com.ares.shop.model.StaffCommissionTx tx = new com.ares.shop.model.StaffCommissionTx();
+        tx.staffId = u.id;
+        tx.staffName = u.fullName;
+        tx.txType = "PAYOUT";
+        tx.amount = amount;
+        tx.note = note;
+        tx.createdBy = cur != null ? cur.fullName : "Kế toán / Quản lý";
+        tx.createdAt = java.time.LocalDateTime.now();
+        if (commissionTxRepo != null) commissionTxRepo.save(tx);
+
+        u.totalCommissionPaid = (u.totalCommissionPaid != null ? u.totalCommissionPaid : 0L) + amount;
+        users.save(u);
+
+        return Map.of("success", true, "staffId", u.id, "staffName", u.fullName, "paidAmount", amount);
+    }
+
+    @GetMapping("/staff/{id}/commissions")
+    public List<com.ares.shop.model.StaffCommissionTx> getStaffCommissions(@PathVariable Long id) {
+        if (commissionTxRepo == null) return List.of();
+        return commissionTxRepo.findByStaffIdOrderByCreatedAtDesc(id);
+    }
+
+    @GetMapping("/staff/commissions")
+    public List<com.ares.shop.model.StaffCommissionTx> getAllCommissions() {
+        if (commissionTxRepo == null) return List.of();
+        return commissionTxRepo.findAllByOrderByCreatedAtDesc();
+    }
+
+    // ===== Thống kê phân chia sản lượng On & Off =====
+    @GetMapping("/analytics/channels")
+    public Map<String, Object> getChannelAnalytics(@RequestParam(required = false) String from,
+                                                   @RequestParam(required = false) String to) {
+        var all = orders.findAll();
+        java.time.LocalDate fromDate = from != null && !from.isBlank() ? java.time.LocalDate.parse(from) : java.time.LocalDate.now().minusDays(30);
+        java.time.LocalDate toDate = to != null && !to.isBlank() ? java.time.LocalDate.parse(to) : java.time.LocalDate.now();
+
+        var periodOrders = all.stream()
+                .filter(o -> o.status != Enums.OrderStatus.CANCELLED)
+                .filter(o -> o.createdAt != null)
+                .filter(o -> !o.createdAt.toLocalDate().isBefore(fromDate) && !o.createdAt.toLocalDate().isAfter(toDate))
+                .toList();
+
+        var onlineList = periodOrders.stream().filter(o -> !"POS".equalsIgnoreCase(o.channel)).toList();
+        var posList = periodOrders.stream().filter(o -> "POS".equalsIgnoreCase(o.channel)).toList();
+
+        long onlineRev = onlineList.stream().mapToLong(o -> o.paidAmount > 0 ? o.paidAmount : o.total).sum();
+        long posRev = posList.stream().mapToLong(o -> o.paidAmount > 0 ? o.paidAmount : o.total).sum();
+        long totalRev = onlineRev + posRev;
+
+        long onlineOrders = onlineList.size();
+        long posOrders = posList.size();
+        long totalOrders = onlineOrders + posOrders;
+
+        long onlineItems = onlineList.stream().flatMap(o -> o.items.stream()).mapToLong(i -> i.quantity).sum();
+        long posItems = posList.stream().flatMap(o -> o.items.stream()).mapToLong(i -> i.quantity).sum();
+        long totalItems = onlineItems + posItems;
+
+        double onlineRevShare = totalRev > 0 ? Math.round((onlineRev * 1000.0) / totalRev) / 10.0 : 0.0;
+        double posRevShare = totalRev > 0 ? Math.round((posRev * 1000.0) / totalRev) / 10.0 : 0.0;
+
+        double onlineAov = onlineOrders > 0 ? Math.round((double) onlineRev / onlineOrders) : 0.0;
+        double posAov = posOrders > 0 ? Math.round((double) posRev / posOrders) : 0.0;
+
+        // Thống kê theo ngày
+        List<Map<String, Object>> dailyStats = new ArrayList<>();
+        java.time.LocalDate cur = fromDate;
+        while (!cur.isAfter(toDate)) {
+            final java.time.LocalDate d = cur;
+            long onDayRev = onlineList.stream().filter(o -> o.createdAt.toLocalDate().equals(d)).mapToLong(o -> o.total).sum();
+            long posDayRev = posList.stream().filter(o -> o.createdAt.toLocalDate().equals(d)).mapToLong(o -> o.total).sum();
+            long onDayItems = onlineList.stream().filter(o -> o.createdAt.toLocalDate().equals(d)).flatMap(o -> o.items.stream()).mapToLong(i -> i.quantity).sum();
+            long posDayItems = posList.stream().filter(o -> o.createdAt.toLocalDate().equals(d)).flatMap(o -> o.items.stream()).mapToLong(i -> i.quantity).sum();
+
+            dailyStats.add(Map.of(
+                    "date", d.toString(),
+                    "onlineRevenue", onDayRev,
+                    "posRevenue", posDayRev,
+                    "onlineItems", onDayItems,
+                    "posItems", posDayItems,
+                    "totalRevenue", onDayRev + posDayRev
+            ));
+            cur = cur.plusDays(1);
+        }
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("fromDate", fromDate.toString());
+        res.put("toDate", toDate.toString());
+        res.put("totalRevenue", totalRev);
+        res.put("onlineRevenue", onlineRev);
+        res.put("posRevenue", posRev);
+        res.put("onlineRevShare", onlineRevShare);
+        res.put("posRevShare", posRevShare);
+        res.put("totalOrders", totalOrders);
+        res.put("onlineOrders", onlineOrders);
+        res.put("posOrders", posOrders);
+        res.put("totalItems", totalItems);
+        res.put("onlineItems", onlineItems);
+        res.put("posItems", posItems);
+        res.put("onlineAov", onlineAov);
+        res.put("posAov", posAov);
+        res.put("dailyStats", dailyStats);
+
+        return res;
     }
 }

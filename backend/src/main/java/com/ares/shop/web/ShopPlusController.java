@@ -19,6 +19,8 @@ public class ShopPlusController {
     private final AbandonedCartRepo abandoned; private final ReviewRepo reviews; private final ReviewVoteRepo votes; private final StockNotifyRepo notifyMe;
     private final MailService mail; private final SettingRepo settings; private final PromotionRepo promos; private final EmailLogRepo emails;
     private final ObjectMapper json = new ObjectMapper();
+    @org.springframework.beans.factory.annotation.Autowired private VariantRepo variants;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private CarrierShippingService carrierService;
 
     public ShopPlusController(OrderRepo orders, ProductRepo products, UserRepo users, OrderService orderService, GiftCardRepo giftCards, ReferralRepo referrals,
                               BundleRepo bundles, SavedCartRepo saved, AbandonedCartRepo abandoned, ReviewRepo reviews, ReviewVoteRepo votes,
@@ -58,6 +60,8 @@ public class ShopPlusController {
         for (CustomerOrder o : orders.findAllByOrderByCreatedAtDesc()) {
             if (o.status == Enums.OrderStatus.CANCELLED || o.items.isEmpty() || o.items.get(0).productId == null) continue;
             OrderItem i = o.items.get(0);
+            Product prod = products.findById(i.productId).orElse(null);
+            if (prod == null || !prod.active) continue; // Bỏ qua sản phẩm đã bị ẩn hoặc không tồn tại
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("who", mask(o.buyerName)); m.put("city", Optional.ofNullable(o.city).orElse("Việt Nam"));
             m.put("productId", i.productId); m.put("name", i.productName); m.put("image", i.image); m.put("at", o.createdAt);
@@ -66,7 +70,128 @@ public class ShopPlusController {
         return out;
     }
 
+
+    // ===== Kiểm tra hợp lệ giỏ hàng: phát hiện sản phẩm bị ẩn hoặc hết hàng =====
+    public record CartItemReq(Long productId, Long variantId, int quantity) {}
+
+    @PostMapping("/api/public/cart-validate")
+    public Map<String, Object> validateCart(@RequestBody List<CartItemReq> items) {
+        List<Map<String, Object>> errors = new ArrayList<>();
+        boolean valid = true;
+        if (items != null) {
+            for (CartItemReq it : items) {
+                if (it.productId() == null) continue;
+                Product p = products.findById(it.productId()).orElse(null);
+                if (p == null) {
+                    valid = false;
+                    Map<String, Object> err = new LinkedHashMap<>();
+                    err.put("productId", it.productId());
+                    err.put("variantId", it.variantId());
+                    err.put("type", "NOT_FOUND");
+                    err.put("message", "Sản phẩm không tồn tại trong hệ thống");
+                    errors.add(err);
+                    continue;
+                }
+                if (!p.active) {
+                    valid = false;
+                    Map<String, Object> err = new LinkedHashMap<>();
+                    err.put("productId", p.id);
+                    err.put("variantId", it.variantId());
+                    err.put("name", p.name);
+                    err.put("type", "HIDDEN");
+                    err.put("message", "Sản phẩm [" + p.name + "] hiện đã tạm ẩn hoặc ngừng kinh doanh.");
+                    errors.add(err);
+                    continue;
+                }
+                if (p.hasVariants) {
+                    ProductVariant v = (it.variantId() != null && variants != null)
+                            ? variants.findById(it.variantId()).filter(x -> x.product.id.equals(p.id)).orElse(null)
+                            : null;
+                    if (v != null) {
+                        if (!v.active) {
+                            valid = false;
+                            Map<String, Object> err = new LinkedHashMap<>();
+                            err.put("productId", p.id);
+                            err.put("variantId", v.id);
+                            err.put("name", p.name + " (" + v.name + ")");
+                            err.put("type", "HIDDEN");
+                            err.put("message", "Phiên bản [" + v.name + "] của sản phẩm [" + p.name + "] hiện đã tạm ẩn.");
+                            errors.add(err);
+                        } else if (v.stock <= 0) {
+                            valid = false;
+                            Map<String, Object> err = new LinkedHashMap<>();
+                            err.put("productId", p.id);
+                            err.put("variantId", v.id);
+                            err.put("name", p.name + " (" + v.name + ")");
+                            err.put("type", "OUT_OF_STOCK");
+                            err.put("message", "Sản phẩm [" + p.name + " (" + v.name + ")] đã HẾT HÀNG!");
+                            errors.add(err);
+                        } else if (v.stock < it.quantity()) {
+                            valid = false;
+                            Map<String, Object> err = new LinkedHashMap<>();
+                            err.put("productId", p.id);
+                            err.put("variantId", v.id);
+                            err.put("name", p.name + " (" + v.name + ")");
+                            err.put("type", "INSUFFICIENT_STOCK");
+                            err.put("stock", v.stock);
+                            err.put("message", "Sản phẩm [" + p.name + " (" + v.name + ")] chỉ còn " + v.stock + " sản phẩm trong kho (bạn chọn " + it.quantity() + ").");
+                            errors.add(err);
+                        }
+                    } else if (p.stock <= 0) {
+                        valid = false;
+                        Map<String, Object> err = new LinkedHashMap<>();
+                        err.put("productId", p.id);
+                        err.put("name", p.name);
+                        err.put("type", "OUT_OF_STOCK");
+                        err.put("message", "Sản phẩm [" + p.name + "] đã HẾT HÀNG!");
+                        errors.add(err);
+                    }
+                } else {
+                    if (p.stock <= 0) {
+                        valid = false;
+                        Map<String, Object> err = new LinkedHashMap<>();
+                        err.put("productId", p.id);
+                        err.put("name", p.name);
+                        err.put("type", "OUT_OF_STOCK");
+                        err.put("message", "Sản phẩm [" + p.name + "] đã HẾT HÀNG!");
+                        errors.add(err);
+                    } else if (p.stock < it.quantity()) {
+                        valid = false;
+                        Map<String, Object> err = new LinkedHashMap<>();
+                        err.put("productId", p.id);
+                        err.put("name", p.name);
+                        err.put("type", "INSUFFICIENT_STOCK");
+                        err.put("stock", p.stock);
+                        err.put("message", "Sản phẩm [" + p.name + "] chỉ còn " + p.stock + " sản phẩm trong kho (bạn chọn " + it.quantity() + ").");
+                        errors.add(err);
+                    }
+                }
+            }
+        }
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("valid", valid);
+        res.put("errors", errors);
+        return res;
+    }
+
     // ===== Phương thức giao + ngày giao dự kiến =====
+    
+    // ===== Cước vận chuyển và lộ trình chi tiết theo khoảng cách =====
+    @GetMapping("/api/public/shipping-quotes")
+    public Object shippingQuotes(
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String ward,
+            @RequestParam(required = false) String address,
+            @RequestParam(defaultValue = "0") long amount,
+            @RequestParam(defaultValue = "false") boolean hasHazardous
+    ) {
+        if (carrierService != null) {
+            return carrierService.calculateQuotes(province, district, ward, address, amount, 800, hasHazardous);
+        }
+        return Map.of("quotes", List.of());
+    }
+
     @GetMapping("/api/public/shipping-options")
     public List<Map<String, Object>> shipOptions(@RequestParam(required = false) String city, @RequestParam(defaultValue = "0") long amount) {
         List<Map<String, Object>> l = new ArrayList<>();

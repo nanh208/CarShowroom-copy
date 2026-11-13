@@ -80,8 +80,7 @@ Voucher mẫu:
 - **Báo cáo CSV:** đơn hàng, sản phẩm, khách hàng, kho. Chỉ ADMIN được xuất; STAFF dùng được các mục còn lại.
 
 **Phần giả lập (mock)**
-- MoMo, VNPay và trả góp đi qua trang cổng thanh toán giả `/pay/:code`.
-- Mã VietQR là thật về định dạng (img.vietqr.io), nhưng việc xác nhận chuyển khoản là giả lập.
+- Thanh toán là **thật**: đơn chỉ chuyển PAID khi webhook ngân hàng (SePay / payOS / Casso) hoặc IPN MoMo / VNPay có chữ ký hợp lệ báo tiền đã vào. Xem mục "Cấu hình thanh toán".
 - Đăng nhập Google/Facebook cần cấu hình key thật qua biến môi trường.
 - "Lưu để mua sau" chỉ lưu trên trình duyệt (localStorage).
 - Không gửi email hay SMS thật.
@@ -114,7 +113,23 @@ Nút Google/Facebook đã nối sẵn. Khi chưa cấu hình client id, API tr�
    `http://localhost:8080/api/auth/oauth/facebook/callback`
 3. Đặt `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` rồi khởi động lại backend.
 
-Luồng: frontend gọi `GET /api/auth/oauth/{provider}/url` → chuyển tới Google/Facebook → callback ở backend đổi `code` lấy email, tạo/tìm tài khoản, phát JWT → chuyển về `FRONTEND_URL/oauth-callback?token=...`.
+Luồng: frontend gọi `GET /api/auth/oauth/{provider}/url` (kiểm tra cấu hình) → `GET /api/auth/oauth/{provider}/start` (backend sinh `state` + PKCE cho Google, đặt cookie HttpOnly) → Google/Facebook → callback ở backend kiểm `state`, đổi `code` phía server, lấy hồ sơ → tạo/liên kết tài khoản theo `googleId`/`facebookId` (chỉ liên kết theo email khi email đã xác minh) → chuyển về `FRONTEND_URL/oauth-callback?ticket=...` → frontend `POST /api/auth/oauth/exchange` lấy JWT (ticket dùng 1 lần, hết hạn sau 2 phút). Nếu Facebook không trả email, trang `/oauth-callback` yêu cầu người dùng nhập email rồi `POST /api/auth/oauth/complete` (không tạo email giả).
+Tuỳ chọn: `GOOGLE_REDIRECT_URI`, `FACEBOOK_REDIRECT_URI` (ghi đè redirect URI), `FACEBOOK_GRAPH_VERSION` (mặc định `v19.0`).
+
+### Cấu hình thanh toán
+
+| Biến | Ý nghĩa |
+|---|---|
+| `PAYMENT_PUBLIC_BASE_URL` | URL công khai của backend (HTTPS) – dùng làm IPN/return URL. Mặc định = `OAUTH_REDIRECT_BASE` |
+| `BANK_BIN` (mặc định `970415` = VietinBank), `BANK_NAME`, `BANK_ACCOUNT_NO`, `BANK_ACCOUNT_NAME` | Tài khoản nhận chuyển khoản, dùng chung cho ảnh VietQR và thông tin hiển thị |
+| `PAYMENT_SEPAY_ENABLED`, `SEPAY_API_KEY` | Webhook SePay → `POST {base}/api/payment/webhook/sepay` (kiểu xác thực "API Key") |
+| `PAYMENT_PAYOS_ENABLED`, `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` | payOS: link thanh toán + webhook `POST {base}/api/payment/webhook/payos` |
+| `PAYMENT_CASSO_ENABLED`, `CASSO_CHECKSUM_KEY` (Webhook V2) hoặc `CASSO_SECURE_TOKEN` (V1), `CASSO_MAX_AGE_SECONDS` | Webhook Casso → `POST {base}/api/payment/webhook/casso` |
+| `PAYMENT_MOMO_ENABLED`, `MOMO_ENDPOINT`, `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY` | MoMo; IPN `POST {base}/api/payment/momo/ipn` (gửi kèm mỗi giao dịch) |
+| `PAYMENT_VNPAY_ENABLED`, `VNPAY_PAY_URL`, `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` | VNPay; đăng ký IPN `GET {base}/api/payment/vnpay/ipn` với VNPay |
+| `PAYMENT_DEV_SIMULATE_ENABLED` | Chỉ dev: `POST /api/payment/dev/simulate-transfer` (ADMIN). Mặc định `false` |
+
+Quy tắc đối soát chung (`PaymentConfirmationService`): tìm mã đơn (`TS…`/`AU…` 14 số, `POS…` 12 số) trong nội dung chuyển khoản, số tiền ≥ số còn phải trả (MoMo/VNPay: phải khớp đúng), bỏ qua tiền ra, mỗi giao dịch (provider + id) chỉ xử lý 1 lần (bảng `payment_transactions`, ràng buộc UNIQUE).
 
 ## Chức năng
 

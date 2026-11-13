@@ -21,6 +21,8 @@ public class DataSeeder implements CommandLineRunner {
     private final PromotionRepo promos; private final AuctionRepo auctions; private final PasswordEncoder enc; private final CategoryRepo categories;
     private final VariantRepo variants; private final FlashSaleRepo flash; private final BannerRepo banners; private final QuestionRepo questions;
     private final OrderService orderService; private final OrderRepo orders; private final TicketRepo tickets; private final AddressRepo addresses;
+    @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.repo.PosShiftRepo posShifts;
+    @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.repo.StaffCommissionTxRepo commissionTxRepo;
 
     public DataSeeder(UserRepo users, BrandRepo brands, ProductRepo products, ReviewRepo reviews, PromotionRepo promos, AuctionRepo auctions,
                       PasswordEncoder enc, CategoryRepo categories, VariantRepo variants, FlashSaleRepo flash, BannerRepo banners,
@@ -44,24 +46,28 @@ public class DataSeeder implements CommandLineRunner {
             User k = user("khach@ares.vn", "123456", "Nguyễn Văn Khách", Enums.Role.USER, "0901234567");
             user("tran.binh@ares.vn", "123456", "Trần Thị Bình", Enums.Role.USER, "0912345678");
             Address a = new Address(); a.user = k; a.label = "Nhà riêng"; a.receiverName = k.fullName; a.phone = k.phone;
-            a.line = "123 Nguyễn Văn Linh"; a.ward = "Tân Phong"; a.district = "Quận 7"; a.city = "TP. Hồ Chí Minh"; a.isDefault = true; addresses.save(a);
+            a.line = "Chung cư Hoàng Huy Commerce, Võ Nguyên Giáp"; a.ward = "Kênh Dương"; a.district = "Lê Chân"; a.city = "Hải Phòng"; a.isDefault = true; addresses.save(a);
         }
         if (categories.count() == 0) seedCategories();
         if (products.count() == 0) seedProducts();
+        ensureApparel();
+        ensureTestWomenApparel();
         if (promos.count() == 0) seedPromos();
         if (flash.count() == 0) seedFlash();
         if (banners.count() == 0) seedBanners();
         if (auctions.count() == 0) seedAuctions();
         if (reviews.count() == 0) seedReviews();
         if (orders.count() == 0) seedOrders();
+        if (orders.count() < 15) seedHistoricalOrders();
+        ensureStaffAndPosSeed();
     }
 
     private void seedCategories() {
         String[][] c = {{"MODEL", "Xe Model", "TOY", "hw-r34"}, {"RC", "Xe RC", "TOY", "traxxas-slash"}, {"DISPLAY", "Xe Trưng Bày", "TOY", "kyosho-countach"},
-                {"KIT", "Lắp ráp & Kit", "TOY", "lego-chiron"}, {"BATTERY", "Pin & Sạc", "ACCESSORY", "lipo-2s"}, {"REMOTE", "Khiển RC", "ACCESSORY", "futaba"},
+                {"KIT", "Lắp ráp & Kit", "TOY", "lego-chiron"}, {"APPAREL", "Thời trang & Phụ kiện", "ACCESSORY", "apparel-polo"}, {"BATTERY", "Pin & Sạc", "ACCESSORY", "lipo-2s"}, {"REMOTE", "Khiển RC", "ACCESSORY", "futaba"},
                 {"WHEEL", "Bánh xe RC", "ACCESSORY", "wheels-sc"}, {"PART", "Linh kiện & Phụ kiện", "ACCESSORY", "brushless"}};
         int i = 0;
-        for (String[] r : c) { Category x = new Category(); x.code = r[0]; x.name = r[1]; x.grp = r[2]; x.image = "/images/toys/" + r[3] + "-0.jpg"; x.sortOrder = i++; categories.save(x); }
+        for (String[] r : c) { Category x = new Category(); x.code = r[0]; x.name = r[1]; x.grp = r[2]; x.image = r[3].startsWith("apparel") ? "/images/apparel/polo-black.svg" : ("/images/toys/" + r[3] + "-0.jpg"); x.sortOrder = i++; categories.save(x); }
     }
 
     private Map<String, Brand> brandMap() {
@@ -92,6 +98,9 @@ public class DataSeeder implements CommandLineRunner {
 
     // slug | tên | hãng | danh mục | tỷ lệ | tuổi | giá (nghìn) | giá cũ | tồn | đã bán | bảo hành (tháng) | chất liệu | cờ (F=nổi bật, N=mới) | mô tả
     private static final String[] P = {
+        "ares-polo|Áo Polo Đua Xe ARES Racing Team|ARES Parts|APPAREL|Free|12|450|550|60|38|0|Vải thun cá sấu Poly cao cấp, thoáng khí|F|Áo polo đồng phục đội đua ARES Motorsport với logo in nổi 3D, cúc dập chìm, form tôn dáng thể thao chuẩn racing.",
+        "ares-jacket|Áo Khoác Gió Thể Thao ARES Paddock Bomber|ARES Parts|APPAREL|Free|12|890|1150|40|19|0|Vải dù gió 2 lớp chống nước nhẹ, lót lưới|N|Áo khoác gió thời trang phong cách pit crew F1, bo chun cổ tay và gấu áo, khoá kéo kim loại dập nổi Ares Toys.",
+        "ares-cap|Nón Lưỡi Trai ARES Speed Snapback|ARES Parts|APPAREL|Free|6|250|320|80|54|0|Kaki cotton 100% dày dặn, form cứng cáp|N|Nón snapback cao cấp thêu logo khiên ARES 3D mặt trước, phía sau có khoá tăng giảm kích thước phù hợp mọi cỡ đầu.",
         "hw-r34|Hot Wheels Premium Nissan Skyline GT-R (R34)|Hot Wheels|MODEL|1:64|3|189|229|40|126|0|Kim loại đúc, bánh cao su|F|Phiên bản Premium Car Culture với bánh cao su Real Riders, sơn xanh Bayside Blue và tem đua chi tiết.",
         "hw-911|Hot Wheels Car Culture Porsche 911 Carrera RS|Hot Wheels|MODEL|1:64|3|199||35|88|0|Kim loại đúc, bánh cao su|N|Dòng Car Culture dành cho nhà sưu tầm: thân kim loại, đế kim loại, bánh Real Riders.",
         "hw-monster|Hot Wheels Monster Trucks Bone Shaker 1:64|Hot Wheels|MODEL|1:64|3|249||28|64|0|Kim loại + nhựa ABS|N|Xe tải quái vật bánh lớn, khung kim loại, chạy đà cực đã — kèm xe nhỏ để \"nghiền\".",
@@ -148,7 +157,22 @@ public class DataSeeder implements CommandLineRunner {
             p.price = Long.parseLong(f[6]) * K; p.oldPrice = f[7].isBlank() ? null : Long.parseLong(f[7]) * K;
             p.stock = Integer.parseInt(f[8]); p.sold = Integer.parseInt(f[9]); p.warrantyMonths = Integer.parseInt(f[10]);
             p.material = f[11]; p.featured = f[12].contains("F"); p.isNew = f[12].contains("N") && n % 3 == 0; p.description = f[13];
-            for (int i = 0; i < IMG.getOrDefault(f[0], 0); i++) p.images.add("/images/toys/" + f[0] + "-" + i + ".jpg");
+                        if (f[0].startsWith("ares-")) {
+                if (f[0].equals("ares-polo")) {
+                    p.images.add("/images/apparel/polo-black.svg");
+                    p.images.add("/images/apparel/polo-white.svg");
+                    p.images.add("/images/apparel/polo-orange.svg");
+                } else if (f[0].equals("ares-jacket")) {
+                    p.images.add("/images/apparel/jacket-black.svg");
+                    p.images.add("/images/apparel/jacket-red.svg");
+                } else if (f[0].equals("ares-cap")) {
+                    p.images.add("/images/apparel/cap-black.svg");
+                    p.images.add("/images/apparel/cap-white.svg");
+                    p.images.add("/images/apparel/cap-orange.svg");
+                }
+            } else {
+                for (int i = 0; i < IMG.getOrDefault(f[0], 0); i++) p.images.add("/images/toys/" + f[0] + "-" + i + ".jpg");
+            }
             p.specs.put("Thương hiệu", f[2]);
             if (p.scale != null) p.specs.put("Tỷ lệ", p.scale);
             p.specs.put("Độ tuổi", p.ageMin + "+");
@@ -160,14 +184,17 @@ public class DataSeeder implements CommandLineRunner {
             products.save(p);
         }
         // Biến thể màu / phiên bản có giá & tồn kho riêng
-        variants(find("hw-r34"), new Object[][]{{"Bayside Blue", "#1e5aa8", 189, 20}, {"Trắng Pearl", "#f2f2f2", 189, 12}, {"Đen Midnight", "#1b1b1f", 209, 8}});
-        variants(find("minigt-huracan"), new Object[][]{{"Verde Selvans", "#5aa02c", 390, 8}, {"Arancio", "#f07a1a", 390, 6}, {"Bianco", "#f5f5f5", 410, 4}});
-        variants(find("bburago-sf90"), new Object[][]{{"Rosso Corsa", "#c1121f", 520, 8}, {"Giallo Modena", "#f5c400", 540, 6}});
+        variants(find("ares-polo"), new Object[][]{{"Đen Racing (L)", "#1a1a1a", 450, 20, "/images/apparel/polo-black.svg"}, {"Trắng Apex (L)", "#f8fafc", 450, 15, "/images/apparel/polo-white.svg"}, {"Cam Hyper (L)", "#f05a1a", 480, 15, "/images/apparel/polo-orange.svg"}, {"Đen Racing (XL)", "#1a1a1a", 450, 10, "/images/apparel/polo-black.svg"}});
+        variants(find("ares-jacket"), new Object[][]{{"Carbon Black (L)", "#111111", 890, 15, "/images/apparel/jacket-black.svg"}, {"Racing Red (L)", "#dc2626", 920, 12, "/images/apparel/jacket-red.svg"}, {"Carbon Black (XL)", "#111111", 890, 13, "/images/apparel/jacket-black.svg"}});
+        variants(find("ares-cap"), new Object[][]{{"Đen viền cam", "#18181b", 250, 30, "/images/apparel/cap-black.svg"}, {"Trắng line đỏ", "#f1f5f9", 250, 25, "/images/apparel/cap-white.svg"}, {"Cam Ares Edition", "#f05a1a", 270, 25, "/images/apparel/cap-orange.svg"}});
+        variants(find("hw-r34"), new Object[][]{{"Bayside Blue", "#1e5aa8", 189, 20, "/images/toys/hw-r34-0.jpg"}, {"Trắng Pearl", "#f2f2f2", 189, 12, "/images/toys/hw-r34-1.jpg"}, {"Đen Midnight", "#1b1b1f", 209, 8, "/images/toys/hw-r34-2.jpg"}});
+        variants(find("minigt-huracan"), new Object[][]{{"Verde Selvans", "#5aa02c", 390, 8, "/images/toys/minigt-huracan-0.jpg"}, {"Arancio", "#f07a1a", 390, 6, "/images/toys/minigt-huracan-1.jpg"}, {"Bianco", "#f5f5f5", 410, 4, "/images/toys/minigt-huracan-0.jpg"}});
+        variants(find("bburago-sf90"), new Object[][]{{"Rosso Corsa", "#c1121f", 520, 8, "/images/toys/bburago-sf90-0.jpg"}, {"Giallo Modena", "#f5c400", 540, 6, "/images/toys/bburago-sf90-1.jpg"}});
         variants(find("maisto-aventador"), new Object[][]{{"Tím Viola", "#6b2c91", 480, 6}, {"Xanh Lá", "#76b82a", 480, 5}, {"Cam", "#f07a1a", 480, 4}});
         variants(find("lego-mustang"), new Object[][]{{"Bản tiêu chuẩn", null, 1290, 18}, {"Kèm bộ đèn LED", null, 1590, 7}});
         variants(find("traxxas-slash"), new Object[][]{{"RTR (không pin)", null, 16900, 3}, {"RTR + Pin 3S + Sạc", null, 19400, 3}});
         variants(find("wltoys-144001"), new Object[][]{{"1 pin", null, 1690, 12}, {"2 pin (gấp đôi thời gian chơi)", null, 1890, 8}});
-        variants(find("wltoys-crawler"), new Object[][]{{"Xanh rêu", "#556b2f", 1290, 14}, {"Cam", "#f07a1a", 1290, 12}});
+        variants(find("wltoys-crawler"), new Object[][]{{"Xanh rêu", "#556b2f", 1290, 14, "/images/toys/wltoys-crawler-0.jpg"}, {"Cam", "#f07a1a", 1290, 12, "/images/toys/wltoys-crawler-0.jpg"}});
         variants(find("tamiya-mini4wd"), new Object[][]{{"Avante Mk.III Trắng/Đỏ", "#f5f5f5", 290, 25}, {"Avante Mk.III Xanh", "#1e5aa8", 310, 20}});
         variants(find("flysky"), new Object[][]{{"Tay khiển + 1 receiver", null, 690, 14}, {"Tay khiển + 2 receiver", null, 850, 8}});
         variants(find("display-case"), new Object[][]{{"20 ô — gỗ sồi", "#c49a6c", 250, 30}, {"20 ô — đen", "#1b1b1f", 250, 20}, {"40 ô — gỗ sồi", "#c49a6c", 450, 10}});
@@ -180,6 +207,10 @@ public class DataSeeder implements CommandLineRunner {
         for (Object[] r : rows) {
             ProductVariant v = new ProductVariant(); v.product = p; v.name = (String) r[0]; v.color = (String) r[1];
             v.price = ((Integer) r[2]) * K; v.stock = (Integer) r[3]; v.oldPrice = p.oldPrice != null && v.price == p.price ? p.oldPrice : null;
+            if (r.length > 4 && r[4] != null) {
+                v.image = (String) r[4];
+                if (!p.images.contains(v.image)) p.images.add(v.image);
+            }
             variants.save(v); total += v.stock; min = Math.min(min, v.price);
         }
         p.hasVariants = true; p.stock = total; p.price = min; products.save(p);
@@ -285,14 +316,14 @@ public class DataSeeder implements CommandLineRunner {
         if (k == null) return;
         Product slash = find("traxxas-slash"); Product hw = find("hw-r34");
         var v1 = variants.findByProductIdOrderByIdAsc(slash.id).get(0); var v2 = variants.findByProductIdOrderByIdAsc(hw.id).get(0);
-        var o = orderService.place(k, new OrderService.CheckoutReq(k.fullName, k.phone, k.email, "123 Nguyễn Văn Linh, Tân Phong, Quận 7", "TP. Hồ Chí Minh", null, null, 0,
+        var o = orderService.place(k, new OrderService.CheckoutReq(k.fullName, k.phone, k.email, "Chung cư Hoàng Huy Commerce, Võ Nguyên Giáp, Lê Chân", "Hải Phòng", null, null, 0,
                 Enums.PaymentMethod.COD, null, List.of(new OrderService.ItemReq(slash.id, v1.id, 1), new OrderService.ItemReq(hw.id, v2.id, 2)), null, null, null, null, null, null, null, null));
         var t0 = LocalDateTime.now().minusDays(3);
         o.createdAt = t0; o.timeline.put("PENDING", t0); o.timeline.put("CONFIRMED", t0.plusHours(2)); o.timeline.put("SHIPPING", t0.plusDays(1)); o.timeline.put("COMPLETED", t0.plusDays(2));
         o.status = Enums.OrderStatus.COMPLETED; orderService.complete(o); orders.save(o);
         User k2 = users.findById(k.id).orElseThrow(); orderService.updateTier(k2); users.save(k2);
         Product lipo = find("lipo-2s");
-        var o2 = orderService.place(k, new OrderService.CheckoutReq(k.fullName, k.phone, k.email, "123 Nguyễn Văn Linh, Tân Phong, Quận 7", "TP. Hồ Chí Minh", null, null, 0,
+        var o2 = orderService.place(k, new OrderService.CheckoutReq(k.fullName, k.phone, k.email, "Chung cư Hoàng Huy Commerce, Võ Nguyên Giáp, Lê Chân", "Hải Phòng", null, null, 0,
                 Enums.PaymentMethod.MOMO, null, List.of(new OrderService.ItemReq(lipo.id, null, 1)), null, null, null, null, null, null, null, null));
         orderService.pay(o2); o2.status = Enums.OrderStatus.SHIPPING; o2.timeline.put("CONFIRMED", LocalDateTime.now().minusHours(5)); o2.timeline.put("SHIPPING", LocalDateTime.now().minusHours(1)); orders.save(o2);
         Ticket t = new Ticket(); t.user = k; t.code = "HT" + String.valueOf(System.currentTimeMillis()).substring(5); t.subject = "Hỏi cách chỉnh trim tay lái Slash"; t.category = "Kỹ thuật"; t.orderCode = o.code;
@@ -304,5 +335,490 @@ public class DataSeeder implements CommandLineRunner {
     private User user(String email, String pw, String name, Enums.Role role, String phone) {
         User u = new User(); u.email = email; u.password = enc.encode(pw); u.fullName = name; u.role = role; u.phone = phone;
         return users.save(u);
+    }
+
+    private void ensureApparel() {
+        // Ẩn toàn bộ sản phẩm quần áo / thời trang theo yêu cầu
+        for (var p : products.findAll()) {
+            if ("APPAREL".equals(p.type) && p.active) {
+                p.active = false;
+                products.save(p);
+            }
+        }
+        var catOpt = categories.findByCode("APPAREL");
+        if (catOpt.isEmpty()) {
+            Category x = new Category(); x.code = "APPAREL"; x.name = "Quần áo & Trang phục"; x.grp = "ACCESSORY";
+            x.image = "/images/apparel/polo-black.svg"; x.sortOrder = 4; categories.save(x);
+        } else {
+            Category x = catOpt.get();
+            if (!"Quần áo & Trang phục".equals(x.name)) {
+                x.name = "Quần áo & Trang phục";
+                categories.save(x);
+            }
+        }
+        Brand brand = brands.findAll().stream().filter(b -> "ARES Parts".equals(b.name)).findFirst().orElseGet(() -> {
+            Brand b = new Brand(); b.name = "ARES Parts"; b.country = "Việt Nam"; b.description = "Phụ kiện và linh kiện do ARES Toys tuyển chọn.";
+            b.logoUrl = "/images/brands/ares-parts.svg"; return brands.save(b);
+        });
+
+        if (products.findAll().stream().noneMatch(p -> "AR-ARES-POLO".equals(p.sku))) {
+            seedApparelItem("ares-polo", "Áo Polo Đua Xe ARES Racing Team", brand, 450, 550, 60, 38,
+                    "Vải thun cá sấu Poly cao cấp, thoáng khí", true,
+                    "Áo polo đồng phục đội đua ARES Motorsport với logo in nổi 3D, cúc dập chìm, form tôn dáng thể thao chuẩn racing. Quần áo thời trang đua xe cao cấp.",
+                    List.of("/images/apparel/polo-black.svg", "/images/apparel/polo-white.svg", "/images/apparel/polo-orange.svg"),
+                    new Object[][]{
+                        {"Đen Racing (L)", "#1a1a1a", 450, 20, "/images/apparel/polo-black.svg"},
+                        {"Trắng Apex (L)", "#f8fafc", 450, 15, "/images/apparel/polo-white.svg"},
+                        {"Cam Hyper (L)", "#f05a1a", 480, 15, "/images/apparel/polo-orange.svg"},
+                        {"Đen Racing (XL)", "#1a1a1a", 450, 10, "/images/apparel/polo-black.svg"}
+                    });
+
+            seedApparelItem("ares-jacket", "Áo Khoác Gió Thể Thao ARES Paddock Bomber", brand, 890, 1150, 40, 19,
+                    "Vải dù gió 2 lớp chống nước nhẹ, lót lưới", false,
+                    "Áo khoác gió thời trang phong cách pit crew F1, bo chun cổ tay và gấu áo, khoá kéo kim loại dập nổi Ares Toys. Quần áo khoác giữ nhiệt cản gió đường đua.",
+                    List.of("/images/apparel/jacket-black.svg", "/images/apparel/jacket-red.svg"),
+                    new Object[][]{
+                        {"Carbon Black (L)", "#111111", 890, 15, "/images/apparel/jacket-black.svg"},
+                        {"Racing Red (L)", "#dc2626", 920, 12, "/images/apparel/jacket-red.svg"},
+                        {"Carbon Black (XL)", "#111111", 890, 13, "/images/apparel/jacket-black.svg"}
+                    });
+
+            seedApparelItem("ares-cap", "Nón Lưỡi Trai ARES Speed Snapback", brand, 250, 320, 80, 54,
+                    "Kaki cotton 100% dày dặn, form cứng cáp", false,
+                    "Nón snapback cao cấp thêu logo khiên ARES 3D mặt trước, phía sau có khoá tăng giảm kích thước phù hợp mọi cỡ đầu. Mũ nón thời trang racing.",
+                    List.of("/images/apparel/cap-black.svg", "/images/apparel/cap-white.svg", "/images/apparel/cap-orange.svg"),
+                    new Object[][]{
+                        {"Đen viền cam", "#18181b", 250, 30, "/images/apparel/cap-black.svg"},
+                        {"Trắng line đỏ", "#f1f5f9", 250, 25, "/images/apparel/cap-white.svg"},
+                        {"Cam Ares Edition", "#f05a1a", 270, 25, "/images/apparel/cap-orange.svg"}
+                    });
+        }
+
+        if (products.findAll().stream().noneMatch(p -> "AR-ARES-TEE".equals(p.sku))) {
+            seedApparelItem("ares-tee", "Áo Thun Graphic ARES Pitlane Streetwear", brand, 320, 390, 80, 45,
+                    "100% Cotton 250gsm co giãn 2 chiều, đứng form", true,
+                    "Áo thun phông oversize graphic streetwear phong cách garage đường đua ARES Pitlane Crew. Quần áo thời trang cá tính, thấm hút mồ hôi.",
+                    List.of("/images/apparel/tee-black.svg", "/images/apparel/tee-white.svg"),
+                    new Object[][]{
+                        {"Đen Phantom (L)", "#18181b", 320, 30, "/images/apparel/tee-black.svg"},
+                        {"Trắng Vintage (L)", "#f1f5f9", 320, 25, "/images/apparel/tee-white.svg"},
+                        {"Đen Phantom (XL)", "#18181b", 320, 25, "/images/apparel/tee-black.svg"}
+                    });
+        }
+
+        if (products.findAll().stream().noneMatch(p -> "AR-ARES-HOODIE".equals(p.sku))) {
+            seedApparelItem("ares-hoodie", "Áo Hoodie Nỉ ARES Apex Racing Heavyweight", brand, 790, 990, 50, 28,
+                    "Nỉ bông chân cua 380gsm dày dặn, mũ 2 lớp", true,
+                    "Áo hoodie nỉ cao cấp phong cách đua xe đường phố ARES Apex Racing. Có túi kangaroo phía trước, bo thun co giãn, giữ ấm cực tốt mùa lạnh.",
+                    List.of("/images/apparel/hoodie-black.svg", "/images/apparel/hoodie-red.svg"),
+                    new Object[][]{
+                        {"Đen Asphalt (L)", "#212124", 790, 20, "/images/apparel/hoodie-black.svg"},
+                        {"Đỏ Racing (L)", "#dc2626", 820, 15, "/images/apparel/hoodie-red.svg"},
+                        {"Đen Asphalt (XL)", "#212124", 790, 15, "/images/apparel/hoodie-black.svg"}
+                    });
+        }
+
+        for (Product p : products.findAll()) {
+            if ("AR-HW-R34".equals(p.sku)) {
+                assignVariantImages(p, Map.of(
+                    "Bayside Blue", "/images/toys/hw-r34-0.jpg",
+                    "Trắng Pearl", "/images/toys/hw-r34-1.jpg",
+                    "Đen Midnight", "/images/toys/hw-r34-2.jpg"
+                ));
+            } else if ("AR-MINIGT-HURACAN".equals(p.sku)) {
+                assignVariantImages(p, Map.of(
+                    "Verde Selvans", "/images/toys/minigt-huracan-0.jpg",
+                    "Arancio", "/images/toys/minigt-huracan-1.jpg",
+                    "Bianco", "/images/toys/minigt-huracan-0.jpg"
+                ));
+            } else if ("AR-BBURAGO-SF90".equals(p.sku)) {
+                assignVariantImages(p, Map.of(
+                    "Rosso Corsa", "/images/toys/bburago-sf90-0.jpg",
+                    "Giallo Modena", "/images/toys/bburago-sf90-1.jpg"
+                ));
+            } else if ("AR-WLTOYS-CRAWLER".equals(p.sku)) {
+                assignVariantImages(p, Map.of(
+                    "Xanh rêu", "/images/toys/wltoys-crawler-0.jpg",
+                    "Cam", "/images/toys/wltoys-crawler-0.jpg"
+                ));
+            }
+        }
+    }
+
+    private void seedApparelItem(String slug, String name, Brand brand, int priceK, int oldPriceK, int stock, int sold,
+                                 String material, boolean featured, String desc, List<String> imgs, Object[][] vRows) {
+        Product p = new Product();
+        p.sku = "AR-" + slug.toUpperCase();
+        p.name = name;
+        p.brand = brand;
+        p.type = "APPAREL";
+        p.grp = "ACCESSORY";
+        p.scale = "Free";
+        p.ageMin = 12;
+        p.price = (long) priceK * K;
+        p.oldPrice = oldPriceK > 0 ? (long) oldPriceK * K : null;
+        p.stock = stock;
+        p.sold = sold;
+        p.warrantyMonths = 0;
+        p.material = material;
+        p.featured = featured;
+        p.isNew = true;
+        p.description = desc;
+        p.images.addAll(imgs);
+        p.specs.put("Thương hiệu", brand.name);
+        p.specs.put("Phân loại", "Thời trang thể thao");
+        p.specs.put("Chất liệu", material);
+        p.specs.put("Mã SKU", p.sku);
+        p.specs.put("Bảo hành", "Đổi mới 7 ngày nếu lỗi");
+        p = products.save(p);
+        variants(p, vRows);
+    }
+
+    private void assignVariantImages(Product p, Map<String, String> imgMap) {
+        List<ProductVariant> list = variants.findByProductIdOrderByIdAsc(p.id);
+        boolean changed = false;
+        for (ProductVariant v : list) {
+            if (imgMap.containsKey(v.name) && (v.image == null || !v.image.equals(imgMap.get(v.name)))) {
+                v.image = imgMap.get(v.name);
+                variants.save(v);
+                if (!p.images.contains(v.image)) {
+                    p.images.add(v.image);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) products.save(p);
+    }
+
+    public static boolean SEED_TEST_WOMEN_APPAREL = false;
+
+    private void ensureTestWomenApparel() {
+        if (!SEED_TEST_WOMEN_APPAREL) return;
+        Brand brand = brands.findAll().stream().filter(b -> "ARES Fashion".equals(b.name)).findFirst().orElseGet(() -> {
+            Brand b = new Brand(); b.name = "ARES Fashion"; b.country = "Quốc tế"; b.description = "Bộ sưu tập trang phục & thời trang nữ cao cấp.";
+            b.logoUrl = "/images/brands/ares-parts.svg"; return brands.save(b);
+        });
+
+        // 1. Váy Ngắn Bodycon Cắt Xẻ Sexy
+        if (products.findAll().stream().noneMatch(p -> "TEST-FEM-DRESS".equals(p.sku))) {
+            seedTestApparelItem("TEST-FEM-DRESS", "Váy Ngắn Bodycon Cắt Xẻ Sexy (Mẫu test)", brand, 390, 490, 55, 68,
+                    "Thun gân dệt kim co giãn 4 chiều, ôm sát tôn dáng", true,
+                    "Váy ngắn đầm bodycon ôm sát đường cong quyến rũ, thiết kế cắt xẻ eo và xẻ đùi gợi cảm. Chất liệu co giãn 4 chiều mềm mịn. Đồ nữ thời trang quyến rũ.",
+                    List.of("/images/test_female/dress-black.jpg", "/images/test_female/dress-red.jpg", "/images/test_female/dress-white.jpg"),
+                    new Object[][]{
+                        {"Đen Huyền Bí (S)", "#111111", 390, 20, "/images/test_female/dress-black.jpg"},
+                        {"Đen Huyền Bí (M)", "#111111", 390, 20, "/images/test_female/dress-black.jpg"},
+                        {"Đỏ Rượu Vang (S)", "#991b1b", 410, 15, "/images/test_female/dress-red.jpg"},
+                        {"Trắng Ngọc Trai (S)", "#f8fafc", 390, 15, "/images/test_female/dress-white.jpg"}
+                    });
+        }
+
+        // 2. Áo Trễ Vai Xẻ Ngực Quyến Rũ
+        if (products.findAll().stream().noneMatch(p -> "TEST-FEM-TOP".equals(p.sku))) {
+            seedTestApparelItem("TEST-FEM-TOP", "Áo Trễ Vai Xẻ Ngực Quyến Rũ (Mẫu test)", brand, 290, 380, 60, 42,
+                    "Lụa satin mỏng mát, tay bồng tiểu thư", true,
+                    "Áo kiểu nữ trễ vai xẻ ngực sâu gợi cảm, khoe trọn xương quai xanh và vòng một cuốn hút. Chất liệu lụa mỏng nhẹ bay bổng. Áo trễ vai xẻ ngực thời trang nữ.",
+                    List.of("/images/test_female/top-white.jpg", "/images/test_female/top-black.jpg", "/images/test_female/top-pink.jpg"),
+                    new Object[][]{
+                        {"Trắng Tinh Khôi (Freesize)", "#ffffff", 290, 25, "/images/test_female/top-white.jpg"},
+                        {"Đen Quyến Rũ (Freesize)", "#18181b", 290, 20, "/images/test_female/top-black.jpg"},
+                        {"Hồng Pastel (Freesize)", "#f472b6", 310, 15, "/images/test_female/top-pink.jpg"}
+                    });
+        }
+
+        // 3. Bộ Đồ Lót Ren Xuyên Thấu Cao Cấp
+        if (products.findAll().stream().noneMatch(p -> "TEST-FEM-LINGERIE".equals(p.sku))) {
+            seedTestApparelItem("TEST-FEM-LINGERIE", "Bộ Đồ Lót Ren Xuyên Thấu Cao Cấp (Mẫu test)", brand, 350, 450, 55, 89,
+                    "Ren hoa cao cấp mềm mại không dặm ngứa, mút đệm mỏng", true,
+                    "Bộ nội y đồ lót ren hoa cao cấp mềm mại, cúp ngực nâng đẩy tự nhiên, dây áo tuỳ chỉnh. Thiết kế ren hoa xuyên thấu tôn dáng cực kỳ quyến rũ. Đồ lót nữ sexy cao cấp.",
+                    List.of("/images/test_female/lingerie-black.jpg", "/images/test_female/lingerie-red.jpg"),
+                    new Object[][]{
+                        {"Đen Quyến Rũ (Size 34/75B)", "#111111", 350, 20, "/images/test_female/lingerie-black.jpg"},
+                        {"Đen Quyến Rũ (Size 36/80B)", "#111111", 350, 20, "/images/test_female/lingerie-black.jpg"},
+                        {"Đỏ Mận Nóng Bỏng (Size 34/75B)", "#991b1b", 370, 15, "/images/test_female/lingerie-red.jpg"}
+                    });
+        }
+
+        // 4. Đầm Hai Dây Xẻ Ngực Sâu & Xẻ Tà
+        if (products.findAll().stream().noneMatch(p -> "TEST-FEM-SLIP".equals(p.sku))) {
+            seedTestApparelItem("TEST-FEM-SLIP", "Đầm Hai Dây Xẻ Ngực Sâu & Xẻ Tà (Mẫu test)", brand, 420, 520, 40, 31,
+                    "Lụa băng cao cấp mềm mượt, óng ả", true,
+                    "Đầm hai dây cổ chữ V khoét ngực sâu gợi cảm, tà váy xẻ cao khoe đôi chân thon dài. Vải lụa óng ả mướt mịn. Đầm váy xẻ ngực xẻ tà quyến rũ.",
+                    List.of("/images/test_female/slip-black.jpg", "/images/test_female/slip-red.jpg"),
+                    new Object[][]{
+                        {"Đen Huyền Bí (S)", "#111111", 420, 20, "/images/test_female/slip-black.jpg"},
+                        {"Đỏ Ruby Nổi Bật (S)", "#dc2626", 450, 20, "/images/test_female/slip-red.jpg"}
+                    });
+        }
+
+        // 5. Chân Váy Ngắn Chữ A Xếp Ly Tennis
+        if (products.findAll().stream().noneMatch(p -> "TEST-FEM-SKIRT".equals(p.sku))) {
+            seedTestApparelItem("TEST-FEM-SKIRT", "Chân Váy Ngắn Chữ A Xếp Ly (Mẫu test)", brand, 260, 320, 55, 76,
+                    "Kaki tuyết mưa đứng form, có quần lót trong", true,
+                    "Chân váy ngắn xếp ly tennis dáng chữ A cạp cao tôn dáng, có quần bảo hộ an toàn bên trong. Phong cách trẻ trung nữ tính năng động. Váy ngắn sexy.",
+                    List.of("/images/test_female/skirt-black.jpg", "/images/test_female/skirt-grey.jpg"),
+                    new Object[][]{
+                        {"Đen Cá Tính (S)", "#18181b", 260, 30, "/images/test_female/skirt-black.jpg"},
+                        {"Xám Tro Hiện Đại (S)", "#71717a", 260, 25, "/images/test_female/skirt-grey.jpg"}
+                    });
+        }
+    }
+
+    private void seedTestApparelItem(String sku, String name, Brand brand, int priceK, int oldPriceK, int stock, int sold,
+                                     String material, boolean featured, String desc, List<String> imgs, Object[][] vRows) {
+        Product p = new Product();
+        p.sku = sku;
+        p.name = name;
+        p.brand = brand;
+        p.type = "APPAREL";
+        p.grp = "ACCESSORY";
+        p.scale = "Free";
+        p.ageMin = 16;
+        p.price = (long) priceK * K;
+        p.oldPrice = oldPriceK > 0 ? (long) oldPriceK * K : null;
+        p.stock = stock;
+        p.sold = sold;
+        p.warrantyMonths = 0;
+        p.material = material;
+        p.featured = featured;
+        p.isNew = true;
+        p.description = desc;
+        p.images.addAll(imgs);
+        p.specs.put("Thương hiệu", brand.name);
+        p.specs.put("Phân loại", "Thời trang nữ quyến rũ (Mẫu test)");
+        p.specs.put("Chất liệu", material);
+        p.specs.put("Mã SKU", p.sku);
+        p.specs.put("Ghi chú", "Mẫu thử nghiệm hệ thống (Có thể xoá nhanh)");
+        p = products.save(p);
+        variants(p, vRows);
+    }
+
+
+    
+
+        private void seedHistoricalOrders() {
+        User k = users.findByEmailIgnoreCase("khach@ares.vn").orElse(null);
+        if (k == null) return;
+        List<Product> catalogPool = products.findAll().stream().filter(p -> p.active && p.price > 0).limit(10).toList();
+        if (catalogPool.isEmpty()) return;
+
+        String[] buyers = {"Trần Đức Anh", "Lê Thuỳ Trang", "Nguyễn Hoàng Nam", "Vũ Minh Quân", "Phạm Quốc Bảo", "Đặng Hải Yến", "Ngô Gia Huy"};
+        String[] phones = {"0912888999", "0987654321", "0903112233", "0934567890", "0978123456", "0945678901", "0967890123"};
+        String[] cities = {"Hải Phòng", "Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Cần Thơ"};
+
+        int[][] pattern = {
+            {2, 14}, {3, 11}, {2, 16}, {4, 10}, {5, 15}, {3, 9}, {2, 13},
+            {4, 17}, {3, 11}, {5, 14}, {4, 10}, {6, 16}, {5, 19}
+        };
+
+        long orderSeq = 1000L;
+        for (int dayBack = 13; dayBack >= 1; dayBack--) {
+            int pIdx = 13 - dayBack;
+            int numOrders = pattern[pIdx][0];
+            int startHour = pattern[pIdx][1];
+            LocalDate date = LocalDate.now().minusDays(dayBack);
+
+            for (int j = 0; j < numOrders; j++) {
+                orderSeq++;
+                LocalDateTime dt = date.atTime(Math.min(22, startHour + j * 2), (j * 17) % 60);
+                CustomerOrder o = new CustomerOrder();
+                o.code = "TS" + date.toString().replace("-", "").substring(2) + String.format("%04d", orderSeq);
+                o.user = k;
+                o.buyerName = buyers[(j + dayBack) % buyers.length];
+                o.phone = phones[(j + dayBack) % phones.length];
+                o.email = "khach" + orderSeq + "@gmail.com";
+                o.city = cities[(j + dayBack) % cities.length];
+                o.shippingAddress = "Số " + (j * 15 + 12) + " đường Trần Phú, " + o.city;
+                o.paymentMethod = (j % 2 == 0) ? Enums.PaymentMethod.BANK_QR : Enums.PaymentMethod.COD;
+                o.status = (j == 0 && dayBack % 4 == 0) ? Enums.OrderStatus.CANCELLED : Enums.OrderStatus.COMPLETED;
+                o.paymentStatus = (o.status == Enums.OrderStatus.COMPLETED) ? Enums.PaymentStatus.PAID : Enums.PaymentStatus.UNPAID;
+                o.createdAt = dt;
+                o.timeline.put("PENDING", dt);
+                if (o.status != Enums.OrderStatus.CANCELLED) {
+                    o.timeline.put("CONFIRMED", dt.plusHours(1));
+                    o.timeline.put("SHIPPING", dt.plusHours(4));
+                    o.timeline.put("COMPLETED", dt.plusDays(1));
+                    o.paidAt = dt.plusHours(1);
+                }
+
+                int numItems = 1 + (j % 3);
+                long subtotal = 0;
+                for (int itemIdx = 0; itemIdx < numItems; itemIdx++) {
+                    Product prod = catalogPool.get((j + itemIdx + dayBack) % catalogPool.size());
+                    List<ProductVariant> vList = variants.findByProductIdOrderByIdAsc(prod.id);
+                    ProductVariant varItem = vList.isEmpty() ? null : vList.get(0);
+                    int qty = 1 + (itemIdx % 2);
+
+                    OrderItem oi = new OrderItem();
+                    oi.order = o;
+                    oi.productId = prod.id;
+                    oi.variantId = varItem != null ? varItem.id : null;
+                    oi.productName = prod.name;
+                    oi.variantName = varItem != null ? varItem.name : null;
+                    oi.sku = prod.sku;
+                    oi.image = (prod.images != null && !prod.images.isEmpty()) ? prod.images.get(0) : "";
+                    oi.unitPrice = varItem != null ? varItem.price : prod.price;
+                    oi.quantity = qty;
+                    oi.warrantyMonths = prod.warrantyMonths;
+                    o.items.add(oi);
+                    subtotal += (oi.unitPrice * qty);
+                }
+                o.subtotal = subtotal;
+                o.shippingFee = subtotal >= 500000 ? 0 : 35000;
+                o.total = o.subtotal + o.shippingFee;
+                o.paidAmount = (o.paymentStatus == Enums.PaymentStatus.PAID) ? o.total : 0;
+                orders.save(o);
+            }
+        }
+    }
+
+    private void ensureStaffAndPosSeed() {
+        // Cập nhật thông tin chi tiết cho nhân viên
+        users.findByEmailIgnoreCase("admin@ares.vn").ifPresent(u -> {
+            boolean changed = false;
+            if (u.phone == null || u.phone.isBlank()) {
+                u.phone = "0901234567";
+                changed = true;
+            }
+            if (u.tier == null || "Đồng".equals(u.tier)) {
+                u.tier = "Titan";
+                changed = true;
+            }
+            if (u.staffCode == null) {
+                u.staffCode = "QL-001";
+                u.department = "Quản lý điều hành Showroom";
+                u.commissionRate = 1.5;
+                u.monthlySalesTarget = 100_000_000L;
+                changed = true;
+            }
+            if (changed) users.save(u);
+        });
+
+        users.findByEmailIgnoreCase("staff@ares.vn").ifPresent(u -> {
+            if (u.staffCode == null) {
+                u.staffCode = "NV-001";
+                u.department = "Thu ngân & Bán hàng tại quầy";
+                u.commissionRate = 3.0;
+                u.monthlySalesTarget = 60_000_000L;
+                users.save(u);
+            }
+        });
+
+        if (!users.existsByEmailIgnoreCase("ngan.cashier@ares.vn")) {
+            User u = new User();
+            u.email = "ngan.cashier@ares.vn";
+            u.fullName = "Trần Thu Ngân";
+            u.phone = "0988776655";
+            u.password = enc.encode("staff123");
+            u.role = Enums.Role.STAFF;
+            u.staffCode = "NV-002";
+            u.department = "Thu ngân quầy A";
+            u.commissionRate = 2.5;
+            u.monthlySalesTarget = 50_000_000L;
+            u.employmentStatus = "ACTIVE";
+            users.save(u);
+        }
+
+        if (!users.existsByEmailIgnoreCase("duc.sales@ares.vn")) {
+            User u = new User();
+            u.email = "duc.sales@ares.vn";
+            u.fullName = "Hoàng Minh Đức";
+            u.phone = "0977665544";
+            u.password = enc.encode("staff123");
+            u.role = Enums.Role.STAFF;
+            u.staffCode = "NV-003";
+            u.department = "Tư vấn kỹ thuật & RC";
+            u.commissionRate = 3.5;
+            u.monthlySalesTarget = 80_000_000L;
+            u.employmentStatus = "ACTIVE";
+            users.save(u);
+        }
+
+        // Mở ca làm việc mẫu nếu chưa có ca nào mở
+        if (posShifts != null && posShifts.findFirstByStatusOrderByStartTimeDesc("OPEN").isEmpty()) {
+            User staff = users.findByEmailIgnoreCase("staff@ares.vn").orElse(null);
+            com.ares.shop.model.PosShift s = new com.ares.shop.model.PosShift();
+            s.shiftCode = "CA-" + java.time.format.DateTimeFormatter.ofPattern("yyMMdd-0830").format(java.time.LocalDateTime.now());
+            s.staffId = staff != null ? staff.id : 1L;
+            s.staffName = staff != null ? staff.fullName : "Lê Nhân Viên";
+            s.staffEmail = staff != null ? staff.email : "staff@ares.vn";
+            s.openingCash = 2_000_000L;
+            s.expectedCash = 2_000_000L;
+            s.status = "OPEN";
+            s.notes = "Ca sáng: Tiền lẻ đầu ca 2.000.000đ (két A)";
+            posShifts.save(s);
+        }
+
+        // Tạo một số đơn POS mẫu để phân tách sản lượng On & Off
+        if (orders.findByChannelOrderByCreatedAtDesc("POS").isEmpty()) {
+            User staff = users.findByEmailIgnoreCase("staff@ares.vn").orElse(null);
+            var prodList = products.findAll();
+            if (!prodList.isEmpty()) {
+                Product p1 = prodList.get(0);
+                Product p2 = prodList.size() > 1 ? prodList.get(1) : p1;
+
+                // Đơn POS 1: Tiền mặt
+                CustomerOrder o1 = new CustomerOrder();
+                o1.code = "POS" + java.time.format.DateTimeFormatter.ofPattern("yyMMddHHmmss").format(java.time.LocalDateTime.now()) + "01";
+                o1.channel = "POS";
+                o1.buyerName = "Trần Anh Quân (Khách mua trực tiếp)";
+                o1.phone = "0934567890";
+                o1.email = "quan.pos@gmail.com";
+                o1.shippingAddress = "Nhận tại showroom ARES Toys";
+                o1.city = "Hải Phòng";
+                o1.staffId = staff != null ? staff.id : null;
+                o1.staffName = staff != null ? staff.fullName : "Lê Nhân Viên";
+                o1.paymentMethod = Enums.PaymentMethod.COD;
+                o1.posPaymentMethod = "CASH";
+                o1.paymentStatus = Enums.PaymentStatus.PAID;
+                o1.status = Enums.OrderStatus.COMPLETED;
+                o1.createdAt = java.time.LocalDateTime.now().minusHours(4);
+                o1.paidAt = o1.createdAt;
+                o1.subtotal = p1.price;
+                o1.total = p1.price;
+                o1.paidAmount = p1.price;
+                o1.cashGiven = (p1.price / 100000 + 1) * 100000L;
+                o1.cashChange = o1.cashGiven - o1.total;
+                o1.commissionRate = 3.0;
+                o1.commissionAmount = Math.round(o1.total * 0.03);
+
+                OrderItem i1 = new OrderItem();
+                i1.order = o1; i1.productId = p1.id; i1.productName = p1.name; i1.unitPrice = p1.price; i1.quantity = 1;
+                i1.image = p1.images != null && !p1.images.isEmpty() ? p1.images.get(0) : "";
+                o1.items.add(i1);
+                orders.save(o1);
+
+                // Đơn POS 2: Chuyển khoản VietQR
+                CustomerOrder o2 = new CustomerOrder();
+                o2.code = "POS" + java.time.format.DateTimeFormatter.ofPattern("yyMMddHHmmss").format(java.time.LocalDateTime.now()) + "02";
+                o2.channel = "POS";
+                o2.buyerName = "Hoàng Văn Tuấn (Quẹt QR tại quầy)";
+                o2.phone = "0945678901";
+                o2.email = "tuan.pos@gmail.com";
+                o2.shippingAddress = "Nhận tại showroom ARES Toys";
+                o2.city = "Hải Phòng";
+                o2.staffId = staff != null ? staff.id : null;
+                o2.staffName = staff != null ? staff.fullName : "Lê Nhân Viên";
+                o2.paymentMethod = Enums.PaymentMethod.BANK_QR;
+                o2.posPaymentMethod = "BANK_QR";
+                o2.paymentStatus = Enums.PaymentStatus.PAID;
+                o2.status = Enums.OrderStatus.COMPLETED;
+                o2.createdAt = java.time.LocalDateTime.now().minusHours(2);
+                o2.paidAt = o2.createdAt;
+                o2.subtotal = p2.price * 2;
+                o2.total = p2.price * 2;
+                o2.paidAmount = o2.total;
+                o2.cashGiven = o2.total;
+                o2.cashChange = 0L;
+                o2.commissionRate = 3.0;
+                o2.commissionAmount = Math.round(o2.total * 0.03);
+
+                OrderItem i2 = new OrderItem();
+                i2.order = o2; i2.productId = p2.id; i2.productName = p2.name; i2.unitPrice = p2.price; i2.quantity = 2;
+                i2.image = p2.images != null && !p2.images.isEmpty() ? p2.images.get(0) : "";
+                o2.items.add(i2);
+                orders.save(o2);
+            }
+        }
     }
 }

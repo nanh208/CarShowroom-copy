@@ -11,9 +11,11 @@ import java.util.*;
 @RestController @RequestMapping("/api/orders")
 public class OrderController {
     private final OrderService service; private final OrderRepo orders; private final ReturnRepo returns; private final NotifyService notify;
+    private final com.ares.shop.service.payment.PaymentProps paymentProps;
 
-    public OrderController(OrderService service, OrderRepo orders, ReturnRepo returns, NotifyService notify) {
-        this.service = service; this.orders = orders; this.returns = returns; this.notify = notify;
+    public OrderController(OrderService service, OrderRepo orders, ReturnRepo returns, NotifyService notify,
+                           com.ares.shop.service.payment.PaymentProps paymentProps) {
+        this.service = service; this.orders = orders; this.returns = returns; this.notify = notify; this.paymentProps = paymentProps;
     }
 
     @PostMapping
@@ -24,14 +26,21 @@ public class OrderController {
         CustomerOrder o = own(code);
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("order", o); m.put("returns", returns.findByOrderCode(o.code));
-        m.put("bank", Map.of("bank", "Vietcombank", "bin", "970436", "account", "1023456789", "holder", "CONG TY ARES TOYS",
-                "qr", "https://img.vietqr.io/image/970436-1023456789-compact2.png?amount=" + Math.max(0, o.total - o.paidAmount) + "&addInfo=" + o.code + "&accountName=CONG%20TY%20ARES%20TOYS"));
+        m.put("bank", paymentProps.bankInfo(o.code, com.ares.shop.service.payment.PaymentConfirmationService.amountDue(o)));
         return m;
     }
 
-    /** Xác nhận thanh toán giả lập (QR chuyển khoản / MoMo / VNPay / kỳ trả góp). */
+    /**
+     * Trước đây: khách tự bấm "đã thanh toán". Nay bị vô hiệu hoá — đơn chỉ chuyển PAID khi webhook ngân hàng
+     * (SePay/payOS/Casso) hoặc IPN MoMo/VNPay có chữ ký hợp lệ báo tiền đã vào. Nhân viên vẫn có thể xác nhận thủ công
+     * trong trang quản trị (AdminController.markPaid).
+     */
     @PostMapping("/{code}/pay")
-    public CustomerOrder pay(@PathVariable String code) { return service.pay(own(code)); }
+    public CustomerOrder pay(@PathVariable String code) {
+        own(code);
+        throw new ApiException(org.springframework.http.HttpStatus.GONE,
+                "Đơn hàng sẽ tự động được xác nhận khi hệ thống nhận được tiền. Vui lòng hoàn tất thanh toán qua ngân hàng / MoMo / VNPay.");
+    }
 
     @PostMapping("/{code}/cancel")
     public CustomerOrder cancel(@PathVariable String code, @RequestBody(required = false) Map<String, String> body) {

@@ -89,7 +89,7 @@ onBeforeUnmount(() => removeEventListener('beforeunload', leave))
 .pbg { position: absolute; inset: -10px; background-position: center; } .pov { position: absolute; inset: 0; background: var(--pb); }
 .pin { position: relative; padding: 16px; color: var(--pt); display: flex; flex-direction: column; gap: 10px; }
 .phd { display: flex; justify-content: space-between; gap: 8px; font-size: .78em; border-bottom: 2px solid var(--pt); padding-bottom: 8px; } .phd b.v2 { color: #ff6a00; font-style: italic; }
-.pin h2 { margin: 0; color: var(--pt); font-size: 1.7em; } .pin h2.v2 { font-family: 'Anton', sans-serif; font-style: italic; text-transform: uppercase; } .pin h2.v1 { font-family: 'Oswald', sans-serif; }
+.pin h2 { margin: 0; color: var(--pt); font-size: 1.7em; } .pin h2.v2 { font-family: 'Oswald', 'Be Vietnam Pro', sans-serif; font-style: italic; font-weight: 700; text-transform: uppercase; } .pin h2.v1 { font-family: 'Oswald', 'Be Vietnam Pro', sans-serif; }
 .pin p { margin: 0; font-size: .95em; } .pin p.hc { font-weight: 600; text-decoration: underline; }
 .pcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .pc { background: var(--surface); color: var(--text); padding: 6px; display: flex; flex-direction: column; font-size: .8em; } .frame.dark .pc { background: #1e1e1e; color: #eee; } .pc i { height: 50px; background: var(--tile); margin-bottom: 4px; }
 .pbtn { align-self: flex-start; background: #ff6a00; color: #fff; padding: 8px 16px; font-weight: 700; font-size: .85em; } .pbtn.v1 { background: #a87a3c; border-radius: 8px; }

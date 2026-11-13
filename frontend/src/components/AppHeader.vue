@@ -9,6 +9,7 @@
         <div v-if="theme === 'v2'" class="menu">
           <router-link :to="{ path: '/products', query: { type: 'MODEL,DISPLAY' } }" :class="{ on: isModel }" @mouseenter="mega = 'cars'">Xe mô hình</router-link>
           <router-link :to="{ path: '/products', query: { type: 'RC' } }" :class="{ on: isRC }" @mouseenter="mega = ''">Xe RC</router-link>
+          
           <router-link :to="{ path: '/products', query: { grp: 'ACCESSORY' } }" :class="{ on: isAcc }" @mouseenter="mega = 'acc'">Phụ kiện</router-link>
           <router-link to="/collections" active-class="on" @mouseenter="mega = ''">Bộ sưu tập</router-link>
           <router-link to="/auctions" active-class="on" @mouseenter="mega = ''">Đấu giá</router-link>
@@ -50,16 +51,26 @@
             </div>
           </div>
           <router-link id="cart-target" to="/cart" :class="['cartpill', { bump }]" aria-haspopup="dialog" @click.prevent="openCart">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
             <span><b class="cc">{{ cart.count }}</b><em> món</em></span>
           </router-link>
           <div class="userwrap">
-            <router-link :to="auth.loggedIn ? '/account' : '/login'" class="avatar" :title="auth.loggedIn ? auth.user.fullName : 'Đăng nhập'">
-              <template v-if="auth.loggedIn">{{ (auth.user.fullName || '?').split(' ').pop()[0] }}</template>
+            <router-link :to="auth.loggedIn ? '/account' : '/login'" class="avatar" :title="auth.loggedIn ? auth.user?.fullName : 'Đăng nhập'">
+              <img v-if="auth.loggedIn && auth.user?.avatarUrl" :src="auth.user.avatarUrl" class="avatar-img" alt="" />
+              <template v-else-if="auth.loggedIn">{{ (auth.user?.fullName || '?').split(' ').pop()[0] }}</template>
               <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0z"/></svg>
             </router-link>
             <div v-if="auth.loggedIn" class="umenu">
-              <b>{{ auth.user.fullName }}</b><small>{{ auth.user.email }}</small>
+              <div class="umenu-head">
+                <div class="umenu-avatar">
+                  <img v-if="auth.user?.avatarUrl" :src="auth.user.avatarUrl" alt="" />
+                  <span v-else>{{ (auth.user?.fullName || '?').split(' ').pop()[0] }}</span>
+                </div>
+                <div class="umenu-text">
+                  <b>{{ auth.user?.fullName }}</b>
+                  <small>{{ auth.user?.email }}</small>
+                </div>
+              </div>
               <router-link to="/account">Tài khoản của tôi</router-link>
               <router-link to="/compare">So sánh xe ({{ prefs.compare.length }})</router-link>
               <router-link v-if="auth.isStaff" to="/admin">Trang quản trị</router-link>
@@ -107,6 +118,11 @@ const isCars = computed(() => (route.path === '/products' && route.query.grp !==
 const onDark = computed(() => route.meta.darkHero && scrollY.value < 380)
 const onScroll = () => { scrollY.value = window.scrollY; scrolled.value = window.scrollY > 8 }
 const megaData = {
+  apparel: { title: 'Quần áo & Trang phục ARES', all: { path: '/products', query: { type: 'APPAREL' } }, tiles: [
+    { label: 'Áo Polo Racing', img: '/images/apparel/polo-black.svg', to: { path: '/products', query: { type: 'APPAREL', q: 'polo' } } },
+    { label: 'Áo Khoác Bomber', img: '/images/apparel/jacket-black.svg', to: { path: '/products', query: { type: 'APPAREL', q: 'khoác' } } },
+    { label: 'Áo Hoodie Apex', img: '/images/apparel/hoodie-black.svg', to: { path: '/products', query: { type: 'APPAREL', q: 'hoodie' } } },
+    { label: 'Nón Snapback', img: '/images/apparel/cap-black.svg', to: { path: '/products', query: { type: 'APPAREL', q: 'nón' } } }] },
   cars: { title: 'Danh mục xe', all: { path: '/products', query: { grp: 'TOY' } }, tiles: [
     { label: 'Xe Model', img: '/images/toys/hw-r34-0.jpg', to: { path: '/products', query: { type: 'MODEL' } } },
     { label: 'Xe RC', img: '/images/toys/traxxas-slash-0.jpg', to: { path: '/products', query: { type: 'RC' } } },
@@ -169,14 +185,22 @@ const logout = () => { auth.logout(); router.push('/') }
 .search input { width: 0; padding: 0; border: none; outline: none; background: rgba(0,0,0,.18); color: #fff; height: 32px; border-radius: 0 7px 7px 0; font: inherit; font-size: .85rem; transition: width .25s, padding .25s; }
 .search input::placeholder { color: rgba(255,255,255,.75); }
 .search.open .ib { border-radius: 7px 0 0 7px; } .search.open input { width: 170px; padding: 0 10px 0 2px; }
-.cartpill { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 7px; background: rgba(0,0,0,.18); color: #fff; font-size: .82rem; font-weight: 600; }
+.cartpill { display: flex; align-items: center; gap: 9px; height: 38px; padding: 0 14px; border-radius: 8px; background: rgba(0,0,0,.32); color: #fff; font-size: .95rem; font-weight: 700; border: 1px solid rgba(255,255,255,.2); box-shadow: 0 2px 8px rgba(0,0,0,.2); transition: background .15s, transform .15s; }
+.cartpill .cc { font-size: 1.05rem; font-weight: 900; }
 .cartpill:hover { background: rgba(0,0,0,.3); color: #fff; }
 .userwrap { position: relative; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; background: #f4ebdd; color: var(--bronze-3); display: flex; align-items: center; justify-content: center; font-weight: 800; margin-left: 4px; }
-.umenu { display: none; position: absolute; right: 0; top: 40px; width: 230px; background: #fff; border-radius: 10px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.3); padding: 12px; border: 1px solid var(--border); }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: #f4ebdd; color: var(--bronze-3); display: flex; align-items: center; justify-content: center; font-weight: 800; margin-left: 4px; overflow: hidden; border: 2px solid transparent; transition: border-color .2s; }
+.avatar:hover { border-color: var(--accent); }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.umenu { display: none; position: absolute; right: 0; top: 40px; width: 240px; background: #fff; border-radius: 12px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.3); padding: 12px; border: 1px solid var(--border); z-index: 100; }
 .userwrap:hover .umenu { display: flex; flex-direction: column; }
 .umenu::before { content: ''; position: absolute; top: -10px; left: 0; right: 0; height: 10px; }
-.umenu b { font-size: .92rem; } .umenu small { color: var(--muted); margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.umenu-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.umenu-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--bronze-soft); color: var(--bronze-3); display: flex; align-items: center; justify-content: center; font-weight: 800; overflow: hidden; flex-shrink: 0; border: 1.5px solid var(--border); }
+.umenu-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.umenu-text { display: flex; flex-direction: column; min-width: 0; }
+.umenu-text b { font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.umenu-text small { color: var(--muted); font-size: .75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .umenu a, .umenu button { padding: 8px; border-radius: 6px; color: var(--text); font: 500 .88rem inherit; font-family: inherit; background: none; border: none; text-align: left; cursor: pointer; }
 .umenu a:hover, .umenu button:hover { background: var(--bg-2); }
 /* mega menu */

@@ -1,11 +1,16 @@
-// Giao diện: 'v2' (racing poster 2.0, mặc định) hoặc 'v1' (wireframe đồng). Lưu localStorage, gắn vào <html data-theme>.
-import { ref, watch } from 'vue'
+// Giao diện: 'v2' (Racing Poster 2.0 theo yêu cầu). Gắn vào <html data-theme>.
+import { ref, watch, reactive } from 'vue'
+
 const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null
-export const theme = ref(saved === 'v1' || saved === 'v2' ? saved : 'v2')
-const apply = v => { document.documentElement.dataset.theme = v }
+export const theme = ref(saved === 'v1' ? 'v2' : (saved || 'v2'))
+const apply = v => { document.documentElement.dataset.theme = v || 'v2' }
 apply(theme.value)
-watch(theme, v => { localStorage.setItem('theme', v); apply(v) })
-export const toggleTheme = () => { theme.value = theme.value === 'v2' ? 'v1' : 'v2' }
+watch(theme, v => {
+  const finalVal = v || 'v2'
+  localStorage.setItem('theme', finalVal)
+  apply(finalVal)
+})
+export const toggleTheme = () => { theme.value = theme.value === 'v1' ? 'v2' : 'v1' }
 
 // ===== Hiển thị & trợ năng: sáng/tối, cỡ chữ, tương phản cao (lưu localStorage, gắn vào <html>) =====
 const ls = (k, d) => { try { return localStorage.getItem(k) ?? d } catch { return d } }
@@ -29,7 +34,6 @@ watch(density, v => { localStorage.setItem('density', v); applyDensity() })
 
 // ===== Giao diện toàn site do admin cấu hình (backend /api/public/appearance) =====
 // Giá trị localStorage chỉ là bộ nhớ đệm để tránh nháy khi tải; nguồn chuẩn là backend.
-import { reactive } from 'vue'
 export const BG_DEFAULT = { bgImage: '', bgOverlay: 0.78, bgBlur: 0, bgFit: 'cover', bgAttach: 'fixed', bgPages: 'all' }
 export const bg = reactive({ ...BG_DEFAULT, ...(() => { try { return JSON.parse(ls('bgCache', '{}')) } catch { return {} } })() })
 watch(bg, v => localStorage.setItem('bgCache', JSON.stringify(v)))

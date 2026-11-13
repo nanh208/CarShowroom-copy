@@ -73,7 +73,7 @@ input[type=checkbox], input[type=radio], input[type=range] { accent-color: var(-
 .badge-PENDING { background: #fff3cd; color: #8a6100; } .badge-CONFIRMED { background: #e3f0ff; color: #0b5cad; }
 .badge-SHIPPING { background: #f1e6ff; color: #6a1fb0; }
 .badge-COMPLETED, .badge-DONE, .badge-PAID { background: #e6f4ea; color: #1e7b34; }
-.badge-CANCELLED { background: #fdecea; color: #b3261e; } .badge-DEPOSITED, .badge-PARTIAL { background: var(--bronze-soft); color: var(--bronze-3); }
+.badge-CANCELLED { background: #fdecea; color: #b3261e; } .badge-DEPOSITED, .badge-PARTIAL { background: var(--bronze-soft); color: var(--bronze-3); } .badge-REFUNDED { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
 
 .price { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
 .price-lg { font-size: 1.8rem; font-weight: 700; font-family: var(--head); }
@@ -200,3 +200,18 @@ html[data-density="compact"] .btn:not(.btn-sm) { padding: 8px 14px; }
 /* Ảnh nền toàn site (admin cấu hình): lớp nền nằm dưới nội dung, html/body trong suốt */
 html.has-sitebg, html.has-sitebg body { background: transparent !important; }
 html.has-sitebg #app { position: relative; }
+
+
+.buy.buy-out,
+.pcard .buy:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  opacity: 1;
+  cursor: pointer;
+}
+.buy.buy-out:hover,
+.pcard .buy:disabled:hover {
+  background: #e2e8f0;
+  color: #475569;
+}

@@ -12,10 +12,22 @@ export const useAuth = defineStore('auth', {
     setSession(token, user) {
       this.token = token; this.user = user
       localStorage.setItem('token', token)
+      if (user) localStorage.setItem('user', JSON.stringify(user))
+    },
+    updateUser(user) {
+      this.user = { ...this.user, ...user }
+      localStorage.setItem('user', JSON.stringify(this.user))
     },
     async init() {
-      if (this.token && !this.user) {
-        try { this.user = (await api.get('/auth/me')).data } catch { this.logout() }
+      const stored = localStorage.getItem('user')
+      if (stored) {
+        try { this.user = JSON.parse(stored) } catch {}
+      }
+      if (this.token) {
+        try {
+          this.user = (await api.get('/auth/me')).data
+          localStorage.setItem('user', JSON.stringify(this.user))
+        } catch { this.logout() }
       }
       this.ready = true
     },
@@ -23,10 +35,12 @@ export const useAuth = defineStore('auth', {
       const { data } = await api.post('/auth/login', { email, password, totp: totp || undefined })
       if (data.totpRequired) return 'TOTP'
       this.setSession(data.token, data.user)
+      return data
     },
     async register(form) {
       const { data } = await api.post('/auth/register', form)
       this.setSession(data.token, data.user)
+      return data
     },
     async loginWithToken(token) {
       localStorage.setItem('token', token); this.token = token; this.user = null
@@ -35,6 +49,7 @@ export const useAuth = defineStore('auth', {
     logout() {
       this.user = null; this.token = null
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
     }
   }
 })

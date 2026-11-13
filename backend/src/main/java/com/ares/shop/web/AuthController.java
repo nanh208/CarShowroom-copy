@@ -51,15 +51,50 @@ public class AuthController {
     @GetMapping("/me")
     public User me() { return Current.user(); }
 
-    /** Trả về URL chuyển hướng tới Google/Facebook; 501 nếu chưa cấu hình client id. */
+    /** Kiểm tra cấu hình và trả URL bắt đầu đăng nhập (backend) ; 501 nếu chưa cấu hình client id/secret. */
     @GetMapping("/oauth/{provider}/url")
     public Map<String, String> oauthUrl(@PathVariable String provider) {
-        return Map.of("url", oauth.authorizeUrl(provider));
+        oauth.checkProvider(provider);
+        return Map.of("url", oauth.startUrl(provider));
     }
 
-    /** Callback từ nhà cung cấp OAuth2 -> phát JWT -> chuyển về frontend /oauth-callback?token=... */
-    @GetMapping("/oauth/{provider}/callback")
-    public ResponseEntity<Void> callback(@PathVariable String provider, @RequestParam(required = false) String code) {
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(oauth.handleCallback(provider, code))).build();
+    /** Bắt đầu: sinh state (+PKCE), đặt cookie HttpOnly gắn trình duyệt rồi chuyển tới Google/Facebook. */
+    @GetMapping("/oauth/{provider}/start")
+    public ResponseEntity<Void> start(@PathVariable String provider) {
+        String target;
+        ResponseCookie cookie = null;
+        try {
+            String[] r = oauth.begin(provider);
+            cookie = ResponseCookie.from(OAuthService.STATE_COOKIE, r[0]).httpOnly(true).secure(oauth.secureCookie())
+                    .sameSite("Lax").path("/api/auth/oauth").maxAge(600).build();
+            target = r[1];
+        } catch (ApiException e) {
+            target = oauth.frontend() + "/login?error=" + java.net.URLEncoder.encode(e.getMessage(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        var b = ResponseEntity.status(HttpStatus.FOUND).location(URI.create(target));
+        if (cookie != null) b.header(HttpHeaders.SET_COOKIE, cookie.toString());
+        return b.build();
     }
+
+    /** Callback từ Google/Facebook: kiểm state, đổi code phía server, rồi chuyển về FRONTEND_URL/oauth-callback?ticket=... */
+    @GetMapping("/oauth/{provider}/callback")
+    public ResponseEntity<Void> callback(@PathVariable String provider, @RequestParam(required = false) String code,
+                                         @RequestParam(required = false) String state, @RequestParam(required = false) String error,
+                                         @CookieValue(name = OAuthService.STATE_COOKIE, required = false) String cookieState) {
+        String target = oauth.handleCallback(provider, code, state, cookieState, error);
+        ResponseCookie clear = ResponseCookie.from(OAuthService.STATE_COOKIE, "").httpOnly(true).secure(oauth.secureCookie())
+                .sameSite("Lax").path("/api/auth/oauth").maxAge(0).build();
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(target)).header(HttpHeaders.SET_COOKIE, clear.toString()).build();
+    }
+
+    public record TicketReq(String ticket) {}
+    public record CompleteReq(String pending, String email) {}
+
+    /** Đổi ticket dùng 1 lần lấy JWT (không để JWT trên URL). */
+    @PostMapping("/oauth/exchange")
+    public Map<String, Object> exchange(@RequestBody TicketReq r) { return oauth.exchange(r.ticket()); }
+
+    /** Facebook không trả email: người dùng nhập email để tạo tài khoản. */
+    @PostMapping("/oauth/complete")
+    public Map<String, Object> complete(@RequestBody CompleteReq r) { return oauth.completeSignup(r.pending(), r.email()); }
 }

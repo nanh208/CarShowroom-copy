@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgC" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
+    <filter id="shadowC" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect width="400" height="400" fill="url(#bgC)"/>
+  <g filter="url(#shadowC)">
+    <!-- Flat Visor / Brim -->
+    <path d="M70 240 C90 290 310 290 330 240 C340 230 60 230 70 240 Z" fill="#111215" stroke="#111" stroke-width="3"/>
+    <path d="M80 242 C100 282 300 282 320 242" fill="none" stroke="#f05a1a" stroke-width="3" stroke-dasharray="6,4"/>
+    <!-- 6-Panel Crown -->
+    <path d="M90 235 C90 120 310 120 310 235 Z" fill="#18181b" stroke="#111" stroke-width="3"/>
+    <!-- Panel Seam Lines -->
+    <line x1="200" y1="120" x2="200" y2="235" stroke="#444" stroke-width="1.8"/>
+    <path d="M200 120 Q145 170 135 235" fill="none" stroke="#444" stroke-width="1.5"/>
+    <path d="M200 120 Q255 170 265 235" fill="none" stroke="#444" stroke-width="1.5"/>
+    <!-- Top Squatchee Button -->
+    <ellipse cx="200" cy="120" rx="9" ry="6" fill="#f05a1a"/>
+    <!-- Eyelets -->
+    <circle cx="160" cy="165" r="3.5" fill="#333" stroke="#f05a1a" stroke-width="1.5"/>
+    <circle cx="240" cy="165" r="3.5" fill="#333" stroke="#f05a1a" stroke-width="1.5"/>
+    <!-- Front 3D Shield Emblem -->
+    <path d="M180 180 L220 180 L220 205 L200 220 L180 205 Z" fill="#f05a1a" stroke="#fff" stroke-width="2"/>
+    <text x="200" y="200" fill="#fff" font-family="'Oswald', sans-serif" font-size="9" font-weight="800" text-anchor="middle">ARES</text>
+  </g>
+</svg>

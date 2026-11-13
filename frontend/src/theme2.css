@@ -8,7 +8,8 @@ html[data-theme="v2"] {
   --shadow: none; --radius: 2px;
   --head: 'Oswald', 'Be Vietnam Pro', sans-serif;
 }
-html[data-theme="v2"] h1, html[data-theme="v2"] h2 { font-family: 'Anton', 'Oswald', sans-serif; font-style: italic; font-weight: 400; text-transform: uppercase; letter-spacing: .01em; }
+html[data-theme="v2"] h1, html[data-theme="v2"] h2 { font-family: 'Be Vietnam Pro', 'Oswald', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-style: normal; font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; }
+html[data-theme="v2"] .admin h1, html[data-theme="v2"] .admin h2, html[data-theme="v2"] .admin .hd h1 { font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; font-style: normal !important; font-weight: 800 !important; letter-spacing: -0.01em !important; }
 html[data-theme="v2"] h3, html[data-theme="v2"] h4 { font-family: 'Oswald', sans-serif; font-weight: 600; }
 html[data-theme="v2"] .page > h1, html[data-theme="v2"] .page h1:first-child, html[data-theme="v2"] .content h1 { font-size: 2.6rem; line-height: 1; position: relative; padding-bottom: 12px; margin-bottom: 14px; }
 html[data-theme="v2"] .page > h1::after, html[data-theme="v2"] .page h1:first-child::after, html[data-theme="v2"] .content h1::after {
@@ -92,7 +93,7 @@ html[data-theme="v2"] .breadcrumb, html[data-theme="v2"] .crumbs { font-family: 
 html[data-theme="v2"] .ftr { background: #111; color: #bbb; position: relative; padding-top: 14px; }
 html[data-theme="v2"] .ftr::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 14px;
   background: conic-gradient(#111 25%, #f3efe6 0 50%, #111 0 75%, #f3efe6 0) 0 0/14px 14px; }
-html[data-theme="v2"] .ftr .news { border-color: #2c2c2c; } html[data-theme="v2"] .ftr .news b { color: #fff; font-family: 'Anton', sans-serif; font-style: italic; font-weight: 400; text-transform: uppercase; font-size: 1.5rem; }
+html[data-theme="v2"] .ftr .news { border-color: #2c2c2c; } html[data-theme="v2"] .ftr .news b { color: #fff; font-family: 'Oswald', 'Be Vietnam Pro', -apple-system, sans-serif; font-style: italic; font-weight: 700; text-transform: uppercase; font-size: 1.5rem; }
 html[data-theme="v2"] .ftr .news input { background: #1d1d1d; border-color: #333; color: #fff; border-radius: 0; }
 html[data-theme="v2"] .ftr a { color: #ddd; } html[data-theme="v2"] .ftr a:hover { color: var(--v2-orange); }
 html[data-theme="v2"] .ftr .logo { color: #fff; } html[data-theme="v2"] .ftr .logo b { color: var(--v2-orange); }
@@ -100,7 +101,7 @@ html[data-theme="v2"] .ftr .logo { color: #fff; } html[data-theme="v2"] .ftr .lo
 /* Admin 2.0: sidebar đen, mục chọn cam */
 html[data-theme="v2"] .admin { background: var(--v2-cream); }
 html[data-theme="v2"] .admin .side { background: #111; border-color: #111; }
-html[data-theme="v2"] .admin .side .logo { color: #fff; font-family: 'Anton', sans-serif; font-style: italic; letter-spacing: .08em; }
+html[data-theme="v2"] .admin .side .logo { color: #fff; font-family: 'Oswald', 'Be Vietnam Pro', -apple-system, sans-serif; font-style: italic; font-weight: 700; letter-spacing: .08em; }
 html[data-theme="v2"] .admin .side nav a { color: #bbb; border-radius: 0; font-family: 'Oswald', sans-serif; }
 html[data-theme="v2"] .admin .side nav a:hover { background: #1f1f1f; color: #fff; }
 html[data-theme="v2"] .admin .side nav a.on { background: var(--v2-orange); color: #fff; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
@@ -130,7 +131,7 @@ html[data-theme="v2"] .tile { aspect-ratio: 4/3; clip-path: none; border-radius:
 html[data-theme="v2"] .tile img { filter: brightness(.92); }
 html[data-theme="v2"] .tile .cap { padding: 48px 18px 16px; flex-direction: column; align-items: flex-start; gap: 2px; background: linear-gradient(transparent, rgba(0,0,0,.82)); }
 html[data-theme="v2"] .tile .cap span { font: 500 1.05rem/1.3 'Oswald', sans-serif; letter-spacing: .02em; }
-html[data-theme="v2"] .tile .cap small { font: italic 400 1.35rem/1.1 'Anton', sans-serif; color: var(--v2-orange); opacity: 1; }
+html[data-theme="v2"] .tile .cap small { font: italic 700 1.35rem/1.1 'Oswald', 'Be Vietnam Pro', sans-serif; color: var(--v2-orange); opacity: 1; }
 html[data-theme="v2"] .tile .off, html[data-theme="v2"] .tile .live { border-radius: 0; background: var(--v2-orange); transform: skewX(-10deg); font-family: 'Oswald', sans-serif; }
 html[data-theme="v2"] .tile:hover img { filter: brightness(1); }
 html[data-theme="v2"] .home .rev { border-radius: 0; }
@@ -141,11 +142,26 @@ html[data-theme="v2"] .admin .content { padding: 36px 40px; }
 html[data-theme="v2"] .hero-img { border-radius: 0; }
 
 /* Góc vuông nhất quán cho toàn bộ nội dung 2.0 (trừ phần tử tròn có chủ đích) */
-html[data-theme="v2"] main *:not(:is(.arr, .iconbtns button, .vbtn i, .av, .tool, .swatch, .spinner, .dot, .avatar, .dots button, input[type=radio], input[type=checkbox], .needle, .w, .knob, .bullet, .step i, .tl-dot)),
+html[data-theme="v2"] main *:not(:is(.arr, .iconbtns button, .vbtn i, .av, .tool, .swatch, .spinner, .dot, .avatar, .dots button, input[type=radio], input[type=checkbox], .needle, .w, .knob, .bullet, .step i, .tl-dot, .vip-member-card, .vcb-platinum-card, .member-avatar-medallion, .medallion-ring, .medallion-img, .medallion-fallback, .medallion-vip-seal, .silver-emv-chip, .chip-center-chamber, .click-hint-badge, .flip-card-box, .flip-side, .card-back-container, .hologram-seal, .status-pill-active, .perk-badge-dot, .card-modal-container, .avatar-ring-outer, .avatar-ring-inner, .avatar-photo, .avatar-vip-seal, .tier-holo-badge, .emv-chip, .cb-seal, .avatar-fallback, .vip-status-pill, .tier-current-tag, .t-bar, .t-bar div, .tier-col, .tc-badge-cur, .avatar-luxury-container)),
 html[data-theme="v2"] .admin .content *:not(:is(.avatar, .dot, input[type=radio], input[type=checkbox], .needle)) { border-radius: 0 !important; }
-html[data-theme="v2"] .price-lg { color: var(--v2-orange); font-family: 'Anton', sans-serif; font-weight: 400; font-style: italic; font-size: 2.2rem; }
+html[data-theme="v2"] .price-lg { color: var(--v2-orange); font-family: 'Oswald', 'Be Vietnam Pro', sans-serif; font-weight: 700; font-style: italic; font-size: 2.2rem; }
 html[data-theme="v2"] .perks div, html[data-theme="v2"] .panel { background: #fff; border: 1px solid var(--border); }
-html[data-theme="v2"] .promo { background: #111 !important; }
+html[data-theme="v2"] .detail .promo { background: #111 !important; }
+html[data-theme="v2"] .row.promo { background: transparent !important; }
+html[data-theme="v2"] .btn-promo {
+  background: var(--v2-orange) !important;
+  color: #fff !important;
+  border: 1px solid var(--v2-orange) !important;
+  font-family: 'Oswald', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+html[data-theme="v2"] .btn-promo:hover {
+  background: var(--v2-ink) !important;
+  border-color: var(--v2-ink) !important;
+  color: #fff !important;
+}
 html[data-theme="v2"] .vbtn.on, html[data-theme="v2"] .vbtn:hover { border-color: var(--v2-orange); }
 html[data-theme="v2"] .thumbs button.on { border-color: var(--v2-orange); }
 html[data-theme="v2"] .carousel { background: #fff; border: 1px solid var(--border); } html[data-theme="v2"] .photo { background: #fff; }

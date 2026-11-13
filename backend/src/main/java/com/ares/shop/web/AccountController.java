@@ -12,9 +12,10 @@ import java.util.*;
 public class AccountController {
     private final UserRepo users; private final AddressRepo addresses; private final OrderRepo orders;
     private final PointRepo points; private final ReturnRepo returns; private final PasswordEncoder enc;
+    private final com.ares.shop.service.OrderService orderService;
 
-    public AccountController(UserRepo users, AddressRepo addresses, OrderRepo orders, PointRepo points, ReturnRepo returns, PasswordEncoder enc) {
-        this.users = users; this.addresses = addresses; this.orders = orders; this.points = points; this.returns = returns; this.enc = enc;
+    public AccountController(UserRepo users, AddressRepo addresses, OrderRepo orders, PointRepo points, ReturnRepo returns, PasswordEncoder enc, com.ares.shop.service.OrderService orderService) {
+        this.users = users; this.addresses = addresses; this.orders = orders; this.points = points; this.returns = returns; this.enc = enc; this.orderService = orderService;
     }
 
     public record ProfileReq(String fullName, String phone, String avatarUrl) {}
@@ -23,8 +24,9 @@ public class AccountController {
     @PutMapping("/profile")
     public User profile(@RequestBody ProfileReq r) {
         User u = users.findById(Current.user().id).orElseThrow();
-        if (r.fullName() != null) u.fullName = r.fullName();
-        u.phone = r.phone(); u.avatarUrl = r.avatarUrl();
+        if (r.fullName() != null && !r.fullName().isBlank()) u.fullName = r.fullName().trim();
+        if (r.phone() != null) u.phone = r.phone().trim();
+        if (r.avatarUrl() != null) u.avatarUrl = r.avatarUrl().trim().isEmpty() ? null : r.avatarUrl().trim();
         return users.save(u);
     }
 
@@ -78,8 +80,43 @@ public class AccountController {
     @GetMapping("/points")
     public Map<String, Object> points() {
         User u = users.findById(Current.user().id).orElseThrow();
-        return Map.of("points", u.points, "tier", u.tier == null ? "Đồng" : u.tier, "history", points.findByUserIdOrderByCreatedAtDesc(u.id),
-                "pointValue", com.ares.shop.service.OrderService.POINT_VALUE, "earnPer", com.ares.shop.service.OrderService.EARN_PER);
+        orderService.updateTier(u);
+        users.save(u);
+        long totalSpent = orderService.getTotalSpent(u);
+        Map<String, Object> res = new HashMap<>();
+        res.put("points", u.points);
+        res.put("tier", u.tier == null ? "Đồng" : u.tier);
+        res.put("history", points.findByUserIdOrderByCreatedAtDesc(u.id));
+        res.put("pointValue", com.ares.shop.service.OrderService.POINT_VALUE);
+        res.put("earnPer", com.ares.shop.service.OrderService.EARN_PER);
+        res.put("totalSpent", totalSpent);
+        return res;
+    }
+
+    /** Quản trị viên nâng/hạ thẻ VIP hoặc điều chỉnh điểm trực tiếp. */
+    @PostMapping("/admin-upgrade-tier")
+    public Map<String, Object> adminUpgradeTier(@RequestBody Map<String, Object> body) {
+        User current = Current.user();
+        if (current.role != Enums.Role.ADMIN) {
+            throw ApiException.bad("Chỉ Quản trị viên (ADMIN) mới có quyền sử dụng tính năng này");
+        }
+        Long targetId = body.get("userId") != null ? Long.valueOf(body.get("userId").toString()) : current.id;
+        User target = users.findById(targetId).orElseThrow(() -> ApiException.notFound("Không tìm thấy người dùng"));
+
+        if (body.get("tier") != null && !body.get("tier").toString().isBlank()) {
+            target.tier = body.get("tier").toString().trim();
+            orderService.pointTx(target, 0, "Quản trị viên cấp hạng VIP: " + target.tier);
+        }
+        if (body.get("pointsDelta") != null) {
+            int delta = Integer.parseInt(body.get("pointsDelta").toString());
+            target.points = Math.max(0, target.points + delta);
+            orderService.pointTx(target, delta, delta > 0 ? "Quản trị viên cộng điểm thưởng" : "Quản trị viên điều chỉnh điểm");
+        }
+        if (body.get("vipCardNumber") != null && !body.get("vipCardNumber").toString().isBlank()) {
+            target.vipCardNumber = body.get("vipCardNumber").toString().trim();
+        }
+        users.save(target);
+        return points();
     }
 
     @GetMapping("/returns")
