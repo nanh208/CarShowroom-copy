@@ -136,7 +136,28 @@ import api, { errMsg } from '../../api'
 import { vnd, dt, d, ORDER_STATUS, PAY_METHOD, PAY_STATUS } from '../../format'
 const route = useRoute(), router = useRouter()
 const list = ref([]), status = ref(route.query.status || ''), channel = ref('ALL'), view = ref(null), err = ref(''), q = ref(route.query.q || ''), sel = ref([]), bulkTo = ref(''), busy = ref(false)
-const pg = usePaged(list, { size: 25, sorts: { new: { label: 'Mới nhất' }, old: { label: 'Cũ nhất', fn: (a, b) => a.createdAt.localeCompare(b.createdAt) }, big: { label: 'Giá trị cao', fn: (a, b) => b.total - a.total } } })
+const pg = usePaged(list, {
+  size: 25,
+  sorts: {
+    priority: {
+      label: 'Ưu tiên xử lý (Đơn chờ cũ lên đầu, hoàn tất xuống cuối)',
+      fn: (a, b) => {
+        const getRank = s => s === 'PENDING' ? 1 : s === 'CONFIRMED' ? 2 : s === 'SHIPPING' ? 3 : s === 'COMPLETED' ? 4 : s === 'RETURNED' ? 5 : 6;
+        const ra = getRank(a.status), rb = getRank(b.status);
+        const aActive = ra <= 3, bActive = rb <= 3;
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+        if (aActive && bActive) {
+          return (a.createdAt || '').localeCompare(b.createdAt || '');
+        }
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      }
+    },
+    new: { label: 'Mới nhất', fn: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || '') },
+    old: { label: 'Cũ nhất', fn: (a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') },
+    big: { label: 'Giá trị cao', fn: (a, b) => (b.total || 0) - (a.total || 0) }
+  }
+})
 const labels = (ids, kind = 'labels') => { const u = router.resolve({ path: '/admin/' + kind, query: { ids: ids.join(','), auto: 1 } }).href; window.open(u, '_blank') }
 const rf = ref({ amount: 0, reason: '', toCredit: false }), notes = ref([]), noteText = ref('')
 async function open(o) { view.value = o; rf.value = { amount: o.paidAmount - (o.refundedAmount || 0), reason: '', toCredit: false }; notes.value = (await api.get(`/admin/orders/${o.id}/notes`)).data }

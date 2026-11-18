@@ -164,7 +164,7 @@
 
           </div>
 
-          <div class="row" style="gap:6px;margin-top:6px"><input v-model="imgUrl" class="input" style="flex:1" placeholder="hoặc dán URL ảnh" /><button class="btn btn-sm btn-outline" @click="imgUrl && form.images.push(imgUrl); imgUrl = ''">Thêm</button></div>
+          <div class="row" style="gap:6px;margin-top:6px"><input v-model="imgUrl" class="input" style="flex:1" placeholder="hoặc dán URL ảnh" /><button type="button" class="btn btn-sm btn-outline" @click="imgUrl && form.images.push(imgUrl); imgUrl = ''">Thêm</button><button type="button" class="btn btn-sm btn-primary" @click="openMediaModal('product')">+ Thư viện ảnh</button></div>
 
         </div>
 
@@ -288,6 +288,7 @@
                       <input type="file" accept="image/*" style="display:none" @change="uploadVarImage(i, $event)" />
                       <span>{{ uploadingVar === i ? 'Đang tải...' : (v.image ? 'Đổi ảnh' : 'Tải ảnh lên') }}</span>
                     </label>
+                    <button type="button" class="btn btn-sm btn-outline" style="margin-top:4px" title="Chọn từ thư viện" @click="openMediaModal('variant', i)">Thư viện</button>
                     <input v-model="v.image" class="input var-url-input" placeholder="URL ảnh..." />
                   </div>
                 </td>
@@ -354,6 +355,13 @@
 
     </div>
 
+    <MediaLibraryModal
+      v-model="showMediaModal"
+      :multiple="mediaTarget.type === 'product'"
+      :title="mediaTarget.type === 'product' ? 'Chọn hình ảnh cho sản phẩm' : 'Chọn hình ảnh cho biến thể'"
+      @select="handleMediaSelect"
+    />
+
   </div>
 
 </template>
@@ -371,6 +379,7 @@ import { toast } from '../../stores/prefs'
 import api, { errMsg, uploadImage } from '../../api'
 
 import { vnd, TYPES, catalog, loadCatalog } from '../../format'
+import MediaLibraryModal from '../../components/admin/MediaLibraryModal.vue'
 
 
 
@@ -518,6 +527,31 @@ async function edit(p) {
 
 
 
+
+const showMediaModal = ref(false)
+const mediaTarget = ref({ type: 'product', variantIndex: null })
+function openMediaModal(type = 'product', variantIndex = null) {
+  mediaTarget.value = { type, variantIndex }
+  showMediaModal.value = true
+}
+function handleMediaSelect(selected) {
+  if (mediaTarget.value.type === 'product') {
+    if (!form.value.images) form.value.images = []
+    if (Array.isArray(selected)) {
+      selected.forEach(u => {
+        if (!form.value.images.includes(u)) form.value.images.push(u)
+      })
+    } else if (selected && !form.value.images.includes(selected)) {
+      form.value.images.push(selected)
+    }
+  } else if (mediaTarget.value.type === 'variant') {
+    const idx = mediaTarget.value.variantIndex
+    const url = Array.isArray(selected) ? selected[0] : selected
+    if (idx !== null && vars.value[idx]) {
+      vars.value[idx].image = url
+    }
+  }
+}
 
 const uploadingVar = ref(null)
 async function uploadVarImage(index, e) {

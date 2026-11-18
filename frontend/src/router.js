@@ -42,6 +42,7 @@ const routes = [
     children: [
       { path: '', component: () => import('./views/admin/Dashboard.vue') },
       { path: 'products', component: () => import('./views/admin/AdminProducts.vue') },
+      { path: 'media', component: () => import('./views/admin/AdminMedia.vue') },
       { path: 'pos', component: () => import('./views/admin/AdminPos.vue') },
       { path: 'sales-channels', component: () => import('./views/admin/AdminSalesChannels.vue') },
       { path: 'orders', component: () => import('./views/admin/AdminOrders.vue') },

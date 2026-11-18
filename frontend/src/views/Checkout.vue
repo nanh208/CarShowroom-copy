@@ -461,7 +461,33 @@ const launch = ref('idle'), placed = ref(null), payNext = computed(() => ['MOMO'
 
 const goOrder = () => router.push(placed.value.guest ? `/track/${placed.value.code}` : `/orders/${placed.value.code}?new=1`)
 
-const goPay = () => router.push(`/pay/${placed.value.code}`)
+const goPay = async () => {
+  const code = placed.value?.code
+  const method = placed.value?.paymentMethod
+  if (!code) return
+  if (method === 'VNPAY') {
+    try {
+      const { data } = await api.post('/payment/vnpay/create-url', { orderCode: code })
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl
+        return
+      }
+    } catch (e) {
+      toast(errMsg(e), 'error')
+    }
+  } else if (method === 'MOMO') {
+    try {
+      const { data } = await api.post('/payment/momo/create-url', { orderCode: code })
+      if (data.payUrl) {
+        window.location.href = data.payUrl
+        return
+      }
+    } catch (e) {
+      toast(errMsg(e), 'error')
+    }
+  }
+  router.push(`/pay/${code}`)
+}
 
 const addresses = ref([]), addrId = ref(0), vouchers = ref([]), pts = ref({ points: 0 }), usePts = ref(false)
 

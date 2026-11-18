@@ -203,12 +203,25 @@ public class PaymentController {
 
     private static Map<String, String> rsp(String code, String msg) { return Map.of("RspCode", code, "Message", msg); }
 
-    /** Return URL VNPay: chỉ kiểm chữ ký để hiển thị, KHÔNG xác nhận tiền. */
+    /** Return URL VNPay: kiểm chữ ký và xác nhận giao dịch sandbox khi thành công. */
     @GetMapping("/vnpay/return")
     public ResponseEntity<Void> vnPayReturn(@RequestParam Map<String, String> p) {
         String code = p.getOrDefault("vnp_TxnRef", "");
         if (!vnPay.verify(p)) return redirectToPayPage(code, "vnpay", "invalid");
-        return redirectToPayPage(code, "vnpay", "00".equals(p.get("vnp_ResponseCode")) ? "success" : "failed");
+        boolean ok = "00".equals(p.get("vnp_ResponseCode")) && "00".equals(p.getOrDefault("vnp_TransactionStatus", "00"));
+        if (ok) {
+            CustomerOrder o = confirm.find(code).orElse(null);
+            if (o != null) {
+                long amount = 0;
+                try { amount = Long.parseLong(p.getOrDefault("vnp_Amount", "0")) / 100; } catch (Exception ignored) {}
+                String txId = p.getOrDefault("vnp_TransactionNo", "");
+                if (txId.isBlank()) txId = code + ":" + p.getOrDefault("vnp_PayDate", String.valueOf(System.currentTimeMillis()));
+                final String fTx = txId;
+                final long fAmount = amount > 0 ? amount : PaymentConfirmationService.amountDue(o);
+                safeApply(() -> confirm.applyGateway("VNPAY", fTx, o.code, fAmount, json(p), Enums.PaymentMethod.VNPAY));
+            }
+        }
+        return redirectToPayPage(code, "vnpay", ok ? "success" : "failed");
     }
 
     // ------------------------------------------------------------------ MoMo
@@ -230,12 +243,24 @@ public class PaymentController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Redirect URL MoMo: chỉ hiển thị kết quả. */
+    /** Redirect URL MoMo: kiểm chữ ký và xác nhận giao dịch sandbox khi thành công. */
     @GetMapping("/momo/return")
     public ResponseEntity<Void> moMoReturn(@RequestParam Map<String, String> p) {
         String code = MoMoService.orderCodeOf(p.get("orderId"));
         if (!moMo.verifyIpn(p)) return redirectToPayPage(code, "momo", "invalid");
-        return redirectToPayPage(code, "momo", "0".equals(p.get("resultCode")) ? "success" : "failed");
+        boolean ok = "0".equals(String.valueOf(p.get("resultCode")));
+        if (ok) {
+            CustomerOrder o = confirm.find(code).orElse(null);
+            if (o != null) {
+                long amount = 0;
+                try { amount = Long.parseLong(String.valueOf(p.get("amount"))); } catch (Exception ignored) {}
+                String txId = String.valueOf(p.getOrDefault("transId", code + ":" + System.currentTimeMillis()));
+                final String fTx = txId;
+                final long fAmount = amount > 0 ? amount : PaymentConfirmationService.amountDue(o);
+                safeApply(() -> confirm.applyGateway("MOMO", fTx, o.code, fAmount, json(p), Enums.PaymentMethod.MOMO));
+            }
+        }
+        return redirectToPayPage(code, "momo", ok ? "success" : "failed");
     }
 
     // ------------------------------------------------------------------ Webhook ngân hàng (SePay / payOS / Casso)
