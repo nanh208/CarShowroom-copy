@@ -626,3 +626,70 @@ html[data-theme="v2"][data-mode="dark"] .pcard .tag-yellow {
 html[data-theme="v2"][data-mode="dark"] .pcard .rate {
   color: #f5c400 !important;
 }
+
+/* AI Consultant Integration Styles */
+html[data-theme="v2"] .btn-ask-ai {
+  border-color: var(--v2-orange);
+  color: var(--v2-orange);
+  font-weight: 600;
+}
+html[data-theme="v2"] .btn-ask-ai:hover {
+  background: var(--v2-orange);
+  color: #ffffff;
+}
+html[data-theme="v2"] .btn-ai-media {
+  background: rgba(229, 62, 30, 0.88) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+html[data-theme="v2"] .btn-ai-media:hover {
+  background: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .btn-ask-ai {
+  border-color: var(--v2-orange) !important;
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .btn-ask-ai:hover {
+  background: var(--v2-orange) !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .ai-badge {
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .btn-copy:hover,
+html[data-theme="v2"][data-mode="dark"] .btn-thumb:hover,
+html[data-theme="v2"][data-mode="dark"] .btn-thumb.on {
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pc b {
+  color: #f5f5f7 !important;
+}
+
+/* Buybar Dark Mode High-Contrast Contrast Tuning */
+html[data-theme="v2"][data-mode="dark"] .buybar {
+  background: #18181d !important;
+  border-top: 3px solid var(--v2-orange) !important;
+  color: #f5f5f7 !important;
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.6) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .buybar .bb-l b {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .buybar .mode {
+  background: #22222a !important;
+  color: #f5f5f7 !important;
+  border-color: #3e3e4a !important;
+}
+html[data-theme="v2"][data-mode="dark"] .buybar .qty {
+  border-color: #3e3e4a !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .buybar .qty button {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .buybar .bb-price b {
+  color: #ffffff !important;
+}

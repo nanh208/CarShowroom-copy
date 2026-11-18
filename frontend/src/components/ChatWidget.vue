@@ -4,7 +4,10 @@
       <section v-if="open" class="box" role="dialog" aria-label="Trợ lý hỗ trợ ARES">
         <header class="head">
           <span class="av" aria-hidden="true">A<i :class="{ on: mode === 'bot' || staffOnline }" /></span>
-          <div><b>{{ mode === 'human' ? 'Chat với nhân viên' : 'Trợ lý ARES' }}</b><small>{{ mode === 'human' ? 'Thường phản hồi trong vài phút' : 'Trả lời tức thì 24/7 · tìm sản phẩm, tra đơn, mã giảm giá' }}</small></div>
+          <div>
+            <b>{{ mode === 'human' ? 'Chat với nhân viên' : 'Chuyên gia AI ARES' }}</b>
+            <small>{{ mode === 'human' ? 'Thường phản hồi trong vài phút' : 'Tư vấn mô hình, tỷ lệ, chọn quà & kỹ thuật 24/7' }}</small>
+          </div>
           <button v-if="mode === 'human'" class="hb" @click="mode = 'bot'">Trợ lý</button>
           <button v-else class="hb" title="Xoá lịch sử trò chuyện" @click="reset">Mới</button>
           <button class="x" aria-label="Đóng" @click="open = false">✕</button>
@@ -13,13 +16,26 @@
           <template v-if="mode === 'bot'">
             <transition-group name="msg">
               <div v-for="m in bot" :key="m.k" :class="['msg', m.me ? 'me' : 'them']">
+                <div v-if="m.aiPowered && !m.me" class="ai-badge">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12 2.1 12.5"/></svg>
+                  <span>Chuyên gia AI tư vấn</span>
+                </div>
                 <span>{{ m.text }}</span>
                 <div v-if="m.products?.length" class="plist">
                   <router-link v-for="p in m.products" :key="p.id" :to="`/products/${p.id}`" class="pc" @click="open = false">
-                    <img :src="p.image" alt="" loading="lazy" /><span><b>{{ p.name }}</b><small>{{ vnd(p.price) }} · {{ p.stock ? 'Còn hàng' : 'Hết hàng' }}</small></span></router-link>
+                    <img :src="p.image" alt="" loading="lazy" />
+                    <span>
+                      <b>{{ p.name }}</b>
+                      <small>{{ vnd(p.price) }} · {{ p.stock ? 'Còn hàng' : 'Hết hàng' }}<template v-if="p.scale"> · {{ p.scale }}</template></small>
+                    </span>
+                  </router-link>
                 </div>
                 <div v-if="m.coupons?.length" class="clist">
-                  <button v-for="c in m.coupons" :key="c.code" class="cp" @click="copy(c.code)"><b>{{ c.code }}</b><small>{{ c.value }}{{ c.minOrder ? ' · đơn từ ' + vnd(c.minOrder) : '' }}{{ c.endDate ? ' · HSD ' + d(c.endDate) : '' }}</small><em>{{ copied === c.code ? 'Đã chép ✓' : 'Chép' }}</em></button>
+                  <button v-for="c in m.coupons" :key="c.code" class="cp" @click="copy(c.code)">
+                    <b>{{ c.code }}</b>
+                    <small>{{ c.value }}{{ c.minOrder ? ' · đơn từ ' + vnd(c.minOrder) : '' }}{{ c.endDate ? ' · HSD ' + d(c.endDate) : '' }}</small>
+                    <em>{{ copied === c.code ? 'Đã chép' : 'Chép' }}</em>
+                  </button>
                 </div>
                 <div v-if="m.order" class="ocard">
                   <div class="row between"><b>{{ m.order.code }}</b><span :class="['badge', 'badge-' + m.order.status]">{{ ORDER_STATUS[m.order.status] }}</span></div>
@@ -30,6 +46,14 @@
                 </div>
                 <div v-if="m.orders?.length" class="olist">
                   <button v-for="o in m.orders" :key="o.code" class="ochip" @click="ask(o.code)"><b>{{ o.code }}</b><small>{{ ORDER_STATUS[o.status] }} · {{ vnd(o.total) }}</small></button>
+                </div>
+                <div v-if="!m.me && m.k !== 'g'" class="msg-actions">
+                  <button type="button" class="btn-copy" @click="copy(m.text)" :title="copied === m.text ? 'Đã sao chép' : 'Sao chép câu trả lời'">
+                    {{ copied === m.text ? 'Đã sao chép' : 'Sao chép' }}
+                  </button>
+                  <button type="button" :class="['btn-thumb', { on: m.liked }]" @click="m.liked = !m.liked" title="Hữu ích">
+                    {{ m.liked ? 'Đã cảm ơn' : 'Hữu ích' }}
+                  </button>
                 </div>
                 <button v-if="m.handoff" class="btn btn-sm hand" :disabled="busy" @click="handoff">Chuyển nhân viên</button>
                 <router-link v-if="m.ticket" :to="`/support/tickets/${m.ticket}`" class="small" @click="open = false">Mở phiếu {{ m.ticket }} →</router-link>
@@ -47,7 +71,7 @@
         </div>
         <div v-if="mode === 'human' && !auth.loggedIn && !msgs.length" class="namebox"><input v-model="name" class="input" placeholder="Tên của bạn" aria-label="Tên của bạn" /></div>
         <form class="send" @submit.prevent="mode === 'bot' ? ask() : send()">
-          <input v-model="text" class="input" maxlength="500" :placeholder="mode === 'bot' ? 'VD: xe RC dưới 3tr, phí ship, mã giảm giá…' : 'Nhập tin nhắn…'" aria-label="Tin nhắn" />
+          <input v-model="text" class="input" maxlength="500" :placeholder="mode === 'bot' ? 'Hỏi AI: so sánh tỷ lệ, chọn quà, xe RC…' : 'Nhập tin nhắn…'" aria-label="Tin nhắn" />
           <button class="btn btn-sm" :disabled="!text.trim() || typing">Gửi</button>
         </form>
         <a class="call" :href="`tel:${HOTLINE.replace(/ /g, '')}`">Gọi hotline {{ HOTLINE }}</a>
@@ -55,7 +79,8 @@
     </transition>
     <button :class="['fab', { opened: open }]" :aria-label="open ? 'Đóng hỗ trợ' : 'Mở trợ lý hỗ trợ'" @click="toggle">
       <transition name="ic" mode="out-in"><span v-if="open" key="x">✕</span><svg v-else key="c" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></transition>
-      <span v-if="unread && !open" class="dot" /></button>
+      <span v-if="unread && !open" class="dot" />
+    </button>
   </div>
 </template>
 
@@ -69,8 +94,8 @@ import { HOTLINE, ORDER_STATUS, PAY_STATUS, vnd, d } from '../format'
 const auth = useAuth(), router = useRouter()
 const open = ref(false), text = ref(''), name = ref(''), msgs = ref([]), unread = ref(false), list = ref(), mode = ref('bot'), busy = ref(false), typing = ref(false), copied = ref('')
 const staffOnline = ref(true)
-const GREET = { k: 'g', text: 'Xin chào! Mình là trợ lý ARES 👋 Hỏi mình về đơn hàng, mã giảm giá, phí ship — hoặc gõ tên mẫu xe/ngân sách để tìm sản phẩm.' }
-const START = ['Tra cứu đơn hàng', 'Mã giảm giá', 'Phí ship', 'Đổi trả', 'Gợi ý quà tặng', 'Gặp nhân viên']
+const GREET = { k: 'g', text: 'Xin chào! Mình là chuyên gia tư vấn AI của ARES Toys. Bạn có thể hỏi mình về tư vấn chọn xe theo ngân sách, so sánh các tỷ lệ (1:64, 1:18, 1:24), gợi ý quà tặng, kỹ thuật xe RC điều khiển hoặc tra cứu đơn hàng.' }
+const START = ['Tư vấn chọn quà', 'So sánh tỷ lệ 1:64 và 1:18', 'Tư vấn xe RC', 'Cách bảo quản xe', 'Tra cứu đơn hàng', 'Mã giảm giá', 'Gặp nhân viên']
 const bot = ref([]), quick = ref(START)
 const newSid = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 let sid = localStorage.getItem('chatSession') || newSid(); localStorage.setItem('chatSession', sid)
@@ -80,7 +105,7 @@ const save = () => localStorage.setItem(KEY, JSON.stringify({ sid, bot: bot.valu
 try { const h = JSON.parse(localStorage.getItem(KEY) || 'null'); if (h?.sid === sid && h.bot?.length) { bot.value = h.bot; quick.value = h.quick || START; seq = h.bot.length } } catch { /* lịch sử hỏng */ }
 if (!bot.value.length) bot.value = [GREET]
 // Lịch sử lưu ở server (BotLog): khôi phục khi máy này chưa có bản lưu
-if (bot.value.length <= 1) api.get(`/public/bot/${sid}`).then(r => { if (r.data.length) bot.value = [GREET, ...r.data.flatMap(l => [{ k: 'q' + l.id, me: true, text: l.question }, { k: 'a' + l.id, text: l.answer }])]; seq = bot.value.length }).catch(() => {})
+if (bot.value.length <= 1) api.get(`/public/bot/${sid}`).then(r => { if (r.data.length) bot.value = [GREET, ...r.data.flatMap(l => [{ k: 'q' + l.id, me: true, text: l.question }, { k: 'a' + l.id, text: l.answer, aiPowered: l.intent === 'ai-consultant' }])]; seq = bot.value.length }).catch(() => {})
 watch(bot, save, { deep: true })
 const scroll = () => nextTick(() => { if (list.value) list.value.scrollTo({ top: list.value.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }) })
 const push = m => { bot.value.push({ k: ++seq + '-' + Date.now(), ...m }); scroll() }
@@ -92,7 +117,15 @@ async function ask(q) {
   try {
     const { data } = await api.post(`/public/bot/${sid}`, { text: q })
     await wait(Math.max(0, Math.min(900, 350 + data.text.length * 4) - (Date.now() - t0)))
-    const m = { text: data.text, products: data.products, coupons: data.coupons, order: data.order, handoff: data.handoff }
+    const m = {
+      text: data.text,
+      products: data.products,
+      coupons: data.coupons,
+      order: data.order,
+      handoff: data.handoff,
+      aiPowered: !!data.aiPowered,
+      modelUsed: data.modelUsed
+    }
     if (data.askOrder && auth.loggedIn) { try { m.orders = (await api.get('/account/orders')).data.slice(0, 4) } catch { /* bỏ qua */ } }
     push(m); quick.value = data.quick?.length ? data.quick : START
   } catch (e) { push({ text: 'Có lỗi kết nối (' + errMsg(e) + '). Thử lại hoặc gọi hotline nhé.', handoff: true }) }
@@ -128,8 +161,25 @@ async function send() {
 }
 const toggle = () => { open.value = !open.value; unread.value = false; scroll() }
 const openEv = e => { if (!open.value) toggle(); if (e?.detail === 'human') handoff() }
-onMounted(() => { poll(); timer = setInterval(() => { if (open.value || mode.value === 'human') poll() }, 5000); addEventListener('open-chat', openEv) })
-onUnmounted(() => { clearInterval(timer); removeEventListener('open-chat', openEv) })
+
+const onAskAi = e => {
+  if (!open.value) open.value = true
+  mode.value = 'bot'
+  if (e?.detail?.prompt) {
+    nextTick(() => ask(e.detail.prompt))
+  }
+}
+
+onMounted(() => {
+  timer = setInterval(poll, 6000)
+  window.addEventListener('ares:open-chat', openEv)
+  window.addEventListener('ares:ask-ai', onAskAi)
+})
+onUnmounted(() => {
+  clearInterval(timer)
+  window.removeEventListener('ares:open-chat', openEv)
+  window.removeEventListener('ares:ask-ai', onAskAi)
+})
 </script>
 
 <style scoped>
@@ -137,7 +187,7 @@ onUnmounted(() => { clearInterval(timer); removeEventListener('open-chat', openE
 .fab { width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--primary); color: #fff; font-size: 1.3rem; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.25); position: relative; display: grid; place-items: center; transition: transform .2s ease-out, background .2s ease-out; }
 .fab:active { transform: scale(.9); } .fab.opened { background: #111; }
 .dot { position: absolute; top: 6px; right: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--danger); animation: pop .3s ease-out; }
-.box { position: absolute; right: 0; bottom: 70px; width: min(380px, calc(100vw - 24px)); height: min(620px, calc(100vh - 120px)); background: var(--surface); color: var(--text); border: 1px solid var(--border); overflow: hidden; box-shadow: 0 24px 60px -16px rgba(0,0,0,.4); display: flex; flex-direction: column; transform-origin: bottom right; }
+.box { position: absolute; right: 0; bottom: 70px; width: min(390px, calc(100vw - 24px)); height: min(640px, calc(100vh - 120px)); background: var(--surface); color: var(--text); border: 1px solid var(--border); overflow: hidden; box-shadow: 0 24px 60px -16px rgba(0,0,0,.4); display: flex; flex-direction: column; transform-origin: bottom right; }
 .head { display: flex; align-items: center; gap: 10px; background: #111; color: #fff; padding: 12px 14px; border-bottom: 3px solid var(--primary); }
 .av { position: relative; width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center; background: var(--primary); font: 700 1rem 'Oswald', sans-serif; }
 .av i { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; background: #777; border: 2px solid #111; } .av i.on { background: #2ecc71; }
@@ -149,6 +199,10 @@ onUnmounted(() => { clearInterval(timer); removeEventListener('open-chat', openE
 .hint { text-align: center; margin-top: 30px; }
 .msg { max-width: 88%; padding: 9px 12px; font-size: .9rem; line-height: 1.5; white-space: pre-wrap; display: flex; flex-direction: column; gap: 6px; }
 .me { align-self: flex-end; background: var(--primary); color: #fff; } .them { align-self: flex-start; background: var(--bg-2); }
+.ai-badge { display: inline-flex; align-items: center; gap: 4px; font-size: .7rem; font-weight: 700; color: var(--primary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: .04em; }
+.msg-actions { display: flex; gap: 10px; align-items: center; margin-top: 2px; border-top: 1px dashed var(--border); padding-top: 4px; }
+.btn-copy, .btn-thumb { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 2px 4px; font-size: .72rem; font-family: inherit; transition: color .15s; }
+.btn-copy:hover, .btn-thumb:hover, .btn-thumb.on { color: var(--primary); font-weight: 600; }
 .plist, .clist, .olist { display: flex; flex-direction: column; gap: 6px; white-space: normal; }
 .pc { display: flex; gap: 8px; align-items: center; background: var(--surface); padding: 6px; border: 1px solid var(--border); color: var(--text); text-decoration: none; }
 .pc img { width: 54px; height: 40px; object-fit: cover; flex-shrink: 0; } .pc span { min-width: 0; display: flex; flex-direction: column; } .pc b { font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pc small, .cp small, .ochip small, .ocard small { color: var(--muted); font-size: .74rem; }

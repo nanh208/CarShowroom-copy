@@ -19,8 +19,10 @@ import java.util.stream.*;
 public class BotController {
     private final ChatIntentRepo intents; private final BotLogRepo logs; private final ProductRepo products; private final PromotionRepo promos;
     private final OrderRepo orders; private final TicketRepo tickets; private final ChatRepo chats;
-    public BotController(ChatIntentRepo intents, BotLogRepo logs, ProductRepo products, PromotionRepo promos, OrderRepo orders, TicketRepo tickets, ChatRepo chats) {
+    private final com.ares.shop.service.AiConsultantService aiService;
+    public BotController(ChatIntentRepo intents, BotLogRepo logs, ProductRepo products, PromotionRepo promos, OrderRepo orders, TicketRepo tickets, ChatRepo chats, com.ares.shop.service.AiConsultantService aiService) {
         this.intents = intents; this.logs = logs; this.products = products; this.promos = promos; this.orders = orders; this.tickets = tickets; this.chats = chats;
+        this.aiService = aiService;
     }
 
     public static String norm(String s) {
@@ -69,9 +71,13 @@ public class BotController {
                 r.put("text", best.answer);
                 if (best.quickReplies != null && !best.quickReplies.isBlank()) r.put("quick", Arrays.stream(best.quickReplies.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
             } else {
-                var found = search(n);
-                if (!found.isEmpty()) { intent = "product-search"; r.put("text", "Mình tìm thấy " + found.size() + " sản phẩm phù hợp:"); r.put("products", found); }
-                else { r.put("text", "Xin lỗi, mình chưa hiểu câu hỏi. Bạn thử diễn đạt khác, chọn gợi ý bên dưới, hoặc chuyển sang nhân viên nhé."); r.put("handoff", true); }
+                var ai = aiService.consult(q, u, session);
+                intent = "ai-consultant";
+                r.put("text", ai.text());
+                if (!ai.products().isEmpty()) r.put("products", ai.products());
+                if (!ai.quick().isEmpty()) r.put("quick", ai.quick());
+                r.put("aiPowered", ai.aiPowered());
+                r.put("modelUsed", ai.modelUsed());
             }
         }
         BotLog l = new BotLog(); l.session = session; l.userId = u == null ? null : u.id; l.question = q; l.intent = intent; l.matched = intent != null;
@@ -164,5 +170,30 @@ public class BotController {
             "sessions", all.stream().map(l -> l.session).distinct().count(),
             "byIntent", byIntent.entrySet().stream().sorted((x, y) -> Long.compare(y.getValue(), x.getValue())).map(e -> Map.of("intent", e.getKey(), "count", e.getValue())).toList(),
             "unmatched", unmatched.entrySet().stream().sorted((x, y) -> Long.compare(y.getValue(), x.getValue())).limit(15).map(e -> Map.of("q", e.getKey(), "count", e.getValue())).toList());
+    }
+
+    // ===== Admin AI Config & Test =====
+    @GetMapping("/api/admin/bot/ai-config")
+    public Map<String, Object> getAiConfig() {
+        return aiService.getConfig();
+    }
+
+    @PostMapping("/api/admin/bot/ai-config")
+    public Map<String, Object> saveAiConfig(@RequestBody Map<String, Object> req) {
+        aiService.saveConfig(req);
+        return aiService.getConfig();
+    }
+
+    @PostMapping("/api/admin/bot/ai-test")
+    public Map<String, Object> testAi(@RequestBody Ask a) {
+        String q = Optional.ofNullable(a.text()).orElse("").trim();
+        var ai = aiService.consult(q, Current.userOrNull(), "admin-ai-test");
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("text", ai.text());
+        r.put("products", ai.products());
+        r.put("quick", ai.quick());
+        r.put("aiPowered", ai.aiPowered());
+        r.put("modelUsed", ai.modelUsed());
+        return r;
     }
 }

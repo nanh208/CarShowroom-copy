@@ -10,7 +10,7 @@
         <button v-if="imgs.length > 1" class="arr l" aria-label="Ảnh trước" @click="step(-1)">‹</button>
         <button v-if="imgs.length > 1" class="arr r" aria-label="Ảnh sau" @click="step(1)">›</button>
         <span v-if="fs" class="flashtag">Flash sale · còn <Countdown :to="fs.endTime" /><template v-if="fs.quota"> · {{ fs.quota - fs.sold }} suất</template></span>
-        <div class="mediabtns"><button type="button" @click="v360 = '360'">⟳ 360°</button><button type="button" @click="v360 = 'video'">▶ Video</button></div>
+        <div class="mediabtns"><button type="button" @click="v360 = '360'">⟳ 360°</button><button type="button" @click="v360 = 'video'">▶ Video</button><button type="button" class="btn-ai-media" @click="askAiAboutThis">Tư vấn AI</button></div>
         <div class="iconbtns">
           <button :class="['wish', { on: prefs.isWished(p.id) }]" :aria-pressed="prefs.isWished(p.id)" title="Yêu thích" @click="prefs.toggleWish(p)"><svg viewBox="0 0 24 24" width="18" height="18" :fill="prefs.isWished(p.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button>
           <button :class="{ on: prefs.inCompare(p.id) }" title="So sánh" @click="prefs.toggleCompare(p)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M8 21H3v-5M21 3l-7 7M3 21l7-7"/></svg></button>
@@ -110,7 +110,11 @@
         <img loading="lazy" decoding="async" :src="imgs[imgs.length - 1]" alt="" />
         <div><span class="eyebrow">Điểm nổi bật</span><h2>{{ p.scale ? 'Tỷ lệ ' + p.scale : p.name }} · {{ p.material }}</h2>
           <p class="muted">{{ p.description }}</p>
-          <router-link to="/support" class="btn btn-outline btn-sm">Cần tư vấn? Chat với ARES →</router-link></div>
+          <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button type="button" class="btn btn-outline btn-sm btn-ask-ai" @click="askAiAboutThis">Hỏi chuyên gia AI về xe này</button>
+            <router-link to="/support" class="btn btn-outline btn-sm">Chat với nhân viên →</router-link>
+          </div>
+        </div>
       </section>
 
       <section v-if="likes.length" class="block">
@@ -137,6 +141,7 @@
           <div class="bb-price"><small v-if="fs">Giá flash sale</small><b>{{ vnd(unitPrice * qty) }}</b></div>
           <button class="btn btn-outline" :disabled="!stock" @click="add(false)">Thêm vào giỏ</button>
           <BuyNowButton :disabled="!stock" :before="canBuy" :after="buyNow" />
+          <button type="button" class="btn btn-outline btn-sm btn-ask-ai" @click="askAiAboutThis" title="Hỏi chuyên gia AI về mẫu xe này">Hỏi AI</button>
         </div>
       </div>
       <ScaleGuide v-if="guide" :current="p.scale" @close="guide = false" />
@@ -267,6 +272,14 @@ function add(buyNow, silent) {
 }
 const canBuy = () => { if (variants.value.length && !variant.value) { toast('Vui lòng chọn phiên bản', 'error'); return false } }
 const buyNow = async () => { add(true, true); await router.push('/checkout') }
+
+function askAiAboutThis() {
+  const carName = p.value?.name || ''
+  const scale = p.value?.scale ? `tỷ lệ ${p.value.scale}` : ''
+  const price = p.value?.price ? `giá ${vnd(p.value.price)}` : ''
+  const prompt = `Tư vấn giúp tôi về mẫu xe ${carName} (${scale}, ${price}): chất liệu độ hoàn thiện ra sao và có phù hợp để sưu tầm hoặc làm quà không?`
+  window.dispatchEvent(new CustomEvent('ares:ask-ai', { detail: { prompt, productId: p.value?.id } }))
+}
 watch(() => route.params.id, id => id && load(), { immediate: true })
 </script>
 
