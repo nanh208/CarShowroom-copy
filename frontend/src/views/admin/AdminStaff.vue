@@ -22,15 +22,20 @@
       </div>
     </div>
 
-    <!-- Tabs: Nhân sự vs Hoa hồng -->
+    <!-- Tabs: Nhân sự vs Hoa hồng vs Chia đơn tự động -->
     <div class="staff-tabs-strip">
       <button :class="['staff-tab-btn', { active: activeTab === 'staff' }]" @click="activeTab = 'staff'">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Danh sách nhân sự & Phân công
+        Danh sách nhân sự
       </button>
       <button :class="['staff-tab-btn', { active: activeTab === 'commission' }]" @click="activeTab = 'commission'">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg>
         Thưởng hoa hồng & Hiệu suất bán hàng
+      </button>
+      <button :class="['staff-tab-btn', { active: activeTab === 'dispatch' }]" @click="activeTab = 'dispatch'; loadDispatchData()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="m9 11 3 3 6-6"/></svg>
+        Tự động phân công đơn hàng
+        <span v-if="dispatchStats.unassignedCount > 0" class="dispatch-badge-count">{{ dispatchStats.unassignedCount }}</span>
       </button>
     </div>
 
@@ -115,9 +120,10 @@
               <th style="width:70px">ID</th>
               <th>Nhân viên</th>
               <th style="width:130px">Điện thoại</th>
-              <th style="width:140px">Vai trò</th>
+              <th style="width:130px">Vai trò</th>
               <th style="width:130px">Trạng thái</th>
-              <th style="width:170px">Dư nợ công nợ</th>
+              <th style="width:120px;text-align:center">Nhận đơn TĐ</th>
+              <th style="width:160px">Dư nợ công nợ</th>
               <th>Bộ phận / Ghi chú</th>
               <th style="text-align:right;width:220px">Thao tác</th>
             </tr>
@@ -154,6 +160,16 @@
                 <span :class="['status-badge', s.locked ? 'status-locked' : 'status-active']">
                   {{ s.locked ? 'Đã tạm khoá' : 'Đang làm việc' }}
                 </span>
+              </td>
+              <td style="text-align:center">
+                <button
+                  type="button"
+                  :class="['btn btn-sm', s.autoAssignOrders ? 'btn-success-subtle' : 'btn-muted-subtle']"
+                  :title="s.autoAssignOrders ? 'Đang nhận đơn tự động (Nhấp để tắt)' : 'Đang tắt nhận đơn tự động (Nhấp để bật)'"
+                  @click="toggleStaffAutoAssign(s)"
+                >
+                  {{ s.autoAssignOrders ? 'Đang bật' : 'Tắt' }}
+                </button>
               </td>
               <td>
                 <div v-if="s.remainingDebt > 0" class="debt-box">
@@ -306,6 +322,211 @@
       </div>
     </div>
     <!-- END TAB 2 -->
+
+    <!-- TAB 3: TỰ ĐỘNG PHÂN CÔNG ĐƠN HÀNG (AUTO-DISPATCH) -->
+    <div v-show="activeTab === 'dispatch'">
+      <!-- Dispatch Overview KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card" :class="{ highlight: !dispatchStats.config.enabled }">
+          <span class="kpi-lbl">Trạng thái chia đơn tự động</span>
+          <b class="kpi-val" :class="dispatchStats.config.enabled ? 'highlight-val' : 'danger-val'">
+            {{ dispatchStats.config.enabled ? 'Đang kích hoạt (ON)' : 'Tạm dừng (OFF)' }}
+          </b>
+          <small class="muted">Áp dụng cho mọi đơn online & đấu giá mới</small>
+        </div>
+        <div class="kpi-card" :class="{ highlight: dispatchStats.unassignedCount > 0 }">
+          <span class="kpi-lbl">Đơn chưa có người phụ trách</span>
+          <b class="kpi-val" :class="{ 'danger-val': dispatchStats.unassignedCount > 0 }">
+            {{ dispatchStats.unassignedCount }} đơn
+          </b>
+          <small class="muted">Chờ quản lý hoặc hệ thống phân bổ</small>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">Nhân sự sẵn sàng nhận đơn</span>
+          <b class="kpi-val">{{ eligibleStaffCount }} / {{ totalWorkloadStaffCount }}</b>
+          <small class="muted">Tài khoản STAFF/ADMIN đang kích hoạt</small>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-lbl">Thuật toán phân bổ</span>
+          <b class="kpi-val" style="font-size:1.15rem;color:var(--accent)">
+            {{ strategyLabel(dispatchStats.config.strategy) }}
+          </b>
+          <small class="muted">Xoay vòng / Cân bằng tải / Chỉ tiêu KPI</small>
+        </div>
+      </div>
+
+      <!-- Action Banner: Chia đơn chưa có người phụ trách -->
+      <div v-if="dispatchStats.unassignedCount > 0" class="dispatch-alert-card card">
+        <div class="row between align-center" style="gap:16px;flex-wrap:wrap">
+          <div class="row align-center" style="gap:12px">
+            <div class="dispatch-alert-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <h4 style="margin:0 0 4px">Có {{ dispatchStats.unassignedCount }} đơn hàng chưa có nhân viên phụ trách</h4>
+              <p class="muted small" style="margin:0">Hệ thống sẽ dùng thuật toán {{ strategyLabel(dispatchStats.config.strategy) }} để chia đều các đơn này cho danh sách nhân sự đủ điều kiện.</p>
+            </div>
+          </div>
+          <button class="btn btn-primary" :disabled="dispatchingOrders" @click="dispatchNow">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+            {{ dispatchingOrders ? 'Đang phân công...' : 'Chia ngay ' + dispatchStats.unassignedCount + ' đơn hàng' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Dispatch Configuration Box -->
+      <div class="card" style="margin-top:16px">
+        <div class="row between align-center" style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+          <div>
+            <h3 style="margin:0 0 4px">Cấu hình thuật toán chia đơn tự động</h3>
+            <p class="muted small" style="margin:0">Tuỳ biến quy tắc chia đơn, tỷ lệ hoa hồng mặc định và cơ chế cân bằng công việc.</p>
+          </div>
+          <button class="btn btn-primary" :disabled="savingConfig" @click="saveDispatchConfig">
+            {{ savingConfig ? 'Đang lưu...' : 'Lưu cấu hình' }}
+          </button>
+        </div>
+
+        <div class="config-grid">
+          <!-- Master Switch -->
+          <div class="config-box">
+            <label class="config-title">1. Trạng thái tự động phân công</label>
+            <div class="row align-center" style="gap:12px;margin-top:10px">
+              <label class="switch-ui">
+                <input v-model="dispatchStats.config.enabled" type="checkbox" />
+                <span class="slider-ui" />
+              </label>
+              <span>{{ dispatchStats.config.enabled ? 'Đang BẬT — Đơn mới tạo sẽ tự động chia ngay cho nhân viên' : 'Đang TẮT — Không tự động chia đơn khi khách đặt hàng' }}</span>
+            </div>
+          </div>
+
+          <!-- Strategy Selection -->
+          <div class="config-box" style="margin-top:16px">
+            <label class="config-title">2. Thuật toán phân bổ đơn hàng</label>
+            <div class="strategy-options" style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
+              <label class="strategy-radio-card" :class="{ selected: dispatchStats.config.strategy === 'ROUND_ROBIN' }">
+                <input v-model="dispatchStats.config.strategy" type="radio" value="ROUND_ROBIN" />
+                <div class="strategy-info">
+                  <b>Xoay vòng đều (Round-Robin)</b>
+                  <p class="muted small">Lần lượt chia đơn cho từng nhân viên theo thứ tự vòng tròn, đảm bảo số lượng đơn chia hoàn toàn đồng đều.</p>
+                </div>
+              </label>
+
+              <label class="strategy-radio-card" :class="{ selected: dispatchStats.config.strategy === 'LEAST_LOADED' }">
+                <input v-model="dispatchStats.config.strategy" type="radio" value="LEAST_LOADED" />
+                <div class="strategy-info">
+                  <b>Cân bằng tải đơn chờ (Least-Loaded)</b>
+                  <p class="muted small">Ưu tiên phân công cho nhân viên đang có ít đơn hàng chờ xử lý nhất (đơn mới, đang đóng gói, đang giao).</p>
+                </div>
+              </label>
+
+              <label class="strategy-radio-card" :class="{ selected: dispatchStats.config.strategy === 'TARGET_BASED' }">
+                <input v-model="dispatchStats.config.strategy" type="radio" value="TARGET_BASED" />
+                <div class="strategy-info">
+                  <b>Bù trừ theo doanh số KPI (Target-Based)</b>
+                  <p class="muted small">Ưu tiên chia cho nhân viên có doanh số tháng thấp hơn để hỗ trợ đồng đội hoàn thành chỉ tiêu tháng.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Commission Rate & Notification -->
+          <div class="config-box" style="margin-top:16px">
+            <label class="config-title">3. Tỷ lệ hoa hồng mặc định & Thông báo</label>
+            <div class="row" style="gap:16px;margin-top:10px;flex-wrap:wrap">
+              <div class="form-group" style="flex:1;min-width:220px">
+                <label>Tỷ lệ hoa hồng đơn online (%)</label>
+                <input v-model.number="dispatchStats.config.defaultCommissionRate" type="number" step="0.1" min="0" max="50" class="input" />
+                <small class="muted">Áp dụng nếu nhân viên chưa có tỷ lệ hoa hồng riêng.</small>
+              </div>
+              <div class="form-group" style="flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:center">
+                <label class="row align-center" style="gap:8px;cursor:pointer;margin-top:8px">
+                  <input v-model="dispatchStats.config.autoNotify" type="checkbox" style="width:18px;height:18px" />
+                  <b>Gửi thông báo chuông in-app đến nhân viên</b>
+                </label>
+                <small class="muted">Nhân viên nhận thông báo thời gian thực khi có đơn mới được giao.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff Workload & Assignment Control Table -->
+      <div class="card" style="margin-top:16px">
+        <div class="row between align-center" style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+          <div>
+            <h3>Danh sách nhân sự & Tải công việc hiện tại</h3>
+            <p class="muted small">Quản lý nhân viên tham gia nhận đơn tự động và theo dõi số lượng đơn đang phụ trách.</p>
+          </div>
+          <button class="btn btn-sm btn-outline" @click="loadDispatchData">Làm mới</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:70px">ID</th>
+                <th>Nhân viên</th>
+                <th>Bộ phận</th>
+                <th style="width:140px;text-align:center">Đơn đang xử lý</th>
+                <th style="width:170px;text-align:right">Doanh số phụ trách</th>
+                <th style="width:130px;text-align:center">Tỷ lệ hoa hồng</th>
+                <th style="width:160px;text-align:center">Nhận đơn tự động</th>
+                <th style="text-align:right;width:140px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="sw in dispatchStats.staffWorkload" :key="sw.id">
+                <td><b>#{{ sw.id }}</b></td>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar-wrap">
+                      <div class="avatar-ph">{{ getInitials(sw.fullName || sw.email) }}</div>
+                    </div>
+                    <div>
+                      <div class="user-name">
+                        <b>{{ sw.fullName }}</b>
+                        <span v-if="sw.role === 'ADMIN'" class="badge badge-accent" style="margin-left:4px">Admin</span>
+                      </div>
+                      <div class="user-email muted">{{ sw.email }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ sw.department }}</td>
+                <td style="text-align:center">
+                  <span class="badge" :class="sw.activeOrders > 5 ? 'badge-danger' : sw.activeOrders > 0 ? 'badge-primary' : ''">
+                    {{ sw.activeOrders }} đơn chờ
+                  </span>
+                </td>
+                <td style="text-align:right;font-weight:700">
+                  {{ vnd(sw.totalSales) }}
+                </td>
+                <td style="text-align:center">
+                  <b>{{ sw.commissionRate }}%</b>
+                </td>
+                <td style="text-align:center">
+                  <span :class="['status-badge', sw.autoAssignOrders ? 'status-active' : 'status-locked']">
+                    {{ sw.autoAssignOrders ? 'Đang nhận' : 'Đã tạm dừng' }}
+                  </span>
+                </td>
+                <td style="text-align:right">
+                  <button
+                    type="button"
+                    :class="['btn btn-sm', sw.autoAssignOrders ? 'btn-lock' : 'btn-unlock']"
+                    @click="toggleStaffAutoAssign(sw)"
+                  >
+                    {{ sw.autoAssignOrders ? 'Tắt nhận' : 'Bật nhận' }}
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!dispatchStats.staffWorkload?.length">
+                <td colspan="8" class="muted" style="text-align:center;padding:24px">Không có nhân viên nào phù hợp.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- END TAB 3 -->
 
     <!-- Modal Quyết toán hoa hồng nhân viên -->
     <div v-if="showPayoutModal" class="modal-backdrop" @click.self="showPayoutModal = false">
@@ -479,6 +700,13 @@
           <div class="form-group">
             <label>Bộ phận / Ghi chú nội bộ</label>
             <input v-model.trim="form.staffNote" class="input" placeholder="Ví dụ: Thu ngân, Bán hàng, Thủ kho, CSKH..." />
+          </div>
+
+          <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:6px 0">
+            <input id="autoAssignCheck" v-model="form.autoAssignOrders" type="checkbox" style="width:18px;height:18px;cursor:pointer" />
+            <label for="autoAssignCheck" style="margin:0;cursor:pointer;font-weight:600">
+              Nhận đơn hàng tự động chia (Auto-dispatch)
+            </label>
           </div>
 
           <div v-if="formError" class="form-error">
@@ -730,7 +958,12 @@ const openCreateModal = () => {
     password: '',
     phone: '',
     role: 'STAFF',
-    staffNote: ''
+    staffCode: '',
+    department: 'Tư vấn bán hàng',
+    commissionRate: 2.0,
+    monthlySalesTarget: 50000000,
+    staffNote: '',
+    autoAssignOrders: true
   }
   formError.value = ''
   showModal.value = true
@@ -744,7 +977,12 @@ const openEditModal = (staff) => {
     password: '',
     phone: staff.phone || '',
     role: staff.role || 'STAFF',
-    staffNote: staff.staffNote || ''
+    staffCode: staff.staffCode || '',
+    department: staff.department || '',
+    commissionRate: staff.commissionRate != null ? staff.commissionRate : 2.0,
+    monthlySalesTarget: staff.monthlySalesTarget != null ? staff.monthlySalesTarget : 50000000,
+    staffNote: staff.staffNote || '',
+    autoAssignOrders: staff.autoAssignOrders ?? true
   }
   formError.value = ''
   showModal.value = true
@@ -760,7 +998,12 @@ const saveStaff = async () => {
         fullName: form.value.fullName,
         phone: form.value.phone,
         role: form.value.role,
-        staffNote: form.value.staffNote
+        staffCode: form.value.staffCode,
+        department: form.value.department,
+        commissionRate: form.value.commissionRate,
+        monthlySalesTarget: form.value.monthlySalesTarget,
+        staffNote: form.value.staffNote,
+        autoAssignOrders: form.value.autoAssignOrders
       }
       if (form.value.password && form.value.password.trim().length >= 6) {
         payload.password = form.value.password.trim()
@@ -774,11 +1017,17 @@ const saveStaff = async () => {
         password: form.value.password,
         phone: form.value.phone,
         role: form.value.role,
-        staffNote: form.value.staffNote
+        staffCode: form.value.staffCode,
+        department: form.value.department,
+        commissionRate: form.value.commissionRate,
+        monthlySalesTarget: form.value.monthlySalesTarget,
+        staffNote: form.value.staffNote,
+        autoAssignOrders: form.value.autoAssignOrders
       })
     }
     showModal.value = false
     await loadStaff()
+    await loadDispatchData()
   } catch (err) {
     formError.value = err.response?.data?.message || err.message || 'Lỗi khi lưu nhân viên'
   } finally {
@@ -980,8 +1229,102 @@ async function submitVipModal() {
   }
 }
 
+// ===== TAB 3: TỰ ĐỘNG PHÂN CÔNG ĐƠN HÀNG =====
+const dispatchStats = ref({
+  config: {
+    enabled: true,
+    strategy: 'ROUND_ROBIN',
+    defaultCommissionRate: 2.0,
+    autoNotify: true
+  },
+  unassignedCount: 0,
+  staffWorkload: []
+})
+const loadingDispatch = ref(false)
+const savingConfig = ref(false)
+const dispatchingOrders = ref(false)
+
+const eligibleStaffCount = computed(() => {
+  return dispatchStats.value.staffWorkload?.filter(s => s.autoAssignOrders).length || 0
+})
+
+const totalWorkloadStaffCount = computed(() => {
+  return dispatchStats.value.staffWorkload?.length || 0
+})
+
+const strategyLabel = (strat) => {
+  switch (strat) {
+    case 'ROUND_ROBIN': return 'Xoay vòng đều'
+    case 'LEAST_LOADED': return 'Cân bằng tải đơn chờ'
+    case 'TARGET_BASED': return 'Bù trừ doanh số KPI'
+    default: return 'Xoay vòng đều'
+  }
+}
+
+const loadDispatchData = async () => {
+  loadingDispatch.value = true
+  try {
+    const res = await api.get('/admin/order-assignment/config')
+    if (res.data) {
+      dispatchStats.value = res.data
+    }
+  } catch (err) {
+    console.error('Lỗi tải cấu hình phân công đơn:', err)
+  } finally {
+    loadingDispatch.value = false
+  }
+}
+
+const saveDispatchConfig = async () => {
+  savingConfig.value = true
+  try {
+    await api.post('/admin/order-assignment/config', dispatchStats.value.config)
+    toast('Đã lưu cấu hình tự động phân công đơn hàng!')
+    await loadDispatchData()
+  } catch (err) {
+    toast(errMsg(err, 'Lỗi lưu cấu hình chia đơn'))
+  } finally {
+    savingConfig.value = false
+  }
+}
+
+const toggleStaffAutoAssign = async (staff) => {
+  try {
+    const res = await api.post(`/admin/order-assignment/toggle-staff/${staff.id}`)
+    staff.autoAssignOrders = res.data.autoAssignOrders
+    toast(`Nhân viên ${staff.fullName}: ${staff.autoAssignOrders ? 'ĐÃ BẬT' : 'ĐÃ TẮT'} nhận đơn tự động`)
+    if (activeTab.value === 'dispatch') {
+      await loadDispatchData()
+    } else {
+      await loadStaff()
+    }
+  } catch (err) {
+    toast(errMsg(err, 'Lỗi cập nhật trạng thái nhận đơn'))
+  }
+}
+
+const dispatchNow = async () => {
+  if (dispatchingOrders.value) return
+  dispatchingOrders.value = true
+  try {
+    const res = await api.post('/admin/order-assignment/dispatch-unassigned')
+    if (res.data?.success) {
+      toast(`Đã tự động phân công ${res.data.dispatchedCount} đơn hàng cho nhân viên!`)
+      await loadDispatchData()
+      await loadStaff()
+    } else {
+      toast(res.data?.message || 'Không có đơn nào cần phân công')
+    }
+  } catch (err) {
+    toast(errMsg(err, 'Lỗi phân công đơn hàng'))
+  } finally {
+    dispatchingOrders.value = false
+  }
+}
+
 onMounted(() => {
   loadStaff()
+  loadDispatchData()
 })
 </script>
 
@@ -1447,5 +1790,142 @@ onMounted(() => {
     flex-direction: column;
     gap: 12px;
   }
+}
+
+/* Dispatch Tab Styles */
+.dispatch-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  margin-left: 6px;
+}
+
+.dispatch-alert-card {
+  margin-top: 16px;
+  background: linear-gradient(135deg, rgba(230, 81, 0, 0.08), rgba(245, 158, 11, 0.08));
+  border: 1px solid rgba(230, 81, 0, 0.3);
+  padding: 16px 20px;
+}
+
+.dispatch-alert-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(230, 81, 0, 0.15);
+  color: var(--accent, #e65100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.strategy-radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.strategy-radio-card:hover {
+  border-color: var(--accent, #e65100);
+}
+
+.strategy-radio-card.selected {
+  border-color: var(--accent, #e65100);
+  background: rgba(230, 81, 0, 0.05);
+}
+
+.strategy-radio-card input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--accent, #e65100);
+  width: 18px;
+  height: 18px;
+}
+
+.strategy-info p {
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.switch-ui {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch-ui input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-ui {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.slider-ui:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.switch-ui input:checked + .slider-ui {
+  background-color: #10b981;
+}
+
+.switch-ui input:checked + .slider-ui:before {
+  transform: translateX(20px);
+}
+
+.btn-success-subtle {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-weight: 600;
+}
+
+.btn-success-subtle:hover {
+  background: #10b981;
+  color: #fff;
+}
+
+.btn-muted-subtle {
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.25);
+  font-weight: 600;
+}
+
+.btn-muted-subtle:hover {
+  background: #64748b;
+  color: #fff;
 }
 </style>

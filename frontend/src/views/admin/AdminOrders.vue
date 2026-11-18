@@ -8,6 +8,9 @@
         <button :class="{ on: channel === 'POS' }" @click="channel = 'POS'; load()">Tại quầy (POS)</button>
       </div>
       <div class="row" style="gap:8px">
+        <button class="btn btn-sm btn-outline" :disabled="dispatching" title="Tự động chia đơn cho nhân viên" @click="autoDispatchAll">
+          {{ dispatching ? 'Đang chia đơn...' : 'Tự động chia đơn' }}
+        </button>
         <router-link to="/admin/sales-channels" class="btn btn-sm btn-outline">Thống kê On/Off</router-link>
         <router-link to="/admin/pos" class="btn btn-sm btn-primary">+ Bán hàng tại quầy (POS)</router-link>
       </div>
@@ -37,6 +40,14 @@
               <span v-else class="badge">Online</span>
             </div>
             <div v-if="o.staffName" class="small muted">NV: <b>{{ o.staffName }}</b></div>
+            <div v-else-if="o.status !== 'CANCELLED'" class="small" style="margin-top:2px">
+              <span class="badge" style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);font-size:0.72rem;padding:0 5px">
+                Chưa gán NV
+              </span>
+              <button class="btn-link-action small" style="margin-left:4px;color:var(--accent);text-decoration:underline;cursor:pointer;background:none;border:none;padding:0;font-weight:600" @click.stop="openAssignModal(o)">
+                Gán NV
+              </button>
+            </div>
             <div v-if="o.giftWrap" class="small gift">Gói quà</div>
             <div class="small"><span v-if="o.guest" class="badge badge-PENDING">Khách lẻ</span> <span v-if="o.shippingMethod === 'EXPRESS'" class="badge badge-CONFIRMED">Giao nhanh</span></div>
           </td><td>{{ o.buyerName }}<div class="small muted">{{ o.phone }}</div></td><td class="small">{{ dt(o.createdAt) }}</td>
@@ -84,6 +95,33 @@
           <div class="row" style="gap:6px"><input v-model.trim="noteText" class="input" style="flex:1" placeholder="Thêm ghi chú…" aria-label="Ghi chú nội bộ" @keyup.enter="addNote" /><button class="btn btn-sm" :disabled="!noteText" @click="addNote">Thêm</button></div>
         </div>
         <div class="row" style="gap:8px;margin-top:12px"><button class="btn btn-outline" @click="view = null">Đóng</button><button class="btn btn-outline" @click="labels([view.id], 'packing')">In phiếu đóng gói</button></div>
+      </div>
+    </div>
+    <!-- Modal Gan nhan vien cho don hang -->
+    <div v-if="assignTarget" class="modal-bg" @click.self="assignTarget = null">
+      <div class="modal card" style="max-width:440px">
+        <div class="row between" style="margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px">
+          <h3 style="margin:0">Phân công đơn {{ assignTarget.code }}</h3>
+          <button class="btn-close" style="background:none;border:none;font-size:1.4rem;cursor:pointer" @click="assignTarget = null">&times;</button>
+        </div>
+        <p class="small muted" style="margin-bottom:12px">
+          Khách: <b>{{ assignTarget.buyerName }}</b> &middot; Tổng: <b>{{ vnd(assignTarget.total) }}</b>
+        </p>
+        <div class="form-group" style="margin-bottom:14px">
+          <label style="display:block;margin-bottom:6px;font-weight:600">Chọn nhân viên phụ trách:</label>
+          <select v-model="selectedStaffId" class="input" style="width:100%">
+            <option value="" disabled>-- Chọn nhân viên --</option>
+            <option v-for="s in staffOptions" :key="s.id" :value="s.id">
+              {{ s.fullName }} ({{ s.staffCode || ('#' + s.id) }} - {{ s.department || 'Tư vấn' }})
+            </option>
+          </select>
+        </div>
+        <div class="row" style="justify-content:flex-end;gap:8px">
+          <button class="btn btn-outline" @click="assignTarget = null">Huỷ</button>
+          <button class="btn btn-primary" :disabled="!selectedStaffId || assigning" @click="submitManualAssign">
+            {{ assigning ? 'Đang gán...' : 'Xác nhận phân công' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -135,7 +173,65 @@ async function setStatus(o, s) {
   try { await api.patch(`/admin/orders/${o.id}/status`, { status: s, note }) } catch (e) { err.value = errMsg(e) }
   load()
 }
-onMounted(async () => { await load(); if (route.query.labels && list.value.length) { sel.value = list.value.map(o => o.id) } })
+
+const dispatching = ref(false)
+const assignTarget = ref(null)
+const selectedStaffId = ref('')
+const assigning = ref(false)
+const staffOptions = ref([])
+
+async function loadStaffOptions() {
+  try {
+    const res = await api.get('/admin/staff')
+    staffOptions.value = (res.data || []).filter(s => !s.locked)
+  } catch (e) {
+    console.error('Lỗi tải danh sách nhân viên:', e)
+  }
+}
+
+async function autoDispatchAll() {
+  if (dispatching.value) return
+  dispatching.value = true
+  try {
+    const res = await api.post('/admin/order-assignment/dispatch-unassigned')
+    if (res.data?.success) {
+      toast(`Đã tự động phân công ${res.data.dispatchedCount} đơn hàng cho nhân viên!`)
+      await load()
+    } else {
+      toast(res.data?.message || 'Không có đơn nào cần phân công')
+    }
+  } catch (e) {
+    toast(errMsg(e, 'Lỗi tự động chia đơn'), 'error')
+  } finally {
+    dispatching.value = false
+  }
+}
+
+function openAssignModal(o) {
+  assignTarget.value = o
+  selectedStaffId.value = o.staffId || ''
+  if (!staffOptions.value.length) loadStaffOptions()
+}
+
+async function submitManualAssign() {
+  if (!assignTarget.value || !selectedStaffId.value) return
+  assigning.value = true
+  try {
+    await api.post('/admin/order-assignment/assign', {
+      orderId: assignTarget.value.id,
+      staffId: selectedStaffId.value
+    })
+    toast(`Đã phân công đơn ${assignTarget.value.code} thành công!`)
+    assignTarget.value = null
+    await load()
+  } catch (e) {
+    toast(errMsg(e, 'Lỗi phân công đơn'), 'error')
+  } finally {
+    assigning.value = false
+  }
+}
+
+onMounted(async () => { loadStaffOptions();  await load(); if (route.query.labels && list.value.length) { sel.value = list.value.map(o => o.id) } })
 </script>
 <style scoped>
 .bulk { position: sticky; top: 64px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 12px; background: #111; color: #fff; }

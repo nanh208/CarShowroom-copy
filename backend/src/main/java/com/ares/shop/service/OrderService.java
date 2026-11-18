@@ -59,6 +59,7 @@ public class OrderService {
     @org.springframework.beans.factory.annotation.Autowired private ReferralRepo referrals;
 
     @org.springframework.beans.factory.annotation.Autowired private CarrierShippingService carriers;
+    @org.springframework.beans.factory.annotation.Autowired private OrderAssignmentService assignmentService;
 
     public static final long REFERRAL_DISCOUNT = 50_000; public static final int REFERRAL_REWARD = 100;
 
@@ -538,6 +539,11 @@ public class OrderService {
         o.timeline.put("PENDING", LocalDateTime.now());
 
         CustomerOrder saved = orders.save(o);
+        if (assignmentService != null) {
+            try {
+                saved = assignmentService.assignOrder(saved);
+            } catch (Exception ignored) {}
+        }
 
         String how = switch (o.paymentMethod) {
 
@@ -765,7 +771,13 @@ public class OrderService {
 
         o.timeline.put("PENDING", LocalDateTime.now());
 
-        return orders.save(o);
+        CustomerOrder saved = orders.save(o);
+        if (assignmentService != null) {
+            try {
+                saved = assignmentService.assignOrder(saved);
+            } catch (Exception ignored) {}
+        }
+        return saved;
 
     }
 

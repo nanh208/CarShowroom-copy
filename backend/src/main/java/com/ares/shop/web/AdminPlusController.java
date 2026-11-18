@@ -21,6 +21,7 @@ public class AdminPlusController {
     private final BundleRepo bundles; private final GiftCardRepo giftCards; private final CategoryRepo categories; private final StockMovementSink sink;
     private final StaffDebtRepository staffDebts;
     @org.springframework.beans.factory.annotation.Autowired private com.ares.shop.repo.StaffCommissionTxRepo commissionTxRepo;
+    @org.springframework.beans.factory.annotation.Autowired private OrderAssignmentService assignmentService;
     private final PasswordEncoder enc;
     private final ObjectMapper json = new ObjectMapper();
 
@@ -395,6 +396,8 @@ public class AdminPlusController {
                     m.put("department", u.department != null ? u.department : "Tư vấn bán hàng");
                     m.put("commissionRate", u.commissionRate != null ? u.commissionRate : 2.0);
                     m.put("monthlySalesTarget", u.monthlySalesTarget != null ? u.monthlySalesTarget : 50_000_000L);
+                    m.put("employmentStatus", u.employmentStatus != null ? u.employmentStatus : "ACTIVE");
+                    m.put("autoAssignOrders", u.autoAssignOrders == null || u.autoAssignOrders);
                     m.put("remainingDebt", remainingDebt);
                     m.put("totalDebt", totalDebt);
                     m.put("debtCount", debtCount);
@@ -468,6 +471,7 @@ public class AdminPlusController {
         if (body.get("commissionRate") != null) u.commissionRate = Double.parseDouble(body.get("commissionRate").toString());
         if (body.get("monthlySalesTarget") != null) u.monthlySalesTarget = Long.parseLong(body.get("monthlySalesTarget").toString());
         if (body.get("employmentStatus") != null) u.employmentStatus = body.get("employmentStatus").toString().trim();
+        if (body.get("autoAssignOrders") != null) u.autoAssignOrders = Boolean.parseBoolean(body.get("autoAssignOrders").toString());
         if (body.get("hireDate") != null && !body.get("hireDate").toString().isBlank()) {
             try { u.hireDate = java.time.LocalDate.parse(body.get("hireDate").toString()); } catch (Exception ignored) {}
         }
@@ -486,6 +490,24 @@ public class AdminPlusController {
         }
         if (body.containsKey("staffNote")) {
             u.staffNote = (String) body.get("staffNote");
+        }
+        if (body.containsKey("staffCode") && body.get("staffCode") != null) {
+            u.staffCode = body.get("staffCode").toString().trim();
+        }
+        if (body.containsKey("department") && body.get("department") != null) {
+            u.department = body.get("department").toString().trim();
+        }
+        if (body.containsKey("commissionRate") && body.get("commissionRate") != null) {
+            u.commissionRate = Double.parseDouble(body.get("commissionRate").toString());
+        }
+        if (body.containsKey("monthlySalesTarget") && body.get("monthlySalesTarget") != null) {
+            u.monthlySalesTarget = Long.parseLong(body.get("monthlySalesTarget").toString());
+        }
+        if (body.containsKey("employmentStatus") && body.get("employmentStatus") != null) {
+            u.employmentStatus = body.get("employmentStatus").toString().trim();
+        }
+        if (body.containsKey("autoAssignOrders") && body.get("autoAssignOrders") != null) {
+            u.autoAssignOrders = Boolean.parseBoolean(body.get("autoAssignOrders").toString());
         }
         if (body.containsKey("role")) {
             String roleStr = (String) body.get("role");
@@ -568,6 +590,81 @@ public class AdminPlusController {
     public List<com.ares.shop.model.StaffCommissionTx> getAllCommissions() {
         if (commissionTxRepo == null) return List.of();
         return commissionTxRepo.findAllByOrderByCreatedAtDesc();
+    }
+
+    // ===== Cấu hình & điều phối chia đơn tự động cho nhân viên =====
+    @GetMapping("/order-assignment/config")
+    public Map<String, Object> getOrderAssignmentConfig() {
+        OrderAssignmentService.Config cfg = assignmentService != null ? assignmentService.getConfig() : new OrderAssignmentService.Config();
+        long unassignedCount = orders.findAll().stream()
+                .filter(o -> o.staffId == null && o.status != Enums.OrderStatus.CANCELLED)
+                .count();
+
+        List<Map<String, Object>> staffWorkload = users.findAll().stream()
+                .filter(u -> u.role == Enums.Role.STAFF || u.role == Enums.Role.ADMIN)
+                .filter(u -> !u.locked && !"TERMINATED".equalsIgnoreCase(u.employmentStatus))
+                .sorted(Comparator.comparing(u -> u.id))
+                .map(u -> {
+                    long activeOrders = orders.findAll().stream()
+                            .filter(o -> o.staffId != null && o.staffId.equals(u.id))
+                            .filter(o -> o.status == Enums.OrderStatus.PENDING || o.status == Enums.OrderStatus.CONFIRMED || o.status == Enums.OrderStatus.SHIPPING)
+                            .count();
+                    long totalSales = orders.findAll().stream()
+                            .filter(o -> o.staffId != null && o.staffId.equals(u.id) && o.status != Enums.OrderStatus.CANCELLED)
+                            .mapToLong(o -> o.total).sum();
+                    Map<String, Object> sm = new LinkedHashMap<>();
+                    sm.put("id", u.id);
+                    sm.put("fullName", u.fullName);
+                    sm.put("email", u.email);
+                    sm.put("role", u.role);
+                    sm.put("department", u.department != null ? u.department : "Tư vấn bán hàng");
+                    sm.put("commissionRate", u.commissionRate != null ? u.commissionRate : cfg.defaultCommissionRate);
+                    sm.put("autoAssignOrders", u.autoAssignOrders == null || u.autoAssignOrders);
+                    sm.put("activeOrders", activeOrders);
+                    sm.put("totalSales", totalSales);
+                    return sm;
+                }).toList();
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("config", cfg);
+        res.put("unassignedCount", unassignedCount);
+        res.put("staffWorkload", staffWorkload);
+        return res;
+    }
+
+    @PostMapping("/order-assignment/config")
+    public Map<String, Object> saveOrderAssignmentConfig(@RequestBody OrderAssignmentService.Config cfg) {
+        if (assignmentService != null) {
+            assignmentService.saveConfig(cfg);
+        }
+        return Map.of("success", true, "config", cfg);
+    }
+
+    @PostMapping("/order-assignment/toggle-staff/{staffId}")
+    public Map<String, Object> toggleStaffAutoAssign(@PathVariable Long staffId) {
+        User u = users.findById(staffId).orElseThrow(() -> ApiException.notFound("Không tìm thấy nhân viên"));
+        u.autoAssignOrders = !(u.autoAssignOrders == null || u.autoAssignOrders);
+        users.save(u);
+        return Map.of("success", true, "staffId", u.id, "autoAssignOrders", u.autoAssignOrders);
+    }
+
+    @PostMapping("/order-assignment/dispatch-unassigned")
+    public Map<String, Object> dispatchUnassignedOrders() {
+        if (assignmentService != null) {
+            return assignmentService.dispatchAllUnassigned();
+        }
+        return Map.of("success", false, "message", "Dịch vụ chia đơn chưa sẵn sàng");
+    }
+
+    @PostMapping("/order-assignment/assign")
+    public Map<String, Object> manualAssignOrder(@RequestBody Map<String, Object> body) {
+        Long orderId = Long.valueOf(body.get("orderId").toString());
+        Long staffId = Long.valueOf(body.get("staffId").toString());
+        if (assignmentService != null) {
+            CustomerOrder o = assignmentService.manualAssign(orderId, staffId);
+            return Map.of("success", true, "orderId", o.id, "orderCode", o.code, "staffId", o.staffId, "staffName", o.staffName);
+        }
+        return Map.of("success", false, "message", "Dịch vụ chia đơn chưa sẵn sàng");
     }
 
     // ===== Thống kê phân chia sản lượng On & Off =====

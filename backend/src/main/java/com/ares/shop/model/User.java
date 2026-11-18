@@ -42,6 +42,7 @@ public class User {
     public String employmentStatus = "ACTIVE"; // ACTIVE, PROBATION, LEAVE, TERMINATED
     public LocalDate hireDate = LocalDate.now();
     public Long totalCommissionPaid = 0L; // Tổng hoa hồng đã quyết toán chi trả
+    public Boolean autoAssignOrders = true; // Cho phép nhận đơn hàng tự động chia
 
     // Định danh đăng nhập mạng xã hội (liên kết theo ID nhà cung cấp, không dựa vào email giả)
     @JsonIgnore @Column(unique = true) public String googleId;
