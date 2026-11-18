@@ -81,7 +81,10 @@ html[data-theme="v2"] .pcard .buy { background: #111; } html[data-theme="v2"] .p
 /* Trang danh sách, chips, tile */
 html[data-theme="v2"] .fbar { background: #111; border-radius: 0; clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
 html[data-theme="v2"] .filters { background: var(--v2-cream); }
-html[data-theme="v2"] .chip { border-radius: 0; background: transparent; color: #eee; border-color: #444; font-family: 'Oswald', sans-serif; transform: skewX(-10deg); }
+html[data-theme="v2"] .fbar .chip { border-radius: 0; background: transparent; color: #eee; border-color: #444; font-family: 'Oswald', sans-serif; transform: skewX(-10deg); }
+html[data-theme="v2"] .chip:not(.fbar .chip) { border-radius: 0; background: #fff; color: var(--v2-ink); border: 1.5px solid var(--border); font-family: 'Oswald', sans-serif; }
+html[data-theme="v2"] .chip:not(.fbar .chip):hover { border-color: var(--v2-orange); color: var(--v2-orange); }
+html[data-theme="v2"] .chip:not(.fbar .chip).on { background: var(--v2-orange); border-color: var(--v2-orange); color: #fff; }
 html[data-theme="v2"] .chip.on { background: var(--v2-orange); border-color: var(--v2-orange); color: #fff; }
 html[data-theme="v2"] .chip:hover { border-color: var(--v2-orange); }
 html[data-theme="v2"] .tile { border-radius: 0; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%); }
@@ -178,4 +181,448 @@ html[data-theme="v2"] .hdr .cartpill span { white-space: nowrap; }
   html[data-theme="v2"] .hdr .search input { width: 0; padding: 0; }
   html[data-theme="v2"] .hdr .search.open input { width: auto; padding: 0 12px; top: 62px; background: #fff; border: 1.5px solid #111; }
   html[data-theme="v2"] .hdr .logo { font-size: 1.1rem; } html[data-theme="v2"] .hdr .logo img { height: 30px; }
+}
+
+
+/* ==========================================================================
+   GIAO DIỆN 2.0 - CHẾ ĐỘ TỐI (DARK MODE CHUẨN CAO CẤP CHO THEME 2.0)
+   - Giữ nguyên 100% hình ảnh sản phẩm (không bị đảo ngược màu / phản ngược)
+   - Sửa triệt để lỗi phông chữ trùng màu nền (tương phản cao WCAG AAA)
+   - Không thay đổi bố cục giao diện hay giao diện gốc
+   - Chỉ áp dụng riêng cho Theme 2.0 (Theme 1.0 giữ nguyên)
+   ========================================================================== */
+
+html[data-theme="v2"][data-mode="dark"] {
+  filter: none !important;
+  background: #121214 !important;
+  color-scheme: dark;
+
+  --bg: #121214;
+  --bg-2: #19191d;
+  --surface: #1e1e24;
+  --card: #1e1e24;
+  --border: #33333d;
+  --text: #f5f5f7;
+  --text-2: #d8d8de;
+  --muted: #a0a0aa;
+  --tile: #24242c;
+  --tile-2: #2c2c36;
+  --v2-cream: #121214;
+  --v2-ink: #f5f5f7;
+  --bronze-soft: #301b10;
+}
+
+/* 1. Tuyệt đối giữ nguyên ảnh sản phẩm, không bị đảo ngược / phản ngược màu */
+html[data-theme="v2"][data-mode="dark"] img,
+html[data-theme="v2"][data-mode="dark"] video,
+html[data-theme="v2"][data-mode="dark"] picture,
+html[data-theme="v2"][data-mode="dark"] canvas,
+html[data-theme="v2"][data-mode="dark"] [style*="background-image"],
+html[data-theme="v2"][data-mode="dark"] .pcard img,
+html[data-theme="v2"][data-mode="dark"] .thumb img,
+html[data-theme="v2"][data-mode="dark"] .photo img,
+html[data-theme="v2"][data-mode="dark"] .tile img,
+html[data-theme="v2"][data-mode="dark"] .im img,
+html[data-theme="v2"][data-mode="dark"] .preview-box img,
+html[data-theme="v2"][data-mode="dark"] .thumb-wrap img,
+html[data-theme="v2"][data-mode="dark"] .hero-img img,
+html[data-theme="v2"][data-mode="dark"] .qr-img {
+  filter: none !important;
+}
+
+/* 2. Tiêu đề và liên kết có độ tương phản cao */
+html[data-theme="v2"][data-mode="dark"] h1,
+html[data-theme="v2"][data-mode="dark"] h2,
+html[data-theme="v2"][data-mode="dark"] h3,
+html[data-theme="v2"][data-mode="dark"] h4,
+html[data-theme="v2"][data-mode="dark"] .page > h1,
+html[data-theme="v2"][data-mode="dark"] .page h1:first-child,
+html[data-theme="v2"][data-mode="dark"] .content h1 {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] a {
+  color: #f5f5f7;
+}
+html[data-theme="v2"][data-mode="dark"] a:hover {
+  color: var(--v2-orange);
+}
+html[data-theme="v2"][data-mode="dark"] .home .block h2,
+html[data-theme="v2"][data-mode="dark"] .home .bh h2 {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .home .bh a {
+  color: #f5f5f7 !important;
+}
+
+/* 3. Header 2.0 nền tối thanh lịch, menu rõ ràng */
+html[data-theme="v2"][data-mode="dark"] .hdr {
+  background: #16161a !important;
+  border-bottom: 1px solid #282830 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .logo,
+html[data-theme="v2"][data-mode="dark"] .hdr.dark .logo {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .menu a {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .menu a:hover,
+html[data-theme="v2"][data-mode="dark"] .hdr .menu a.on {
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .ib,
+html[data-theme="v2"][data-mode="dark"] .hdr .cartpill {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .ib:hover,
+html[data-theme="v2"][data-mode="dark"] .hdr .cartpill:hover {
+  background: #24242c !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .search {
+  background: #202026 !important;
+  border-color: #383842 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .search input {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .search input::placeholder {
+  color: #888894 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .hdr .avatar {
+  background: #282830 !important;
+  color: #ffffff !important;
+}
+
+/* 4. Thẻ sản phẩm và lưới sản phẩm */
+html[data-theme="v2"][data-mode="dark"] .pcard {
+  background: #1e1e24 !important;
+  border-color: #33333d !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard:hover {
+  border-color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .thumb {
+  background: #151518 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .name {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .foot .price {
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .buy {
+  background: #2a2a32 !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .buy:hover {
+  background: var(--v2-orange) !important;
+}
+
+/* 5. Bộ lọc và danh mục */
+html[data-theme="v2"][data-mode="dark"] .filters {
+  background: #121214 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .fbar {
+  background: #18181d !important;
+  border: 1px solid #2e2e38 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .chip {
+  background: #24242c !important;
+  color: #f5f5f7 !important;
+  border-color: #3d3d48 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .chip:hover {
+  border-color: var(--v2-orange) !important;
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .chip.on {
+  background: var(--v2-orange) !important;
+  border-color: var(--v2-orange) !important;
+  color: #ffffff !important;
+}
+
+/* 6. Form, Input, Select, Textarea */
+html[data-theme="v2"][data-mode="dark"] .input,
+html[data-theme="v2"][data-mode="dark"] select.input,
+html[data-theme="v2"][data-mode="dark"] textarea.input {
+  background: #18181d !important;
+  border-color: #383844 !important;
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .input:focus {
+  border-color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .input::placeholder {
+  color: #888894 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .card {
+  background: #1e1e24 !important;
+  border-color: #33333d !important;
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .panel,
+html[data-theme="v2"][data-mode="dark"] .perks div {
+  background: #1e1e24 !important;
+  border-color: #33333d !important;
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .modal {
+  background: #1e1e24 !important;
+  border-color: #33333d !important;
+  color: #f5f5f7 !important;
+}
+
+/* 7. Nút bấm và Bảng dữ liệu */
+html[data-theme="v2"][data-mode="dark"] .btn-outline {
+  background: transparent !important;
+  color: #f5f5f7 !important;
+  border-color: #555562 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .btn-outline:hover {
+  background: var(--v2-orange) !important;
+  border-color: var(--v2-orange) !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .table th {
+  color: #f5f5f7 !important;
+  border-color: #33333d !important;
+}
+html[data-theme="v2"][data-mode="dark"] .table td {
+  color: #d8d8de !important;
+  border-color: #282830 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .table tbody tr:hover {
+  background: #25252e !important;
+}
+
+/* 8. Trang chi tiết sản phẩm */
+html[data-theme="v2"][data-mode="dark"] .carousel,
+html[data-theme="v2"][data-mode="dark"] .photo {
+  background: #18181d !important;
+  border-color: #33333d !important;
+}
+html[data-theme="v2"][data-mode="dark"] .detail .promo {
+  background: #18181d !important;
+  border: 1px solid #33333d !important;
+}
+html[data-theme="v2"][data-mode="dark"] .detail .promo b {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .detail .promo small {
+  color: #f6c445 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .detail .promo span {
+  color: #d8d8de !important;
+}
+
+/* 9. Quản trị Admin Theme 2.0 Dark */
+html[data-theme="v2"][data-mode="dark"] .admin {
+  background: #121214 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .side {
+  background: #16161a !important;
+  border-color: #26262e !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .side nav a {
+  color: #b0b0b8 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .side nav a:hover {
+  background: #222228 !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .side nav a.on {
+  background: var(--v2-orange) !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .topbar {
+  background: #16161a !important;
+  border-bottom: 1px solid #26262e !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .content {
+  background: #121214 !important;
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .card {
+  background: #1e1e24 !important;
+  border-color: #33333d !important;
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .card h1,
+html[data-theme="v2"][data-mode="dark"] .admin .card h2,
+html[data-theme="v2"][data-mode="dark"] .admin .card h3 {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .card .muted {
+  color: #a0a0aa !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin .kbtn {
+  background: #202026 !important;
+  border-color: #383842 !important;
+  color: #b0b0b8 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin-user-info b {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .admin-user-info small {
+  color: #a0a0aa !important;
+}
+
+/* 10. Giỏ hàng & Thanh toán */
+html[data-theme="v2"][data-mode="dark"] .summary {
+  background: #1e1e24 !important;
+  border-color: #33333d !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pay {
+  background: #18181d !important;
+  border-color: #33333d !important;
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pay.on {
+  border-color: var(--v2-orange) !important;
+  background: #2a1b14 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .addr {
+  background: #18181d !important;
+  border-color: #33333d !important;
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .addr.on {
+  border-color: var(--v2-orange) !important;
+  background: #2a1b14 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .mbar {
+  background: #18181d !important;
+  border-top-color: var(--v2-orange) !important;
+  color: #f5f5f7 !important;
+}
+
+/* HeroV2 Dark Mode High-Contrast Overrides */
+html[data-theme="v2"][data-mode="dark"] .v2hero {
+  background: #121214 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .copy h1 span:not(.or) {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .copy p,
+html[data-theme="v2"][data-mode="dark"] .pick-copy p {
+  color: #d0d0d8 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .kick {
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .stats {
+  border-top-color: #33333d !important;
+}
+html[data-theme="v2"][data-mode="dark"] .stats dt {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .stats dd {
+  color: #a0a0aa !important;
+}
+html[data-theme="v2"][data-mode="dark"] .btn.v2-black {
+  background: #25252c !important;
+  color: #ffffff !important;
+  border: 1.5px solid #555562 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .btn.v2-black:hover {
+  background: var(--v2-orange) !important;
+  border-color: var(--v2-orange) !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .cta .btn.btn-outline {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1.5px solid #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .cta .btn.btn-outline:hover {
+  background: var(--v2-orange) !important;
+  border-color: var(--v2-orange) !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .note {
+  background: #1e1e24 !important;
+  color: #f5f5f7 !important;
+  border-left: 4px solid var(--v2-orange) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .note b {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .note span:not(.pr) {
+  color: #a0a0aa !important;
+}
+html[data-theme="v2"][data-mode="dark"] .tag-top {
+  color: #888894 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .big {
+  -webkit-text-stroke: 2px rgba(255,255,255,0.18) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .speed b {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12)) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .speed b:nth-child(2) {
+  background: linear-gradient(90deg, transparent, var(--v2-orange)) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .ticker {
+  background: #16161a !important;
+  border-top: 1px solid #282830 !important;
+  border-bottom: 1px solid #282830 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .flow {
+  color: #a0a0aa !important;
+}
+html[data-theme="v2"][data-mode="dark"] .badges li {
+  color: #f5f5f7 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pick-copy h2 span:not(.or) {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .ch h2 span {
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .up-in {
+  background: #18181d !important;
+  border: 1px solid #2e2e38 !important;
+}
+
+/* Tabs & status filter buttons in Admin Dark */
+html[data-theme="v2"][data-mode="dark"] .seg button {
+  color: #a8a8b2 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .seg button.on {
+  color: var(--v2-orange) !important;
+  border-bottom-color: var(--v2-orange) !important;
+  background: transparent !important;
+}
+html[data-theme="v2"][data-mode="dark"] .tabs button {
+  color: #a8a8b2 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .tabs button.active {
+  color: var(--v2-orange) !important;
+  border-bottom-color: var(--v2-orange) !important;
+}
+
+/* Product Card Tools & Badges in Dark Mode */
+html[data-theme="v2"][data-mode="dark"] .tool {
+  background: rgba(30, 30, 36, 0.9) !important;
+  color: #f5f5f7 !important;
+  border: 1px solid #444452 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .tool.on {
+  color: #e53935 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .tool:nth-child(2).on {
+  color: var(--v2-orange) !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .meta {
+  color: #a0a0aa !important;
+  border-color: #383844 !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .tag-yellow {
+  background: #25252e !important;
+  color: #ffffff !important;
+}
+html[data-theme="v2"][data-mode="dark"] .pcard .rate {
+  color: #f5c400 !important;
 }

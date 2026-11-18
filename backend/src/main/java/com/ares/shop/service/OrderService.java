@@ -62,6 +62,7 @@ public class OrderService {
     @org.springframework.beans.factory.annotation.Autowired private OrderAssignmentService assignmentService;
 
     public static final long REFERRAL_DISCOUNT = 50_000; public static final int REFERRAL_REWARD = 100;
+    private static final Object STOCK_LOCK = new Object();
 
 
 
@@ -233,81 +234,83 @@ public class OrderService {
 
         o.note = r.note(); o.paymentMethod = r.paymentMethod();
 
-        for (ItemReq it : r.items()) {
+        synchronized (STOCK_LOCK) {
+            for (ItemReq it : r.items()) {
 
-            if (it.quantity() <= 0) throw ApiException.bad("Số lượng đặt hàng không hợp lệ");
+                if (it.quantity() <= 0) throw ApiException.bad("Số lượng đặt hàng không hợp lệ");
 
-            Product p = products.findById(it.productId())
-                    .orElseThrow(() -> ApiException.bad("Sản phẩm #" + it.productId() + " không tồn tại trong hệ thống"));
-            if (!p.active) {
-                throw ApiException.bad("Sản phẩm \"" + p.name + "\" hiện đã tạm ẩn hoặc ngừng kinh doanh. Vui lòng xoá khỏi giỏ hàng!");
-            }
+                Product p = products.findById(it.productId())
+                        .orElseThrow(() -> ApiException.bad("Sản phẩm #" + it.productId() + " không tồn tại trong hệ thống"));
+                if (!p.active) {
+                    throw ApiException.bad("Sản phẩm \"" + p.name + "\" hiện đã tạm ẩn hoặc ngừng kinh doanh. Vui lòng xoá khỏi giỏ hàng!");
+                }
 
-            OrderItem oi = new OrderItem();
-            oi.order = o; oi.productId = p.id; oi.productName = p.name; oi.sku = p.sku; oi.warrantyMonths = p.warrantyMonths;
-            oi.image = p.images.isEmpty() ? null : p.images.get(0);
-            long unit = p.price;
-            ProductVariant v = null;
+                OrderItem oi = new OrderItem();
+                oi.order = o; oi.productId = p.id; oi.productName = p.name; oi.sku = p.sku; oi.warrantyMonths = p.warrantyMonths;
+                oi.image = p.images.isEmpty() ? null : p.images.get(0);
+                long unit = p.price;
+                ProductVariant v = null;
 
-            if (p.hasVariants) {
-                if (it.variantId() == null) {
-                    v = variants.findByProductIdOrderByIdAsc(p.id).stream()
-                            .filter(x -> x.active && x.stock >= it.quantity())
-                            .findFirst()
-                            .or(() -> variants.findByProductIdOrderByIdAsc(p.id).stream().filter(x -> x.active && x.stock > 0).findFirst())
-                            .or(() -> variants.findByProductIdOrderByIdAsc(p.id).stream().filter(x -> x.active).findFirst())
-                            .orElse(null);
-                    if (v == null) {
-                        throw ApiException.bad("Sản phẩm \"" + p.name + "\" hiện chưa có phiên bản khả dụng hoặc đã tạm ẩn");
+                if (p.hasVariants) {
+                    if (it.variantId() == null) {
+                        v = variants.findByProductIdOrderByIdAsc(p.id).stream()
+                                .filter(x -> x.active && x.stock >= it.quantity())
+                                .findFirst()
+                                .or(() -> variants.findByProductIdOrderByIdAsc(p.id).stream().filter(x -> x.active && x.stock > 0).findFirst())
+                                .or(() -> variants.findByProductIdOrderByIdAsc(p.id).stream().filter(x -> x.active).findFirst())
+                                .orElse(null);
+                        if (v == null) {
+                            throw ApiException.bad("Sản phẩm \"" + p.name + "\" hiện chưa có phiên bản khả dụng hoặc đã tạm ẩn");
+                        }
+                    } else {
+                        v = variants.findById(it.variantId()).filter(x -> x.product.id.equals(p.id))
+                                .orElseThrow(() -> ApiException.bad("Phiên bản đã chọn của \"" + p.name + "\" không tồn tại"));
+                        if (!v.active) {
+                            throw ApiException.bad("Phiên bản \"" + v.name + "\" của sản phẩm \"" + p.name + "\" hiện đã tạm ẩn hoặc ngừng kinh doanh");
+                        }
                     }
+
+                    if (v.stock <= 0) {
+                        throw ApiException.bad("Sản phẩm \"" + p.name + " (" + v.name + ")\" đã HẾT HÀNG! Vui lòng chọn phiên bản khác hoặc loại bỏ khỏi giỏ hàng.");
+                    }
+                    if (v.stock < it.quantity()) {
+                        throw ApiException.bad("Sản phẩm \"" + p.name + " (" + v.name + ")\" chỉ còn " + v.stock + " sản phẩm trong kho (bạn đang đặt " + it.quantity() + "). Vui lòng giảm số lượng!");
+                    }
+
+                    unit = v.price; oi.variantId = v.id; oi.variantName = v.name; if (v.image != null) oi.image = v.image;
+                    v.stock -= it.quantity(); variants.save(v);
+                    p.stock = Math.max(0, p.stock - it.quantity());
                 } else {
-                    v = variants.findById(it.variantId()).filter(x -> x.product.id.equals(p.id))
-                            .orElseThrow(() -> ApiException.bad("Phiên bản đã chọn của \"" + p.name + "\" không tồn tại"));
-                    if (!v.active) {
-                        throw ApiException.bad("Phiên bản \"" + v.name + "\" của sản phẩm \"" + p.name + "\" hiện đã tạm ẩn hoặc ngừng kinh doanh");
+                    if (p.stock <= 0) {
+                        throw ApiException.bad("Sản phẩm \"" + p.name + "\" đã HẾT HÀNG! Vui lòng xoá sản phẩm này khỏi giỏ hàng để tiếp tục thanh toán.");
                     }
+                    if (p.stock < it.quantity()) {
+                        throw ApiException.bad("Sản phẩm \"" + p.name + "\" chỉ còn " + p.stock + " sản phẩm trong kho (bạn đang đặt " + it.quantity() + "). Vui lòng giảm số lượng!");
+                    }
+                    p.stock -= it.quantity();
                 }
 
-                if (v.stock <= 0) {
-                    throw ApiException.bad("Sản phẩm \"" + p.name + " (" + v.name + ")\" đã HẾT HÀNG! Vui lòng chọn phiên bản khác hoặc loại bỏ khỏi giỏ hàng.");
-                }
-                if (v.stock < it.quantity()) {
-                    throw ApiException.bad("Sản phẩm \"" + p.name + " (" + v.name + ")\" chỉ còn " + v.stock + " sản phẩm trong kho (bạn đang đặt " + it.quantity() + "). Vui lòng giảm số lượng!");
+                var fs = liveFlash(p.id, v == null ? null : v.id);
+
+                if (fs.isPresent() && fs.get().quota - fs.get().sold >= it.quantity()) {
+
+                    unit = fs.get().salePrice; oi.flashSale = true; fs.get().sold += it.quantity(); flash.save(fs.get());
+
                 }
 
-                unit = v.price; oi.variantId = v.id; oi.variantName = v.name; if (v.image != null) oi.image = v.image;
-                v.stock -= it.quantity(); variants.save(v);
-                p.stock = Math.max(0, p.stock - it.quantity());
-            } else {
-                if (p.stock <= 0) {
-                    throw ApiException.bad("Sản phẩm \"" + p.name + "\" đã HẾT HÀNG! Vui lòng xoá sản phẩm này khỏi giỏ hàng để tiếp tục thanh toán.");
-                }
-                if (p.stock < it.quantity()) {
-                    throw ApiException.bad("Sản phẩm \"" + p.name + "\" chỉ còn " + p.stock + " sản phẩm trong kho (bạn đang đặt " + it.quantity() + "). Vui lòng giảm số lượng!");
-                }
-                p.stock -= it.quantity();
-            }
+                p.sold += it.quantity();
 
-            var fs = liveFlash(p.id, v == null ? null : v.id);
+                products.save(p);
 
-            if (fs.isPresent() && fs.get().quota - fs.get().sold >= it.quantity()) {
+                log(p, v, -it.quantity(), "Bán hàng", u == null ? "guest:" + r.email() : u.email);
 
-                unit = fs.get().salePrice; oi.flashSale = true; fs.get().sold += it.quantity(); flash.save(fs.get());
+                oi.unitPrice = unit; oi.quantity = it.quantity();
+
+                o.items.add(oi);
+
+                o.subtotal += unit * it.quantity();
 
             }
-
-            p.sold += it.quantity();
-
-            products.save(p);
-
-            log(p, v, -it.quantity(), "Bán hàng", u == null ? "guest:" + r.email() : u.email);
-
-            oi.unitPrice = unit; oi.quantity = it.quantity();
-
-            o.items.add(oi);
-
-            o.subtotal += unit * it.quantity();
-
         }
 
         o.bundleDiscount = bundleDiscount(o.items);
